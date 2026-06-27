@@ -27,7 +27,8 @@ local `.env` and Render environment variables.
 Status on June 27, 2026: the local CLI is linked to the dedicated `RAG Lens`
 project ref `yyqmlfisijerlcrbcuvy`, all checked-in migrations are applied on
 the remote project, security and performance advisors return no warning-level
-issues, and `bun run cleanup:sessions:dry-run` succeeds with count-only output.
+issues, `bun run cleanup:sessions:dry-run` succeeds with count-only output, and
+`bun run smoke:supabase -- --json` passes its read-only hosted checks.
 
 Apply migrations after a hosted project exists:
 
@@ -152,6 +153,17 @@ rows. The real cron command is:
 ```bash
 bun run cleanup:sessions
 ```
+
+Before creating Render services, also run the hosted Supabase read-only smoke
+gate:
+
+```bash
+bun run smoke:supabase -- --json
+```
+
+This validates the dedicated Supabase project's seeded example corpora, Storage
+bucket reachability, vector retrieval RPC, and cleanup dry-run plumbing without
+creating or deleting fixtures.
 
 ## Deferred GitHub Pages Landing
 

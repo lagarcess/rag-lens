@@ -9,6 +9,7 @@
     "lint": "eslint",
     "test": "bun test",
     "seed:examples": "bun scripts/seed-example-corpora.ts",
+    "smoke:supabase": "bun scripts/supabase-smoke.ts",
     "preflight:render": "bun scripts/render-preflight.ts",
     "cleanup:sessions": "bun scripts/cleanup-expired-sessions.ts",
     "cleanup:sessions:dry-run": "bun scripts/cleanup-expired-sessions.ts --dry-run"

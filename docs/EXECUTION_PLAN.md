@@ -193,6 +193,8 @@ Before each commit, run the relevant subset:
 - `curl -fsS http://localhost:3000/api/health` when the dev server is running
 - browser screenshot/interaction checks for UI slices
 - secret scan for env/provider/database slices
+- `bun run smoke:supabase -- --json` before Render deployment work once hosted
+  Supabase env vars are configured
 - `bun run preflight:render` before any Render resource creation, update, or
   dashboard launch workflow
 

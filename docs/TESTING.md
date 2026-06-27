@@ -41,15 +41,33 @@ The Bun test suite covers:
   unretrieved chunks.
 - Workbench trace history API helpers.
 - Cleanup dry-run behavior and count-only logging helpers.
+- Hosted Supabase smoke helper argument parsing, read-only stage orchestration,
+  and sanitized error output.
 - Render deployment preflight package, Blueprint, workspace, and sanitized
   error validation helpers.
 
 ## Integration Tests To Add
 
-- Browser-driven upload/query flow with provider fixtures or a disposable
-  hosted test project.
+- Browser-driven upload/query flow with provider fixtures or a disposable hosted
+  test project.
+- Mutating hosted Supabase fixture smoke proving tiny uploads, trace
+  persistence, immediate purge, and expired fixture cleanup end to end.
 - Disposable Supabase cleanup fixture proving expired rows are deleted while
   examples and active sessions remain.
+
+## Hosted Supabase Smoke
+
+Before Render deployment work, run the read-only hosted Supabase smoke gate:
+
+```bash
+bun run smoke:supabase -- --json
+```
+
+The command verifies the Storage bucket is reachable, first-party example
+corpora are seeded, example chunks use the configured standard Perplexity
+embedding model, vector retrieval returns rows through `match_rag_chunks`, and
+scheduled cleanup can enumerate purgeable upload paths in dry-run mode. Output
+is JSON and must remain count/metadata only.
 
 ## Browser QA
 
