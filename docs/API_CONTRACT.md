@@ -113,8 +113,21 @@ the default indexed vector profile:
 
 Uploaded-document responses use the same shape, with
 `trace.corpus.sourceKind: "upload"`, `trace.retrieval.method:
-"supabase-pgvector-cosine"`, and `trace.persistence.store:
-"supabase-session-vectors"`.
+"supabase-pgvector-cosine"`, and persisted session metadata:
+
+```json
+{
+  "trace": {
+    "persistence": {
+      "mode": "session",
+      "store": "supabase-trace-history"
+    }
+  }
+}
+```
+
+Example-corpus responses remain ephemeral unless a later slice explicitly saves
+seeded example traces.
 
 ### `POST /api/sessions`
 
@@ -198,15 +211,41 @@ Response:
 Status: implemented for upload, extraction, default-profile chunking,
 embedding, and session-scoped vector indexing.
 
+### `GET /api/sessions/:sessionId/traces`
+
+Lists recent persisted traces for an active anonymous session.
+
+Response:
+
+```json
+{
+  "traces": [
+    {
+      "queryId": "uuid",
+      "question": "What does my document say about retrieval?",
+      "answerPreview": "The document says...",
+      "sourceTitle": "Uploaded documents",
+      "sourceKind": "upload",
+      "retrievedCount": 5,
+      "createdAt": "iso timestamp"
+    }
+  ]
+}
+```
+
+Expired, deleted, or unknown sessions return `404`.
+
+### `GET /api/sessions/:sessionId/traces/:queryId`
+
+Reloads a persisted trace for an active anonymous session.
+
+Response: same shape as `POST /api/query`.
+
+Expired, deleted, unknown, or cross-session traces return `404`.
+
 ## Planned
 
 ### `GET /api/corpora`
 
 Lists example corpora and active session documents when the workbench stops
 using its current static source seed.
-
-### Trace persistence for `POST /api/query`
-
-Persists query, answer, prompt, trace JSON, and retrieval rows for active
-sessions. The request and response shape should remain compatible with the
-implemented `POST /api/query` contract.

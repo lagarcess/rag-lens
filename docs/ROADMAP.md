@@ -142,8 +142,30 @@ Verification:
 - Retrieval rows preserve rank order and scores.
 
 Status: implemented for query-time session-scoped vector retrieval and trace
-rendering. Persistence of `rag_queries` and `rag_retrievals` remains in the
-trace-history slice.
+rendering. Uploaded-session queries now persist `rag_queries`,
+`rag_retrievals`, prompt text, trace JSON, and retrieval scores for the active
+anonymous session.
+
+### Slice 6.1 - Trace History
+
+Goal: Let users reopen traces while their anonymous upload session is active.
+
+Deliverables:
+
+- Persist uploaded-session query traces in Supabase.
+- List recent traces in the trace inspector.
+- Reload a saved trace without rerunning retrieval or generation.
+- Block trace history when the session is expired, deleted, or belongs to a
+  different session.
+
+Verification:
+
+- Saved traces reload during an active session.
+- Session deletion clears frontend history.
+- Service tests cover query/retrieval row construction and expiry blocking.
+
+Status: implemented for session-scoped upload traces. Example traces remain
+ephemeral.
 
 ## Slice 7 - Answer Generation And Citations
 

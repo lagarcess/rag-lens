@@ -11,7 +11,12 @@ import { generateOpenRouterAnswer } from "@/lib/rag/openrouter";
 import { embedTextsWithPerplexity } from "@/lib/rag/perplexity-embeddings";
 import { runExampleTrace, runVectorTrace } from "@/lib/rag/query-runner";
 import { createSupabaseSessionSourceRepository } from "@/lib/rag/supabase-session-source";
+import { createSupabaseTracePersistenceRepository } from "@/lib/rag/supabase-trace-store";
 import { retrieveSupabaseVector } from "@/lib/rag/supabase-vector";
+import {
+  persistSessionTrace,
+  TracePersistenceError,
+} from "@/lib/rag/trace-persistence";
 import { createSupabaseAdminClient } from "@/lib/supabase-admin";
 
 const queryRequestSchema = z.object({
@@ -98,7 +103,15 @@ export async function POST(request: Request) {
           : undefined,
       });
 
-      return Response.json(result);
+      const persistedResult = await persistSessionTrace({
+        repository: createSupabaseTracePersistenceRepository(),
+        sessionId: parsed.data.sessionId as string,
+        request: parsed.data,
+        response: result,
+        now: new Date().toISOString(),
+      });
+
+      return Response.json(persistedResult);
     }
 
     if (
@@ -159,7 +172,7 @@ export async function POST(request: Request) {
             ? error.message
             : "Unable to run RAG trace for this request",
       },
-      { status: 404 },
+      { status: error instanceof TracePersistenceError ? error.statusCode : 404 },
     );
   }
 }

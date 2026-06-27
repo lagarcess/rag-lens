@@ -16,6 +16,8 @@ import { ChangeEvent, FormEvent, useMemo, useReducer, useState } from "react";
 import {
   createAnonymousSession,
   deleteAnonymousSession,
+  listSessionTraces,
+  loadSessionTrace,
   runTraceQuery,
   uploadDocument,
 } from "@/features/workbench/workbench-api";
@@ -24,6 +26,7 @@ import {
   workbenchReducer,
 } from "@/features/workbench/workbench-state";
 import type { RagRetrievalRow } from "@/lib/rag/trace";
+import type { TraceSummary } from "@/lib/rag/trace-persistence";
 
 export function WorkbenchClient() {
   const [state, dispatch] = useReducer(
@@ -58,8 +61,11 @@ export function WorkbenchClient() {
         throw new Error("Upload a document before querying uploaded sources.");
       }
 
+      const querySessionId = selectedUploadSource
+        ? selectedSource.sessionId ?? null
+        : null;
       const trace = await runTraceQuery({
-        sessionId: selectedUploadSource ? selectedSource.sessionId ?? null : null,
+        sessionId: querySessionId,
         corpusSlug: selectedUploadSource
           ? "session-uploads"
           : state.selectedCorpusSlug,
@@ -73,11 +79,54 @@ export function WorkbenchClient() {
       });
 
       dispatch({ type: "querySucceeded", result: trace });
+
+      if (querySessionId && trace.trace.persistence.mode === "session") {
+        await refreshTraceHistory(querySessionId);
+      }
     } catch (error) {
       dispatch({
         type: "queryFailed",
         error:
           error instanceof Error ? error.message : "Unable to run this trace",
+      });
+    }
+  }
+
+  async function refreshTraceHistory(sessionId: string) {
+    dispatch({ type: "traceHistoryStarted" });
+
+    try {
+      const history = await listSessionTraces(sessionId);
+      dispatch({ type: "traceHistoryLoaded", traces: history.traces });
+    } catch (error) {
+      dispatch({
+        type: "traceHistoryFailed",
+        error:
+          error instanceof Error
+            ? error.message
+            : "Unable to refresh trace history",
+      });
+    }
+  }
+
+  async function handleTraceSelected(queryId: string) {
+    if (!state.session.sessionId || isLoading) {
+      return;
+    }
+
+    dispatch({ type: "traceReloadStarted" });
+
+    try {
+      const trace = await loadSessionTrace({
+        sessionId: state.session.sessionId,
+        queryId,
+      });
+      dispatch({ type: "traceReloaded", result: trace });
+    } catch (error) {
+      dispatch({
+        type: "queryFailed",
+        error:
+          error instanceof Error ? error.message : "Unable to load this trace",
       });
     }
   }
@@ -363,7 +412,10 @@ export function WorkbenchClient() {
       </section>
 
       <TraceInspector
+        activeQueryId={state.history.activeQueryId}
+        history={state.history}
         isLoading={isLoading}
+        onTraceSelected={handleTraceSelected}
         prompt={result?.trace.prompt.rendered}
         rows={result?.trace.retrieval.rows ?? []}
         result={result}
@@ -530,12 +582,18 @@ function AnswerPanel({
 }
 
 function TraceInspector({
+  activeQueryId,
+  history,
   isLoading,
+  onTraceSelected,
   prompt,
   rows,
   result,
 }: {
+  activeQueryId: string | null;
+  history: WorkbenchState["history"];
   isLoading: boolean;
+  onTraceSelected: (queryId: string) => void;
   prompt?: string;
   rows: RagRetrievalRow[];
   result: ReturnType<typeof createInitialWorkbenchState>["query"]["result"];
@@ -560,6 +618,12 @@ function TraceInspector({
         <Activity className="size-4 text-[var(--accent)]" />
       </div>
 
+      <RecentTracesList
+        activeQueryId={activeQueryId}
+        history={history}
+        onTraceSelected={onTraceSelected}
+      />
+
       <div className="space-y-3">
         {rows.length === 0 ? (
           <div className="rounded-lg border border-[var(--trace-border)] bg-[var(--trace-card)] p-3 text-sm leading-6 text-[var(--trace-muted)]">
@@ -580,6 +644,89 @@ function TraceInspector({
         </pre>
       </div>
     </aside>
+  );
+}
+
+function RecentTracesList({
+  activeQueryId,
+  history,
+  onTraceSelected,
+}: {
+  activeQueryId: string | null;
+  history: WorkbenchState["history"];
+  onTraceSelected: (queryId: string) => void;
+}) {
+  if (history.status === "idle" && history.traces.length === 0) {
+    return null;
+  }
+
+  return (
+    <section
+      aria-labelledby="recent-traces-heading"
+      className="mb-4 rounded-lg border border-[var(--trace-border)] bg-[var(--trace-card)] p-3"
+    >
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <h3
+          className="font-mono text-[11px] text-[var(--accent-cyan)]"
+          id="recent-traces-heading"
+        >
+          recent traces
+        </h3>
+        <span
+          aria-live="polite"
+          className="font-mono text-[10px] text-[var(--trace-muted)]"
+        >
+          {history.status === "loading"
+            ? "syncing"
+            : `${history.traces.length} saved`}
+        </span>
+      </div>
+
+      {history.error ? (
+        <p className="text-xs leading-5 text-[var(--danger)]" role="alert">
+          {history.error}
+        </p>
+      ) : null}
+
+      {history.traces.length === 0 ? (
+        <p className="text-xs leading-5 text-[var(--trace-muted)]">
+          Saved session traces will appear after the first upload query.
+        </p>
+      ) : (
+        <ol className="space-y-2">
+          {history.traces.map((trace) => {
+            const active = trace.queryId === activeQueryId;
+
+            return (
+              <li key={trace.queryId}>
+                <button
+                  aria-current={active ? "true" : undefined}
+                  className={[
+                    "w-full rounded-md border p-2 text-left transition focus:outline-none focus:ring-2 focus:ring-[var(--accent-cyan)]",
+                    active
+                      ? "border-[var(--accent)] bg-[var(--trace-code-bg)]"
+                      : "border-[var(--trace-border)] bg-transparent hover:border-[var(--accent-cyan)]",
+                  ].join(" ")}
+                  onClick={() => onTraceSelected(trace.queryId)}
+                  type="button"
+                >
+                  <span className="line-clamp-2 text-xs font-medium leading-5 text-[var(--trace-foreground)]">
+                    {trace.question}
+                  </span>
+                  <span className="mt-1 flex items-center justify-between gap-2 font-mono text-[10px] text-[var(--trace-muted)]">
+                    <span>
+                      {trace.retrievedCount} chunks ·{" "}
+                      {formatTraceTime(trace.createdAt)}
+                    </span>
+                    <span>{formatSourceKind(trace)}</span>
+                  </span>
+                </button>
+              </li>
+            );
+          })}
+        </ol>
+      )}
+    </section>
   );
 }
 
@@ -619,4 +766,15 @@ function TraceRow({ row }: { row: RagRetrievalRow }) {
       </div>
     </details>
   );
+}
+
+function formatTraceTime(value: string) {
+  return new Intl.DateTimeFormat(undefined, {
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(new Date(value));
+}
+
+function formatSourceKind(trace: TraceSummary) {
+  return trace.sourceKind === "upload" ? "upload" : "example";
 }

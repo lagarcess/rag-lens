@@ -65,6 +65,7 @@ describe("retrieveSupabaseVector", () => {
       charEnd: 62,
       rank: 1,
       similarity: 0.91,
+      distance: 0.09,
       selected: true,
       retrievalMode: "vector",
       matchedTerms: ["rag", "answers"],

@@ -3,6 +3,8 @@ import { describe, expect, test } from "bun:test";
 import {
   createAnonymousSession,
   deleteAnonymousSession,
+  listSessionTraces,
+  loadSessionTrace,
   runTraceQuery,
   uploadDocument,
 } from "./workbench-api";
@@ -222,6 +224,85 @@ describe("deleteAnonymousSession", () => {
     expect(fetchCalls[0]).toMatchObject({
       url: "/api/sessions/11111111-1111-4111-8111-111111111111",
       init: { method: "DELETE" },
+    });
+  });
+});
+
+describe("session trace history helpers", () => {
+  test("lists recent traces for an active session", async () => {
+    const fetchCalls: Array<{ url: string; init?: RequestInit }> = [];
+    const fetchFn = async (url: string | URL | Request, init?: RequestInit) => {
+      fetchCalls.push({ url: String(url), init });
+
+      return new Response(
+        JSON.stringify({
+          traces: [
+            {
+              queryId: "33333333-3333-4333-8333-333333333333",
+              question: "How does RAG improve trust?",
+              answerPreview: "RAG improves trust by citing chunks.",
+              sourceTitle: "Uploaded documents",
+              sourceKind: "upload",
+              retrievedCount: 3,
+              createdAt: "2026-06-27T12:00:00.000Z",
+            },
+          ],
+        }),
+        {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        },
+      );
+    };
+
+    const result = await listSessionTraces(
+      "11111111-1111-4111-8111-111111111111",
+      fetchFn,
+    );
+
+    expect(fetchCalls[0]).toMatchObject({
+      url: "/api/sessions/11111111-1111-4111-8111-111111111111/traces",
+      init: { method: "GET" },
+    });
+    expect(result.traces[0]).toMatchObject({
+      queryId: "33333333-3333-4333-8333-333333333333",
+      retrievedCount: 3,
+    });
+  });
+
+  test("loads a persisted trace by id", async () => {
+    const fetchCalls: Array<{ url: string; init?: RequestInit }> = [];
+    const fetchFn = async (url: string | URL | Request, init?: RequestInit) => {
+      fetchCalls.push({ url: String(url), init });
+
+      return new Response(
+        JSON.stringify({
+          queryId: "33333333-3333-4333-8333-333333333333",
+          answer: "Answer",
+          citations: [],
+          trace: {
+            retrieval: { method: "supabase-pgvector-cosine", rows: [] },
+          },
+        }),
+        {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        },
+      );
+    };
+
+    const result = await loadSessionTrace(
+      {
+        sessionId: "11111111-1111-4111-8111-111111111111",
+        queryId: "33333333-3333-4333-8333-333333333333",
+      },
+      fetchFn,
+    );
+
+    expect(result.queryId).toBe("33333333-3333-4333-8333-333333333333");
+    expect(fetchCalls[0]).toMatchObject({
+      url: "/api/sessions/11111111-1111-4111-8111-111111111111/traces/33333333-3333-4333-8333-333333333333",
+      init: { method: "GET" },
     });
   });
 });

@@ -23,11 +23,13 @@ The Bun test suite covers:
 - Upload extraction.
 - Upload chunk-row construction and ingestion orchestration.
 - Session-scoped vector retrieval RPC arguments.
-- Workbench session/upload/query state.
+- Trace persistence row construction, session expiry blocking, summary listing,
+  and reload mapping.
+- Workbench session/upload/query/history state.
+- Workbench trace history API helpers.
 
 ## Integration Tests To Add
 
-- Query route persists trace records.
 - Browser-driven upload/query flow with provider fixtures or a disposable
   hosted test project.
 

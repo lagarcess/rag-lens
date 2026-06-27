@@ -62,6 +62,7 @@ export async function retrieveSupabaseVector(
       content: row.content,
       rank: index + 1,
       similarity: row.similarity,
+      distance: row.distance,
       selected: true,
       retrievalMode: "vector",
       matchedTerms: Array.isArray(row.metadata?.matchedTerms)

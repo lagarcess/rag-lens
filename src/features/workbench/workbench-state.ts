@@ -1,5 +1,6 @@
 import { RAG_LIMITS } from "@/lib/rag-config";
 import type { EmbeddingMode, RagTraceResponse } from "@/lib/rag/trace";
+import type { TraceSummary } from "@/lib/rag/trace-persistence";
 import type {
   WorkbenchSessionResponse,
   WorkbenchUploadResponse,
@@ -13,6 +14,7 @@ export type UploadStatus =
   | "processing"
   | "ready"
   | "error";
+export type TraceHistoryStatus = "idle" | "loading" | "ready" | "error";
 
 export interface WorkbenchSource {
   slug: string;
@@ -48,6 +50,12 @@ export interface WorkbenchState {
     documents: WorkbenchUploadedDocument[];
     error: string | null;
   };
+  history: {
+    status: TraceHistoryStatus;
+    traces: TraceSummary[];
+    activeQueryId: string | null;
+    error: string | null;
+  };
   query: {
     status: QueryStatus;
     error: string | null;
@@ -81,7 +89,12 @@ export type WorkbenchAction =
   | { type: "uploadFailed"; error: string }
   | { type: "queryStarted" }
   | { type: "querySucceeded"; result: RagTraceResponse }
-  | { type: "queryFailed"; error: string };
+  | { type: "queryFailed"; error: string }
+  | { type: "traceHistoryStarted" }
+  | { type: "traceHistoryLoaded"; traces: TraceSummary[] }
+  | { type: "traceHistoryFailed"; error: string }
+  | { type: "traceReloadStarted" }
+  | { type: "traceReloaded"; result: RagTraceResponse };
 
 export function createInitialWorkbenchState(): WorkbenchState {
   return {
@@ -129,6 +142,12 @@ export function createInitialWorkbenchState(): WorkbenchState {
     uploads: {
       status: "idle",
       documents: [],
+      error: null,
+    },
+    history: {
+      status: "idle",
+      traces: [],
+      activeQueryId: null,
       error: null,
     },
     query: {
@@ -219,6 +238,12 @@ export function workbenchReducer(
           documents: [],
           error: null,
         },
+        history: {
+          status: "idle",
+          traces: [],
+          activeQueryId: null,
+          error: null,
+        },
       };
     case "sessionDeleteFailed":
       return {
@@ -307,6 +332,13 @@ export function workbenchReducer(
     case "querySucceeded":
       return {
         ...state,
+        history: {
+          ...state.history,
+          activeQueryId:
+            action.result.trace.persistence.mode === "session"
+              ? action.result.queryId
+              : state.history.activeQueryId,
+        },
         query: {
           status: "success",
           error: null,
@@ -320,6 +352,56 @@ export function workbenchReducer(
           ...state.query,
           status: "error",
           error: action.error,
+        },
+      };
+    case "traceHistoryStarted":
+      return {
+        ...state,
+        history: {
+          ...state.history,
+          status: "loading",
+          error: null,
+        },
+      };
+    case "traceHistoryLoaded":
+      return {
+        ...state,
+        history: {
+          status: "ready",
+          traces: action.traces,
+          activeQueryId: state.query.result?.queryId ?? state.history.activeQueryId,
+          error: null,
+        },
+      };
+    case "traceHistoryFailed":
+      return {
+        ...state,
+        history: {
+          ...state.history,
+          status: "error",
+          error: action.error,
+        },
+      };
+    case "traceReloadStarted":
+      return {
+        ...state,
+        query: {
+          ...state.query,
+          status: "loading",
+          error: null,
+        },
+      };
+    case "traceReloaded":
+      return {
+        ...state,
+        history: {
+          ...state.history,
+          activeQueryId: action.result.queryId,
+        },
+        query: {
+          status: "success",
+          error: null,
+          result: action.result,
         },
       };
     default:

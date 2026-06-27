@@ -27,6 +27,7 @@ export interface RagChunk {
 export interface RagRetrievalRow extends RagChunk {
   rank: number;
   similarity: number;
+  distance?: number;
   selected: boolean;
   retrievalMode: "lexical" | "vector";
   matchedTerms: string[];
@@ -97,8 +98,11 @@ export interface RagTrace {
     generation: number;
   };
   persistence: {
-    mode: "ephemeral";
-    store: "local-example-runner" | "supabase-session-vectors";
+    mode: "ephemeral" | "session";
+    store:
+      | "local-example-runner"
+      | "supabase-session-vectors"
+      | "supabase-trace-history";
   };
   warnings: string[];
 }

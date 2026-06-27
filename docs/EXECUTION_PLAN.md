@@ -379,6 +379,9 @@ Verification:
 - `bun run lint`
 - `bun run build`
 
+Status: implemented for uploaded-session traces. Example traces remain
+ephemeral because local example chunk IDs are not database chunk foreign keys.
+
 Commit:
 
 ```bash

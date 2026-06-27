@@ -1,4 +1,5 @@
 import type { RagQueryRequest, RagTraceResponse } from "@/lib/rag/trace";
+import type { TraceSummary } from "@/lib/rag/trace-persistence";
 
 export interface WorkbenchSessionResponse {
   sessionId: string;
@@ -22,6 +23,10 @@ export interface WorkbenchUploadResponse {
 export interface WorkbenchDeleteSessionResponse {
   ok: boolean;
   sessionId: string;
+}
+
+export interface WorkbenchTraceHistoryResponse {
+  traces: TraceSummary[];
 }
 
 type FetchFn = (
@@ -102,6 +107,44 @@ export async function deleteAnonymousSession(
   }
 
   return (await response.json()) as WorkbenchDeleteSessionResponse;
+}
+
+export async function listSessionTraces(
+  sessionId: string,
+  fetchFn: FetchFn = fetch,
+): Promise<WorkbenchTraceHistoryResponse> {
+  const response = await fetchFn(`/api/sessions/${sessionId}/traces`, {
+    method: "GET",
+  });
+
+  if (!response.ok) {
+    const payload = await readJsonSafely(response);
+    throw new Error(payload?.error ?? "Unable to list trace history");
+  }
+
+  return (await response.json()) as WorkbenchTraceHistoryResponse;
+}
+
+export async function loadSessionTrace(
+  input: {
+    sessionId: string;
+    queryId: string;
+  },
+  fetchFn: FetchFn = fetch,
+): Promise<RagTraceResponse> {
+  const response = await fetchFn(
+    `/api/sessions/${input.sessionId}/traces/${input.queryId}`,
+    {
+      method: "GET",
+    },
+  );
+
+  if (!response.ok) {
+    const payload = await readJsonSafely(response);
+    throw new Error(payload?.error ?? "Unable to load trace");
+  }
+
+  return (await response.json()) as RagTraceResponse;
 }
 
 async function readJsonSafely(response: Response) {

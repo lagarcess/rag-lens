@@ -153,6 +153,7 @@ describe("workbenchReducer", () => {
       hardExpiresAt: null,
     });
     expect(deleted.uploads.documents).toEqual([]);
+    expect(deleted.history.traces).toEqual([]);
     expect(
       deleted.sources.some((source) => source.slug === "session-uploads"),
     ).toBe(false);
@@ -191,5 +192,83 @@ describe("workbenchReducer", () => {
         sessionId: "11111111-1111-4111-8111-111111111111",
         documentCount: 1,
       });
+  });
+
+  test("tracks recent trace history and reloads persisted traces", () => {
+    const initial = createInitialWorkbenchState();
+
+    const loadingHistory = workbenchReducer(initial, {
+      type: "traceHistoryStarted",
+    });
+    expect(loadingHistory.history.status).toBe("loading");
+
+    const loadedHistory = workbenchReducer(loadingHistory, {
+      type: "traceHistoryLoaded",
+      traces: [
+        {
+          queryId: "33333333-3333-4333-8333-333333333333",
+          question: "How does RAG improve trust?",
+          answerPreview: "RAG improves trust by citing chunks.",
+          sourceTitle: "Uploaded documents",
+          sourceKind: "upload",
+          retrievedCount: 3,
+          createdAt: "2026-06-27T12:00:00.000Z",
+        },
+      ],
+    });
+
+    expect(loadedHistory.history).toMatchObject({
+      status: "ready",
+      error: null,
+    });
+    expect(loadedHistory.history.traces).toHaveLength(1);
+
+    const reloading = workbenchReducer(loadedHistory, {
+      type: "traceReloadStarted",
+    });
+    expect(reloading.query.status).toBe("loading");
+
+    const reloaded = workbenchReducer(reloading, {
+      type: "traceReloaded",
+      result: {
+        queryId: "33333333-3333-4333-8333-333333333333",
+        answer: "Reloaded answer",
+        citations: [],
+        trace: {
+          settings: {
+            topK: 3,
+            chunkSize: 800,
+            chunkOverlap: 120,
+            embeddingMode: "standard",
+          },
+          corpus: {
+            slug: "session-uploads",
+            title: "Uploaded documents",
+            sourceKind: "upload",
+            documentCount: 1,
+          },
+          extraction: { documents: [] },
+          chunking: { totalChunks: 0, chunks: [] },
+          retrieval: {
+            method: "supabase-pgvector-cosine",
+            rows: [],
+          },
+          prompt: { rendered: "Prompt", contextChunkIds: [] },
+          models: {
+            embedding: { provider: "perplexity", model: "pplx-embed-v1-0.6b" },
+            answer: { provider: "openrouter", model: "model" },
+          },
+          timingsMs: { total: 1, retrieval: 1, generation: 1 },
+          persistence: {
+            mode: "session",
+            store: "supabase-trace-history",
+          },
+          warnings: [],
+        },
+      },
+    });
+
+    expect(reloaded.query.status).toBe("success");
+    expect(reloaded.query.result?.answer).toBe("Reloaded answer");
   });
 });

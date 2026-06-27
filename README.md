@@ -51,7 +51,9 @@ vectors, model-backed answers, and session-scoped upload/extraction/indexing are
 working locally against the hosted RAG Lens Supabase project. Uploaded markdown,
 text, and PDF documents are chunked with the default profile, embedded with
 Perplexity, stored in Supabase `pgvector`, and queryable from the workbench for
-the active anonymous session.
+the active anonymous session. Upload-session traces are saved in Supabase and
+can be reopened from the trace inspector until the anonymous session expires or
+is deleted.
 
 - GitHub: https://github.com/lagarcess/rag-lens
 - Render: provisional app/backend service exists, but the Render URL is not the
