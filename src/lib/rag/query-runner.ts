@@ -14,8 +14,33 @@ import type {
   RagTraceResponse,
 } from "./trace";
 
+export interface AnswerProviderInput {
+  question: string;
+  prompt: string;
+  citationCount: number;
+}
+
+export interface AnswerProviderResult {
+  answer: string;
+  provider: "local" | "openrouter";
+  model: string;
+  finishReason?: string;
+  usage?: {
+    promptTokens: number;
+    completionTokens: number;
+    totalTokens: number;
+  };
+}
+
+export type AnswerProvider = (
+  input: AnswerProviderInput,
+) => Promise<AnswerProviderResult>;
+
 export async function runExampleTrace(
   request: RagQueryRequest,
+  options: {
+    answerProvider?: AnswerProvider;
+  } = {},
 ): Promise<RagTraceResponse> {
   const totalStartedAt = performance.now();
   const corpus = await loadExampleCorpus(request.corpusSlug);
@@ -41,7 +66,18 @@ export async function runExampleTrace(
     question: request.question,
     retrievalRows: retrieval.rows,
   });
-  const answer = buildLocalAnswer(retrieval.rows);
+  const localAnswer = buildLocalAnswer(retrieval.rows);
+  const answerResult = options.answerProvider
+    ? await options.answerProvider({
+        question: request.question,
+        prompt: prompt.rendered,
+        citationCount: retrieval.rows.length,
+      })
+    : {
+        answer: localAnswer,
+        provider: "local" as const,
+        model: "extractive-summary",
+      };
   const generationMs = elapsed(generationStartedAt);
 
   const citations: RagCitation[] = retrieval.rows.map((row) => ({
@@ -53,7 +89,7 @@ export async function runExampleTrace(
 
   return {
     queryId: crypto.randomUUID(),
-    answer,
+    answer: answerResult.answer,
     citations,
     trace: {
       settings,
@@ -82,8 +118,10 @@ export async function runExampleTrace(
           model: "local-lexical",
         },
         answer: {
-          provider: "local",
-          model: "extractive-summary",
+          provider: answerResult.provider,
+          model: answerResult.model,
+          finishReason: answerResult.finishReason,
+          usage: answerResult.usage,
         },
       },
       timingsMs: {

@@ -75,8 +75,14 @@ export interface RagTrace {
       model: "local-lexical";
     };
     answer: {
-      provider: "local";
-      model: "extractive-summary";
+      provider: "local" | "openrouter";
+      model: string;
+      finishReason?: string;
+      usage?: {
+        promptTokens: number;
+        completionTokens: number;
+        totalTokens: number;
+      };
     };
   };
   timingsMs: {

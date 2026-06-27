@@ -20,10 +20,11 @@ Response:
 
 ### `POST /api/query`
 
-Runs the current local example trace runner. This V1 implementation is
-ephemeral and uses deterministic lexical retrieval over curated example
-documents. Supabase persistence, embeddings, and model-backed answers are added
-in later slices.
+Runs the current example trace runner. This implementation is ephemeral and
+uses deterministic lexical retrieval over curated example documents. When
+`CHAT_PROVIDER=openrouter` and `OPENROUTER_API_KEY` are configured, answer
+generation uses OpenRouter. Otherwise it falls back to a local extractive answer
+so the demo remains usable without provider calls.
 
 Request:
 
@@ -63,7 +64,22 @@ Response:
       "rows": []
     },
     "prompt": {},
-    "models": {},
+    "models": {
+      "embedding": {
+        "provider": "none",
+        "model": "local-lexical"
+      },
+      "answer": {
+        "provider": "openrouter",
+        "model": "deepseek/deepseek-v4-flash",
+        "finishReason": "stop",
+        "usage": {
+          "promptTokens": 120,
+          "completionTokens": 34,
+          "totalTokens": 154
+        }
+      }
+    },
     "timingsMs": {},
     "persistence": {
       "mode": "ephemeral",

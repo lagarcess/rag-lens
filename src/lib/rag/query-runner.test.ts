@@ -37,4 +37,41 @@ describe("runExampleTrace", () => {
     expect(result.trace.models.answer.provider).toBe("local");
     expect(result.trace.models.embedding.provider).toBe("none");
   });
+
+  test("uses an injected answer provider and records provider metadata", async () => {
+    const result = await runExampleTrace(
+      {
+        sessionId: null,
+        corpusSlug: "rag-concepts-primer",
+        question: "How does RAG improve answer trust?",
+        topK: 2,
+        chunkSize: 520,
+        chunkOverlap: 80,
+        embeddingMode: "standard",
+      },
+      {
+        answerProvider: async ({ prompt, citationCount }) => ({
+          answer: `Model answer using ${citationCount} citations.`,
+          provider: "openrouter",
+          model: "deepseek/deepseek-v4-flash",
+          finishReason: "stop",
+          usage: {
+            promptTokens: prompt.length,
+            completionTokens: 8,
+            totalTokens: prompt.length + 8,
+          },
+        }),
+      },
+    );
+
+    expect(result.answer).toBe("Model answer using 2 citations.");
+    expect(result.trace.models.answer).toMatchObject({
+      provider: "openrouter",
+      model: "deepseek/deepseek-v4-flash",
+      finishReason: "stop",
+      usage: {
+        completionTokens: 8,
+      },
+    });
+  });
 });

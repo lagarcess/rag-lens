@@ -18,7 +18,16 @@ These must never use `NEXT_PUBLIC_`:
 - `PERPLEXITY_API_KEY`
 - `PERPLEXITY_EMBEDDING_MODEL`
 - `PERPLEXITY_CONTEXT_EMBEDDING_MODEL`
-- `PERPLEXITY_CHAT_MODEL`
+- `CHAT_PROVIDER`
+- `OPENROUTER_API_KEY`
+- `OPENROUTER_BASE_URL`
+- `OPENROUTER_CHAT_MODEL`
+- `OPENROUTER_HTTP_REFERER`
+- `OPENROUTER_APP_TITLE`
+- `OPENROUTER_TEMPERATURE`
+- `OPENROUTER_MAX_COMPLETION_TOKENS`
+- `OPENROUTER_REASONING_EFFORT`
+- `OPENROUTER_REASONING_EXCLUDE`
 - `CLEANUP_BATCH_SIZE`
 
 ## Defaults
@@ -27,5 +36,6 @@ V1 defaults:
 
 - Standard query embedding: `pplx-embed-v1-0.6b`
 - Contextual document embedding: `pplx-embed-context-v1-0.6b`
-- Chat model: `sonar-pro`
+- Chat provider: `openrouter`
+- Chat model: `deepseek/deepseek-v4-flash`
 - Upload bucket: `rag-uploads`

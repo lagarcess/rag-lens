@@ -1,6 +1,8 @@
 import { z } from "zod";
 
+import { getOpenRouterEnv, shouldUseOpenRouter } from "@/lib/env";
 import { RAG_LIMITS } from "@/lib/rag-config";
+import { generateOpenRouterAnswer } from "@/lib/rag/openrouter";
 import { runExampleTrace } from "@/lib/rag/query-runner";
 
 const queryRequestSchema = z.object({
@@ -30,7 +32,12 @@ export async function POST(request: Request) {
   }
 
   try {
-    const result = await runExampleTrace(parsed.data);
+    const result = await runExampleTrace(parsed.data, {
+      answerProvider: shouldUseOpenRouter()
+        ? (input) => generateOpenRouterAnswer(input, getOpenRouterEnv())
+        : undefined,
+    });
+
     return Response.json(result);
   } catch (error) {
     return Response.json(
