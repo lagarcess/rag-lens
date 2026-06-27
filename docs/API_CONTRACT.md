@@ -262,6 +262,12 @@ Response:
 }
 ```
 
+Unknown, inactive, deleted, or expired sessions return `404`.
+
+This route is rate-limited with the public session lifecycle scope. When
+throttled, it returns `429 Too Many Requests` with `Retry-After`,
+`X-RateLimit-Limit`, and `X-RateLimit-Remaining` headers.
+
 ### `POST /api/uploads`
 
 Accepts a file upload for an active anonymous session.

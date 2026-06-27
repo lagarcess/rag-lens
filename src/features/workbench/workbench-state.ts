@@ -3,6 +3,7 @@ import { listExampleCorpusManifests } from "@/lib/rag/example-corpus-manifest";
 import type { EmbeddingMode, RagTraceResponse } from "@/lib/rag/trace";
 import type { TraceSummary } from "@/lib/rag/trace-persistence";
 import type {
+  WorkbenchSessionHeartbeatResponse,
   WorkbenchSessionResponse,
   WorkbenchUploadResponse,
 } from "./workbench-api";
@@ -87,6 +88,11 @@ export type WorkbenchAction =
   | { type: "sessionCreateStarted" }
   | { type: "sessionCreated"; session: WorkbenchSessionResponse }
   | { type: "sessionFailed"; error: string }
+  | {
+      type: "sessionHeartbeatSucceeded";
+      session: WorkbenchSessionHeartbeatResponse;
+    }
+  | { type: "sessionHeartbeatFailed"; error: string }
   | { type: "sessionDeleteStarted" }
   | { type: "sessionDeleted" }
   | { type: "sessionDeleteFailed"; error: string }
@@ -205,6 +211,29 @@ export function workbenchReducer(
         session: {
           ...state.session,
           status: "error",
+          error: action.error,
+        },
+      };
+    case "sessionHeartbeatSucceeded":
+      if (action.session.sessionId !== state.session.sessionId) {
+        return state;
+      }
+
+      return {
+        ...state,
+        session: {
+          status: "active",
+          sessionId: action.session.sessionId,
+          expiresAt: action.session.expiresAt,
+          hardExpiresAt: action.session.hardExpiresAt,
+          error: null,
+        },
+      };
+    case "sessionHeartbeatFailed":
+      return {
+        ...state,
+        session: {
+          ...state.session,
           error: action.error,
         },
       };
@@ -427,6 +456,20 @@ export function workbenchReducer(
     default:
       return state;
   }
+}
+
+export function selectHeartbeatSessionId(state: WorkbenchState) {
+  if (state.session.status !== "active" || !state.session.sessionId) {
+    return null;
+  }
+
+  const hasLiveUpload = state.uploads.documents.some(
+    (document) =>
+      document.sessionId === state.session.sessionId &&
+      document.status !== "failed",
+  );
+
+  return hasLiveUpload ? state.session.sessionId : null;
 }
 
 function createEmptyExperimentState() {

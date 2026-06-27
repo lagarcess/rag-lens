@@ -1,4 +1,5 @@
 import { createSupabaseAdminClient } from "@/lib/supabase-admin";
+import { getPublicApiRateLimitResponse } from "@/lib/public-api-rate-limit";
 
 type SessionHeartbeatContext = {
   params: Promise<{
@@ -7,9 +8,15 @@ type SessionHeartbeatContext = {
 };
 
 export async function POST(
-  _request: Request,
+  request: Request,
   context: SessionHeartbeatContext,
 ) {
+  const rateLimitResponse = getPublicApiRateLimitResponse(request, "session");
+
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
+
   const { sessionId } = await context.params;
   const now = new Date().toISOString();
   const supabase = createSupabaseAdminClient();

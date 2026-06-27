@@ -11,8 +11,8 @@ Rules:
 - Restrict file types to PDF, text, and markdown.
 - Require the browser-reported MIME type to match the file extension and run a
   lightweight content check before extraction.
-- Apply an in-memory public API throttle before session creation, upload
-  parsing, retrieval, embedding, or chat provider calls.
+- Apply an in-memory public API throttle before public session lifecycle writes,
+  upload parsing, retrieval, embedding, or chat provider calls.
 - Store every upload under a session-scoped path.
 - Attach `session_id`, `expires_at`, and `hard_expires_at` to all derived rows.
 - Roll back Storage and document rows if extraction, embedding, or chunk

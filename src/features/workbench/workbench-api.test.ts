@@ -3,6 +3,7 @@ import { describe, expect, test } from "bun:test";
 import {
   createAnonymousSession,
   deleteAnonymousSession,
+  heartbeatAnonymousSession,
   listWorkbenchSources,
   listSessionTraces,
   loadSessionTrace,
@@ -202,6 +203,59 @@ describe("createAnonymousSession", () => {
       init: { method: "POST" },
     });
     expect(result.sessionId).toBe("11111111-1111-4111-8111-111111111111");
+  });
+});
+
+describe("heartbeatAnonymousSession", () => {
+  test("posts to the heartbeat route and returns refreshed session metadata", async () => {
+    const fetchCalls: Array<{ url: string; init?: RequestInit }> = [];
+    const fetchFn = async (url: string | URL | Request, init?: RequestInit) => {
+      fetchCalls.push({ url: String(url), init });
+
+      return new Response(
+        JSON.stringify({
+          ok: true,
+          sessionId: "11111111-1111-4111-8111-111111111111",
+          expiresAt: "2026-06-27T12:05:00.000Z",
+          hardExpiresAt: "2026-06-28T10:00:00.000Z",
+        }),
+        {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        },
+      );
+    };
+
+    const result = await heartbeatAnonymousSession(
+      "11111111-1111-4111-8111-111111111111",
+      fetchFn,
+    );
+
+    expect(fetchCalls[0]).toMatchObject({
+      url: "/api/sessions/11111111-1111-4111-8111-111111111111/heartbeat",
+      init: { method: "POST" },
+    });
+    expect(result).toEqual({
+      ok: true,
+      sessionId: "11111111-1111-4111-8111-111111111111",
+      expiresAt: "2026-06-27T12:05:00.000Z",
+      hardExpiresAt: "2026-06-28T10:00:00.000Z",
+    });
+  });
+
+  test("throws a sanitized heartbeat error for non-OK responses", async () => {
+    const fetchFn = async () =>
+      new Response(JSON.stringify({ error: "Session not found or expired" }), {
+        status: 404,
+        headers: { "content-type": "application/json" },
+      });
+
+    await expect(
+      heartbeatAnonymousSession(
+        "11111111-1111-4111-8111-111111111111",
+        fetchFn,
+      ),
+    ).rejects.toThrow("Session not found or expired");
   });
 });
 

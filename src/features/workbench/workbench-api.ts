@@ -8,6 +8,11 @@ export interface WorkbenchSessionResponse {
   hardExpiresAt: string;
 }
 
+export interface WorkbenchSessionHeartbeatResponse
+  extends WorkbenchSessionResponse {
+  ok: boolean;
+}
+
 export interface WorkbenchUploadResponse {
   documentId: string;
   sessionId: string;
@@ -84,6 +89,22 @@ export async function createAnonymousSession(
   }
 
   return (await response.json()) as WorkbenchSessionResponse;
+}
+
+export async function heartbeatAnonymousSession(
+  sessionId: string,
+  fetchFn: FetchFn = fetch,
+): Promise<WorkbenchSessionHeartbeatResponse> {
+  const response = await fetchFn(`/api/sessions/${sessionId}/heartbeat`, {
+    method: "POST",
+  });
+
+  if (!response.ok) {
+    const payload = await readJsonSafely(response);
+    throw new Error(payload?.error ?? "Unable to refresh session");
+  }
+
+  return (await response.json()) as WorkbenchSessionHeartbeatResponse;
 }
 
 export async function uploadDocument(

@@ -26,6 +26,7 @@ import {
 import {
   createAnonymousSession,
   deleteAnonymousSession,
+  heartbeatAnonymousSession,
   listWorkbenchSources,
   listSessionTraces,
   loadSessionTrace,
@@ -40,10 +41,14 @@ import {
 } from "@/features/workbench/trace-evidence";
 import {
   createInitialWorkbenchState,
+  selectHeartbeatSessionId,
   workbenchReducer,
 } from "@/features/workbench/workbench-state";
 import type { RagRetrievalRow, RagTraceResponse } from "@/lib/rag/trace";
 import type { TraceSummary } from "@/lib/rag/trace-persistence";
+
+const SESSION_HEARTBEAT_INTERVAL_MS = 5 * 60 * 1000;
+const SESSION_HEARTBEAT_FAILURE_THRESHOLD = 3;
 
 export function WorkbenchClient() {
   const [state, dispatch] = useReducer(
@@ -64,6 +69,7 @@ export function WorkbenchClient() {
     state.session.status === "creating";
   const isDeletingSession = state.session.status === "deleting";
   const runButtonLabel = state.experiment.baseline ? "Run variant" : "Run trace";
+  const heartbeatSessionId = selectHeartbeatSessionId(state);
 
   useEffect(() => {
     let cancelled = false;
@@ -86,6 +92,61 @@ export function WorkbenchClient() {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    if (!heartbeatSessionId) {
+      return;
+    }
+
+    const activeHeartbeatSessionId = heartbeatSessionId;
+    let cancelled = false;
+    let inFlight = false;
+    let consecutiveFailures = 0;
+
+    async function sendHeartbeat() {
+      if (inFlight) {
+        return;
+      }
+
+      inFlight = true;
+
+      try {
+        const session = await heartbeatAnonymousSession(activeHeartbeatSessionId);
+
+        if (!cancelled) {
+          consecutiveFailures = 0;
+          dispatch({ type: "sessionHeartbeatSucceeded", session });
+        }
+      } catch (error) {
+        if (!cancelled) {
+          consecutiveFailures += 1;
+
+          if (consecutiveFailures >= SESSION_HEARTBEAT_FAILURE_THRESHOLD) {
+            dispatch({
+              type: "sessionHeartbeatFailed",
+              error:
+                error instanceof Error
+                  ? error.message
+                  : "Unable to refresh this session",
+            });
+          }
+        }
+      } finally {
+        inFlight = false;
+      }
+    }
+
+    void sendHeartbeat();
+    const intervalId = window.setInterval(
+      () => void sendHeartbeat(),
+      SESSION_HEARTBEAT_INTERVAL_MS,
+    );
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(intervalId);
+    };
+  }, [heartbeatSessionId]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();

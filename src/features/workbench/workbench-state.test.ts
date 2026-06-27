@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 
 import {
   createInitialWorkbenchState,
+  selectHeartbeatSessionId,
   workbenchReducer,
 } from "./workbench-state";
 
@@ -224,6 +225,138 @@ describe("workbenchReducer", () => {
         sessionId: "11111111-1111-4111-8111-111111111111",
         documentCount: 1,
       });
+  });
+
+  test("selects heartbeat session only after a live upload is attached", () => {
+    const initial = createInitialWorkbenchState();
+
+    expect(selectHeartbeatSessionId(initial)).toBeNull();
+
+    const active = workbenchReducer(initial, {
+      type: "sessionCreated",
+      session: {
+        sessionId: "11111111-1111-4111-8111-111111111111",
+        expiresAt: "2026-06-27T12:00:00.000Z",
+        hardExpiresAt: "2026-06-28T10:00:00.000Z",
+      },
+    });
+
+    expect(selectHeartbeatSessionId(active)).toBeNull();
+
+    const failedOnly = workbenchReducer(active, {
+      type: "uploadFailed",
+      error: "Upload failed",
+    });
+
+    expect(selectHeartbeatSessionId(failedOnly)).toBeNull();
+
+    const uploaded = workbenchReducer(active, {
+      type: "uploadSucceeded",
+      document: {
+        documentId: "22222222-2222-4222-8222-222222222222",
+        sessionId: "11111111-1111-4111-8111-111111111111",
+        fileName: "notes.md",
+        mimeType: "text/markdown",
+        byteSize: 19,
+        status: "ready",
+        extractedCharacters: 19,
+        expiresAt: "2026-06-27T12:00:00.000Z",
+        hardExpiresAt: "2026-06-28T10:00:00.000Z",
+      },
+    });
+
+    expect(selectHeartbeatSessionId(uploaded)).toBe(
+      "11111111-1111-4111-8111-111111111111",
+    );
+  });
+
+  test("refreshes session expiry after heartbeat success and ignores stale heartbeats", () => {
+    const active = workbenchReducer(createInitialWorkbenchState(), {
+      type: "sessionCreated",
+      session: {
+        sessionId: "11111111-1111-4111-8111-111111111111",
+        expiresAt: "2026-06-27T12:00:00.000Z",
+        hardExpiresAt: "2026-06-28T10:00:00.000Z",
+      },
+    });
+    const withError = workbenchReducer(active, {
+      type: "sessionHeartbeatFailed",
+      error: "Session not found or expired",
+    });
+
+    const refreshed = workbenchReducer(withError, {
+      type: "sessionHeartbeatSucceeded",
+      session: {
+        ok: true,
+        sessionId: "11111111-1111-4111-8111-111111111111",
+        expiresAt: "2026-06-27T12:05:00.000Z",
+        hardExpiresAt: "2026-06-28T10:00:00.000Z",
+      },
+    });
+
+    expect(refreshed.session).toMatchObject({
+      status: "active",
+      sessionId: "11111111-1111-4111-8111-111111111111",
+      expiresAt: "2026-06-27T12:05:00.000Z",
+      hardExpiresAt: "2026-06-28T10:00:00.000Z",
+      error: null,
+    });
+
+    const stale = workbenchReducer(refreshed, {
+      type: "sessionHeartbeatSucceeded",
+      session: {
+        ok: true,
+        sessionId: "99999999-9999-4999-8999-999999999999",
+        expiresAt: "2026-06-27T13:00:00.000Z",
+        hardExpiresAt: "2026-06-28T11:00:00.000Z",
+      },
+    });
+
+    expect(stale.session.expiresAt).toBe("2026-06-27T12:05:00.000Z");
+  });
+
+  test("records heartbeat failure without clearing upload session state", () => {
+    const active = workbenchReducer(createInitialWorkbenchState(), {
+      type: "sessionCreated",
+      session: {
+        sessionId: "11111111-1111-4111-8111-111111111111",
+        expiresAt: "2026-06-27T12:00:00.000Z",
+        hardExpiresAt: "2026-06-28T10:00:00.000Z",
+      },
+    });
+    const uploaded = workbenchReducer(active, {
+      type: "uploadSucceeded",
+      document: {
+        documentId: "22222222-2222-4222-8222-222222222222",
+        sessionId: "11111111-1111-4111-8111-111111111111",
+        fileName: "notes.md",
+        mimeType: "text/markdown",
+        byteSize: 19,
+        status: "ready",
+        extractedCharacters: 19,
+        expiresAt: "2026-06-27T12:00:00.000Z",
+        hardExpiresAt: "2026-06-28T10:00:00.000Z",
+      },
+    });
+
+    const failed = workbenchReducer(uploaded, {
+      type: "sessionHeartbeatFailed",
+      error: "Session not found or expired",
+    });
+
+    expect(failed.session).toMatchObject({
+      status: "active",
+      sessionId: "11111111-1111-4111-8111-111111111111",
+      error: "Session not found or expired",
+    });
+    expect(failed.uploads.documents).toHaveLength(1);
+    expect(failed.selectedCorpusSlug).toBe("session-uploads");
+    expect(failed.sources).toContainEqual(
+      expect.objectContaining({
+        slug: "session-uploads",
+        sessionId: "11111111-1111-4111-8111-111111111111",
+      }),
+    );
   });
 
   test("refreshes example sources while preserving a session upload source", () => {
