@@ -4,7 +4,7 @@ services:
     repo: https://github.com/lagarcess/rag-lens
     runtime: node
     plan: free
-    region: oregon
+    region: ohio
     branch: main
     autoDeploy: true
     buildCommand: npm install -g bun@1.3.14 && bun install --frozen-lockfile && bun run build
@@ -39,7 +39,7 @@ services:
     repo: https://github.com/lagarcess/rag-lens
     runtime: node
     plan: starter
-    region: oregon
+    region: ohio
     schedule: "*/30 * * * *"
     buildCommand: npm install -g bun@1.3.14 && bun install --frozen-lockfile
     startCommand: bun run cleanup:sessions
