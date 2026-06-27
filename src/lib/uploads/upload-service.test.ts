@@ -39,6 +39,16 @@ describe("validateUploadFile", () => {
     ).toMatchObject({ mimeType: "application/pdf" });
   });
 
+  test("accepts browser text MIME parameters such as charset", () => {
+    expect(
+      validateUploadFile({
+        fileName: "notes.txt",
+        mimeType: "text/plain;charset=utf-8",
+        byteSize: 12,
+      }),
+    ).toMatchObject({ mimeType: "text/plain" });
+  });
+
   test("rejects unsupported or oversized files", () => {
     expect(() =>
       validateUploadFile({

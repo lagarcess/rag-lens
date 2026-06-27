@@ -267,7 +267,10 @@ function readUploadFile(formData: FormData) {
 }
 
 function normalizeUploadMimeType(mimeType: string) {
-  const normalized = mimeType.trim().toLowerCase();
+  const normalized = mimeType
+    .split(";")[0]
+    .trim()
+    .toLowerCase();
 
   if (!normalized) {
     throw new UploadError("Upload requires a browser-reported content type.", 400);

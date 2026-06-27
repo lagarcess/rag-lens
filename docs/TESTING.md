@@ -43,6 +43,8 @@ The Bun test suite covers:
 - Cleanup dry-run behavior and count-only logging helpers.
 - Hosted Supabase smoke helper argument parsing, read-only stage orchestration,
   and sanitized error output.
+- Hosted Supabase integration smoke helper argument parsing, disposable fixture
+  orchestration, cleanup-on-failure, and sanitized count-only output.
 - Render deployment preflight package, Blueprint, workspace, and sanitized
   error validation helpers.
 
@@ -50,8 +52,6 @@ The Bun test suite covers:
 
 - Browser-driven upload/query flow with provider fixtures or a disposable hosted
   test project.
-- Mutating hosted Supabase fixture smoke proving tiny uploads, trace
-  persistence, immediate purge, and expired fixture cleanup end to end.
 - Disposable Supabase cleanup fixture proving expired rows are deleted while
   examples and active sessions remain.
 
@@ -68,6 +68,22 @@ corpora are seeded, example chunks use the configured standard Perplexity
 embedding model, vector retrieval returns rows through `match_rag_chunks`, and
 scheduled cleanup can enumerate purgeable upload paths in dry-run mode. Output
 is JSON and must remain count/metadata only.
+
+## Hosted Supabase Integration Smoke
+
+Before the first Render deployment, and after any hosted Supabase migration or
+storage-policy change, run the explicit mutating integration smoke:
+
+```bash
+bun run smoke:supabase:integration -- --json
+```
+
+This command creates one disposable anonymous session, uploads one tiny text
+fixture through the production upload helper, embeds and indexes it, runs one
+uploaded-document vector trace, persists and reloads the trace, purges the
+session through the production cleanup helper, and verifies zero remaining
+session-scoped rows or Storage objects. It intentionally mutates hosted data;
+its JSON output must stay limited to counts and metadata.
 
 ## Browser QA
 

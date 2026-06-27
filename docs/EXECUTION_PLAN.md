@@ -195,6 +195,8 @@ Before each commit, run the relevant subset:
 - secret scan for env/provider/database slices
 - `bun run smoke:supabase -- --json` before Render deployment work once hosted
   Supabase env vars are configured
+- `bun run smoke:supabase:integration -- --json` before first Render deployment
+  and after hosted Supabase migration or Storage policy changes
 - `bun run preflight:render` before any Render resource creation, update, or
   dashboard launch workflow
 

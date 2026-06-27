@@ -28,7 +28,9 @@ Status on June 27, 2026: the local CLI is linked to the dedicated `RAG Lens`
 project ref `yyqmlfisijerlcrbcuvy`, all checked-in migrations are applied on
 the remote project, security and performance advisors return no warning-level
 issues, `bun run cleanup:sessions:dry-run` succeeds with count-only output, and
-`bun run smoke:supabase -- --json` passes its read-only hosted checks.
+`bun run smoke:supabase -- --json` plus
+`bun run smoke:supabase:integration -- --json` pass hosted checks. The
+integration smoke leaves zero fixture rows and zero fixture Storage objects.
 
 Apply migrations after a hosted project exists:
 
@@ -164,6 +166,19 @@ bun run smoke:supabase -- --json
 This validates the dedicated Supabase project's seeded example corpora, Storage
 bucket reachability, vector retrieval RPC, and cleanup dry-run plumbing without
 creating or deleting fixtures.
+
+For the final hosted data-path gate, run the explicit mutating integration
+smoke:
+
+```bash
+bun run smoke:supabase:integration -- --json
+```
+
+This creates one disposable anonymous session, uploads one tiny text fixture,
+persists and reloads an uploaded-document trace, purges the session, and verifies
+zero remaining fixture rows or Storage objects. Output must remain count-only;
+do not paste raw session IDs, Storage paths, prompts, or provider responses into
+deployment notes.
 
 ## Deferred GitHub Pages Landing
 

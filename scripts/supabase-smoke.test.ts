@@ -14,6 +14,9 @@ describe("supabase-smoke helpers", () => {
     expect(() => parseSupabaseSmokeArgs(["--delete-fixtures"])).toThrow(
       "Unknown Supabase smoke flag",
     );
+    expect(() => parseSupabaseSmokeArgs(["--mutating"])).toThrow(
+      "Unknown Supabase smoke flag",
+    );
   });
 
   test("runs read-only hosted checks and emits sanitized JSON", async () => {
