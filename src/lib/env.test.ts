@@ -88,11 +88,11 @@ describe("getRetentionEnvFrom", () => {
     expect(
       getRetentionEnvFrom({
         RAG_SESSION_SOFT_TTL_HOURS: "4",
-        RAG_SESSION_HARD_TTL_HOURS: "23.5",
+        RAG_SESSION_HARD_TTL_HOURS: "24",
       }),
     ).toEqual({
       softSessionTtlHours: 4,
-      hardSessionTtlHours: 23.5,
+      hardSessionTtlHours: 24,
     });
   });
 });

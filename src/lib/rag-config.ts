@@ -2,7 +2,7 @@ export const RAG_LIMITS = {
   maxAnonymousFiles: 3,
   maxAnonymousBytes: 10 * 1024 * 1024,
   softSessionTtlHours: 2,
-  hardSessionTtlHours: 23.5,
+  hardSessionTtlHours: 24,
   maxTopK: 12,
   defaultTopK: 5,
   defaultChunkSize: 800,

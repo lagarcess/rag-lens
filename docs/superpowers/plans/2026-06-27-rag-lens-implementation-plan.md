@@ -4,7 +4,7 @@
 
 **Goal:** Build a deployed RAG trace workbench that supports examples, temporary uploads, retrieval inspection, answer generation, and experiment mode.
 
-**Architecture:** Next.js App Router handles the workbench UI and server routes. Supabase stores uploads, chunks, vectors, sessions, and traces. Perplexity provides embeddings. OpenRouter provides V1 answer generation. Render hosts the app and cleanup cron.
+**Architecture:** Next.js App Router handles the workbench UI and server routes. Supabase stores uploads, chunks, vectors, sessions, traces, and scheduled cleanup. Perplexity provides embeddings. OpenRouter provides V1 answer generation. Render hosts the app.
 
 **Tech Stack:** Next.js 16, React 19, TypeScript, Tailwind CSS 4, Bun, Supabase, pgvector, Perplexity API, OpenRouter API, Render.
 

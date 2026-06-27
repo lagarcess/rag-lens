@@ -19,14 +19,15 @@ Rules:
 - Attach `session_id`, `expires_at`, and `hard_expires_at` to all derived rows.
 - Roll back Storage and document rows if extraction, embedding, or chunk
   insertion fails.
-- Schedule anonymous uploads for purge at 23.5 hours so the 30-minute cleanup
-  cadence stays inside the 24-hour deletion promise.
+- Expire anonymous upload access with the demo session. Uploads become
+  purge-eligible after about 24 hours, but abandoned data is physically removed
+  by a low-frequency monthly Supabase cleanup batch.
 - Let users delete the session immediately. Delete-now marks the session
   deleted, removes known Storage objects first, and then deletes the
   session-scoped database rows.
 - Use scheduled cleanup as the backstop for abandoned sessions and for
   delete-now attempts whose immediate cleanup cannot be confirmed.
-- Run Render cleanup every 30 minutes.
+- Run scheduled cleanup from Supabase Cron, not Render.
 
 ## Secret Handling
 
@@ -67,6 +68,13 @@ session-scoped rows.
 
 Use `bun run cleanup:sessions:dry-run` before enabling or changing scheduled
 cleanup. Dry-run emits only counts and performs no Storage or database deletes.
+
+Hosted cleanup is scheduled monthly through Supabase Cron and invokes the
+`cleanup-expired-sessions` Edge Function. Cron credentials live in Supabase
+Vault, and the function requires the dedicated `RAG_LENS_CLEANUP_TOKEN` bearer
+token. The function uses Supabase-managed secret keys internally for
+service-role cleanup operations; the service-role key is not sent as the cron
+HTTP caller token.
 
 ## Dataset Safety
 

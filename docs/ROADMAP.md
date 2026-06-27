@@ -14,7 +14,8 @@ Deliverables:
 - `DESIGN.md`.
 - Product, architecture, data, API, deployment, security, testing, and examples docs.
 - Supabase migration for sessions, corpora, documents, chunks, queries, retrieval traces, and storage bucket.
-- Render blueprint with web service and cleanup cron.
+- Render blueprint with web service.
+- Supabase cleanup schedule and Edge Function.
 - Health endpoint.
 
 Status: complete in the initial foundation commit.
@@ -47,7 +48,8 @@ Deliverables:
 - Anonymous session creation route.
 - Session heartbeat route.
 - Session delete route.
-- Render cleanup script wired to Supabase RPC and Storage object removal.
+- Cleanup script and Supabase Edge Function wired to Supabase RPC and Storage
+  object removal.
 - UI session badge with expiry and delete-now action.
 
 Verification:

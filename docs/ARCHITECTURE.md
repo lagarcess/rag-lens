@@ -10,7 +10,7 @@ flowchart LR
   Next --> Supabase["Supabase Postgres + Storage"]
   Next --> Perplexity["Perplexity embeddings"]
   Next --> OpenRouter["OpenRouter chat"]
-  RenderCron["Render cleanup cron"] --> Supabase
+  SupabaseCron["Supabase Cron + Edge Function"] --> Supabase
 ```
 
 ## Deferred Public Entry Topology
@@ -60,11 +60,11 @@ be used as the public link in the README, portfolio, or social posts.
 - Postgres tables for sessions, corpora, documents, chunks, queries, and retrievals.
 - pgvector for vector search.
 - RLS enabled on app tables; V1 access goes through server routes.
+- Monthly Cron invokes the cleanup Edge Function for abandoned upload purge.
 
 ### Render
 
 - Web service runs the Next.js app.
-- Cron job runs `bun run cleanup:sessions` every 30 minutes.
 - Deferred: app origin is warmed by the GitHub Pages landing and is not the
   public share URL.
 

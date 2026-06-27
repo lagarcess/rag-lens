@@ -110,8 +110,10 @@ Uploads:
 
 - `session_id` is required.
 - `expires_at` is required and marks active demo expiry.
-- `hard_expires_at` is required and marks the physical purge deadline.
-- Anonymous upload files and derived rows are scheduled for purge by 23.5 hours,
-  leaving the 30-minute cleanup cadence inside the 24-hour deletion promise.
+- `hard_expires_at` is required and marks when abandoned uploads become
+  eligible for physical purge.
+- Anonymous upload files and derived rows expire with the demo session and
+  become purge-eligible after about 24 hours. Physical cleanup for abandoned
+  data runs as a monthly Supabase batch.
 - Cleanup removes Storage files before database rows and scopes row deletion to
   the Storage paths processed in that run.

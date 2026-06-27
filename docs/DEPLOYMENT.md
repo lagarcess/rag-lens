@@ -39,6 +39,45 @@ supabase link --project-ref <project-ref>
 supabase db push
 ```
 
+### Scheduled Upload Cleanup
+
+Scheduled abandoned-upload cleanup is owned by Supabase, not Render.
+
+- Supabase Cron job: `rag-lens-monthly-upload-cleanup`.
+- Schedule: `0 8 1 * *` (first day of each month at 08:00 UTC).
+- Execution target: `cleanup-expired-sessions` Edge Function.
+- Credentials: Supabase Vault secrets
+  `rag_lens_cleanup_project_url` and
+  `rag_lens_cleanup_token`, plus Edge Function secret
+  `RAG_LENS_CLEANUP_TOKEN`.
+
+Create or update the Vault secrets before enabling the schedule against hosted
+data:
+
+```sql
+select vault.create_secret(
+  'https://yyqmlfisijerlcrbcuvy.supabase.co',
+  'rag_lens_cleanup_project_url',
+  'RAG Lens project API URL for monthly upload cleanup'
+);
+
+select vault.create_secret(
+  '<generated-cleanup-token>',
+  'rag_lens_cleanup_token',
+  'Dedicated bearer token used only by Supabase Cron to invoke cleanup'
+);
+```
+
+Deploy the cleanup function after linking the hosted project:
+
+```bash
+supabase functions deploy cleanup-expired-sessions
+```
+
+The function logs count-only JSON and deletes Storage objects before database
+rows. Manual delete-now remains immediate through the Next.js session delete
+route.
+
 Use the Supabase dashboard for API keys:
 
 - Project settings -> API -> Project URL
@@ -49,7 +88,6 @@ Use the Supabase dashboard for API keys:
 `render.yaml` defines:
 
 - `rag-lens`: Next.js web service.
-- `rag-lens-session-cleanup`: cron job every 30 minutes.
 
 The web service Blueprint sets `RAG_RETRIEVAL_BACKEND=supabase`. This is the
 intended hosted V1 behavior because the dedicated Supabase project has seeded
@@ -62,12 +100,9 @@ Current Render workspace status on June 27, 2026:
 - CLI active workspace is `rag-lens`.
 - Web service: `rag-lens` (`srv-d900drho3t8c73bpvr80`).
 - Web URL: `https://rag-lens-mx20.onrender.com`.
-- Cleanup cron: `rag-lens-session-cleanup` (`crn-d900e86q1p3s73aal01g`).
 - `bun run preflight:render` passes against the dedicated workspace and
-  validates the two-service Blueprint shape.
+  validates the web-only Blueprint shape.
 - The web deploy is live on commit
-  `2f88c49effd1d5e3819f9fd3fc886aeec9b7704a`.
-- The cleanup cron deploy is live on commit
   `2f88c49effd1d5e3819f9fd3fc886aeec9b7704a`.
 - Live smoke checks passed for `/api/health`, `/api/corpora`, and one
   `/api/query` request using Supabase pgvector retrieval plus OpenRouter answer
@@ -89,7 +124,7 @@ render workspace current -o json
 ```
 
 Only after `render workspace current` shows the dedicated `rag-lens` workspace
-should the web service or cleanup cron be created.
+should the web service be created or updated.
 
 Before using the Render dashboard, Blueprint flow, or any CLI creation command,
 run the local preflight:
@@ -101,9 +136,8 @@ bun run preflight:render
 The preflight first validates local deployment files, then checks the active
 Render workspace before running Render Blueprint validation. Local checks cover
 the package name, required package scripts, web service shape, the web
-`free` plan, cleanup cron `starter` plan, hosted
-`RAG_RETRIEVAL_BACKEND=supabase`, secret placeholders, absence of
-`SUPABASE_PROJECT_REF`, and the narrow cleanup cron env surface. It
+`free` plan, hosted `RAG_RETRIEVAL_BACKEND=supabase`, secret placeholders,
+absence of `SUPABASE_PROJECT_REF`, and absence of Render cron services. It
 intentionally fails while the CLI is pointed at `argus-prod` or any workspace
 other than `rag-lens`. Set
 `RENDER_EXPECTED_WORKSPACE_ID` in local `.env` so the guard checks the pinned
@@ -158,21 +192,16 @@ a Blueprint launch command. The initial Render resources were created with
 
 Do not add `SUPABASE_PROJECT_REF` to Render runtime env vars. It is local
 CLI/operations metadata for `supabase link`, not a value consumed by the
-Next.js service or cleanup cron.
+Next.js service.
 
-Note: the cleanup cron is intentionally safe to defer. Render rejected `free`
-for cron services in CLI validation, so the Blueprint uses `starter`. Create it
-after the cleanup Supabase env vars are available; the cron does not need
-Perplexity or OpenRouter credentials.
-
-Before enabling the cron against hosted data, run:
+Before enabling or changing hosted cleanup, run:
 
 ```bash
 bun run cleanup:sessions:dry-run
 ```
 
 The dry-run lists only counts. It does not remove Storage objects or database
-rows. The real cron command is:
+rows. The local manual destructive cleanup command is:
 
 ```bash
 bun run cleanup:sessions
@@ -276,11 +305,10 @@ Set these on the `rag-lens` web service:
 - `RAG_RATE_LIMIT_UPLOAD_MAX`
 - `RAG_RATE_LIMIT_SESSION_MAX`
 
-### Cleanup cron
+### Supabase cleanup
 
-Set only these on `rag-lens-session-cleanup`:
+Render does not own scheduled cleanup. The monthly cleanup function uses
+Supabase-managed secrets plus optional function env:
 
-- `SUPABASE_URL`
-- `SUPABASE_SERVICE_ROLE_KEY`
 - `SUPABASE_STORAGE_BUCKET`
 - `CLEANUP_BATCH_SIZE`

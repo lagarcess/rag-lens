@@ -9,7 +9,8 @@ Use Next.js App Router, React, TypeScript, Tailwind CSS, and Bun for V1.
 - The user prefers Next.js/React and Bun.
 - The app is a product workbench, not a Python notebook.
 - TypeScript keeps UI, API routes, provider calls, cleanup scripts, and shared types in one language.
-- Render can deploy the web service and cron from the same repository.
+- Render can deploy the web service from the same repository; Supabase owns
+  scheduled cleanup near the uploaded data.
 
 ## Consequence
 

@@ -294,7 +294,7 @@ export function WorkbenchClient() {
         uploadInputRef.current.value = "";
       }
       setToastMessage(
-        "Document uploaded. Session files are removable anytime and deleted within 24 hours.",
+        "Document uploaded. Session files expire with this demo and can be deleted anytime.",
       );
     } catch (error) {
       dispatch({
@@ -382,8 +382,9 @@ export function WorkbenchClient() {
             Public upload policy
           </div>
           <p className="text-sm leading-6 text-[var(--muted)]">
-            Do not upload secrets, private files, or personal data. Uploads stay
-            session-scoped, removable on demand, and deleted within 24 hours.
+            Do not upload secrets, private files, or personal data. Uploads
+            expire with the demo session, can be deleted immediately, and are
+            purged by monthly cleanup.
           </p>
           <div className="mt-3 space-y-3 rounded-md border border-[var(--border)] bg-[var(--surface-elevated)] p-3">
             <UploadLimitMeter
@@ -442,15 +443,10 @@ export function WorkbenchClient() {
                   <span className="font-mono text-[var(--foreground)]">
                     {formatDateTime(state.session.expiresAt)}
                   </span>
-                  {state.session.hardExpiresAt ? (
-                    <>
-                      {" "}
-                      · deleted by{" "}
-                      <span className="font-mono text-[var(--foreground)]">
-                        {formatDateTime(state.session.hardExpiresAt)}
-                      </span>
-                    </>
-                  ) : null}
+                  <span className="mt-1 block">
+                    Delete now removes uploaded files immediately; abandoned
+                    sessions are purged by monthly cleanup.
+                  </span>
                 </p>
                 <button
                   className="shrink-0 rounded-md border border-[var(--border)] px-2 py-1 text-xs font-medium text-[var(--muted)] transition hover:border-[var(--danger)] hover:text-[var(--danger)] disabled:cursor-not-allowed disabled:opacity-60"

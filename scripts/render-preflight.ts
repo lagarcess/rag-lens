@@ -37,7 +37,7 @@ export interface RenderProjectFiles {
 export interface LocalRenderProjectSummary {
   packageName: string;
   webServiceName: string;
-  cronServiceName: string;
+  cleanupOwner: "supabase-cron";
 }
 
 export interface CommandResult {
@@ -131,14 +131,14 @@ export function validateLocalRenderProject(
   const blueprint = parseYamlObject(files.renderYaml, "render.yaml");
   const services = getArrayProperty(blueprint, "services");
   const webService = findService(services, "rag-lens", "web");
-  const cronService = findService(
-    services,
-    "rag-lens-session-cleanup",
-    "cron",
-  );
 
   validateWebService(webService);
-  validateCleanupCron(cronService);
+
+  if (services.some((service) => isRecord(service) && service.type === "cron")) {
+    throwLocalProjectError(
+      "cleanup must be owned by Supabase Cron; render.yaml must not define Render cron services.",
+    );
+  }
 
   if (services.some((service) => serviceHasEnvKey(service, "SUPABASE_PROJECT_REF"))) {
     throwLocalProjectError(
@@ -149,7 +149,7 @@ export function validateLocalRenderProject(
   return {
     packageName,
     webServiceName: "rag-lens",
-    cronServiceName: "rag-lens-session-cleanup",
+    cleanupOwner: "supabase-cron",
   };
 }
 
@@ -387,30 +387,6 @@ function validateWebService(service: Record<string, unknown>) {
         `render.yaml web service ${key} must use sync: false with no literal value.`,
       );
     }
-  }
-}
-
-function validateCleanupCron(service: Record<string, unknown>) {
-  requireField(service, "repo", "https://github.com/lagarcess/rag-lens");
-  requireField(service, "runtime", "node");
-  requireField(service, "plan", "starter");
-  requireField(service, "region", "ohio");
-  requireField(service, "schedule", "*/30 * * * *");
-  requireField(service, "buildCommand", "bun install --frozen-lockfile");
-  requireField(service, "startCommand", "bun run cleanup:sessions");
-
-  const envKeys = Array.from(getEnvVarMap(service).keys()).sort();
-  const allowed = [
-    "CLEANUP_BATCH_SIZE",
-    "SUPABASE_SERVICE_ROLE_KEY",
-    "SUPABASE_STORAGE_BUCKET",
-    "SUPABASE_URL",
-  ].sort();
-
-  if (envKeys.join(",") !== allowed.join(",")) {
-    throwLocalProjectError(
-      `render.yaml cleanup cron env must only contain ${allowed.join(", ")}.`,
-    );
   }
 }
 

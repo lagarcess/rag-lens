@@ -195,11 +195,11 @@ describe("workbenchReducer", () => {
     const retryPending = workbenchReducer(deleting, {
       type: "sessionDeleted",
       warning:
-        "Session deleted. Immediate file cleanup could not be confirmed, so scheduled cleanup will retry within 24 hours.",
+        "Session deleted. Immediate file cleanup could not be confirmed, so scheduled cleanup will retry during the monthly purge.",
     });
 
     expect(retryPending.session.error).toBe(
-      "Session deleted. Immediate file cleanup could not be confirmed, so scheduled cleanup will retry within 24 hours.",
+      "Session deleted. Immediate file cleanup could not be confirmed, so scheduled cleanup will retry during the monthly purge.",
     );
     expect(retryPending.uploads.documents).toEqual([]);
     expect(

@@ -19,7 +19,8 @@ A deployed visitor can:
    metadata.
 6. Change basic retrieval settings and compare trace outcomes.
 7. Delete their anonymous session immediately.
-8. Trust that anonymous uploads and derived data are deleted within 24 hours.
+8. Trust that anonymous uploads expire quickly, can be deleted immediately, and
+   are physically purged by monthly Supabase cleanup.
 
 ## Required Source Documents
 
@@ -76,8 +77,9 @@ Findings incorporated into the execution rules:
 - Supabase hardening must include explicit Data API grants for `service_role`
   and avoid broad `anon` or `authenticated` grants in V1.
 - Retention semantics must be clear before uploads ship: `expires_at` governs
-  active demo expiry, and `hard_expires_at` is the physical purge deadline.
-- Render cron should run with the smallest env surface possible.
+  active demo expiry, and `hard_expires_at` marks abandoned-upload purge
+  eligibility.
+- Scheduled cleanup belongs in Supabase Cron, not Render.
 - Bundled examples should stay first-party unless a future slice explicitly
   records third-party dataset license review.
 
@@ -93,8 +95,8 @@ Current non-deferred V1 focus after Slice 9.1:
 1. Keep the scheduled cleanup job as a retry/backstop for expired sessions,
    failed immediate purges, and abandoned browser sessions.
 2. Keep `render.yaml` and deployment docs aligned with hosted V1 behavior:
-   Supabase vector retrieval, OpenRouter chat generation, and minimal cleanup
-   cron env.
+   Supabase vector retrieval, OpenRouter chat generation, and no Render cleanup
+   cron.
 3. Deploy only from the dedicated `rag-lens` Render workspace
    (`tea-d8vvqob7uimc738uflsg`) or after the user explicitly authorizes a
    different target workspace.
@@ -106,8 +108,8 @@ This excludes the deferred GitHub Pages landing and warmup topology.
 Current public-demo trust pass:
 
 1. Make the anonymous upload constraints visible in the workbench before upload:
-   3 files per session, 10 MB total, active session expiry, and physical purge
-   deadline.
+   3 files per session, 10 MB total, active session expiry, immediate
+   delete-now, and monthly purge.
 2. Align upload validation with the documented safety model by rejecting files
    whose browser-reported MIME type is missing instead of inferring trust from
    the extension alone.
@@ -468,11 +470,11 @@ Goal: Enforce anonymous upload retention end to end.
 Deliverables:
 
 - Cleanup script that removes expired Storage objects before database rows.
-- Render cron command finalized.
+- Supabase cleanup Edge Function and monthly Cron schedule finalized.
 - Local dry-run and real-run modes.
 - Cleanup logs counts only, never file contents.
 - Cleanup preserves example corpora and non-expired sessions.
-- Cron env surface limited to Supabase cleanup requirements.
+- Cron credentials stored in Supabase Vault.
 
 Verification:
 
@@ -492,8 +494,8 @@ git commit -m "feat(retention): add expired session cleanup"
 
 Status: implemented locally. Cleanup deletes Storage objects before database
 rows, scopes row deletion to processed Storage paths, and has a local dry-run
-mode for count-only verification. Hosted cron creation remains part of the
-Render deployment slice.
+mode for count-only verification. Hosted scheduled cleanup is owned by
+Supabase Cron and the cleanup Edge Function.
 
 ### Slice 9.1 - Immediate Session Deletion
 
@@ -573,12 +575,13 @@ share URL.
 
 Deliverables:
 
-- `bun run preflight:render` blocks package, Blueprint, cleanup cron, secret
+- `bun run preflight:render` blocks package, Blueprint, Render cron, secret
   placeholder, and wrong-workspace deployment drift before service creation.
 - Render env vars configured.
 - `render.yaml` verified.
 - Health check verified.
-- Cleanup cron verified or explicitly deferred with reason.
+- Supabase cleanup function and monthly Cron verified or explicitly deferred
+  with reason.
 - README deploy instructions updated from actual deployment evidence.
 
 Verification:
@@ -605,11 +608,11 @@ after explicit approval so Render could build the current `main` branch. The
 Blueprint is configured for hosted V1 with `RAG_RETRIEVAL_BACKEND=supabase`;
 local lexical retrieval remains a development fallback. The active Render CLI
 workspace is `rag-lens` (`tea-d8vvqob7uimc738uflsg`). The dedicated workspace
-now contains `rag-lens` (`srv-d900drho3t8c73bpvr80`) at
-`https://rag-lens-mx20.onrender.com` and `rag-lens-session-cleanup`
-(`crn-d900e86q1p3s73aal01g`). Both deploys are live on commit
-`2f88c49effd1d5e3819f9fd3fc886aeec9b7704a`, and live smoke checks passed for
-health, source catalog, and one Supabase pgvector plus OpenRouter query.
+contains only the web service `rag-lens` (`srv-d900drho3t8c73bpvr80`) at
+`https://rag-lens-mx20.onrender.com`. Scheduled abandoned-upload cleanup is
+owned by Supabase Cron plus the `cleanup-expired-sessions` Edge Function, and
+live smoke checks passed for health, source catalog, cleanup dry-run, and one
+Supabase pgvector plus OpenRouter query.
 
 ### Slice 12 - Portfolio Polish
 

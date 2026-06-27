@@ -56,7 +56,7 @@ services:
       - key: RAG_SESSION_SOFT_TTL_HOURS
         value: "2"
       - key: RAG_SESSION_HARD_TTL_HOURS
-        value: "23.5"
+        value: "24"
       - key: RAG_RATE_LIMIT_WINDOW_MS
         value: "60000"
       - key: RAG_RATE_LIMIT_QUERY_MAX
@@ -65,25 +65,6 @@ services:
         value: "6"
       - key: RAG_RATE_LIMIT_SESSION_MAX
         value: "10"
-
-  - type: cron
-    name: rag-lens-session-cleanup
-    repo: https://github.com/lagarcess/rag-lens
-    runtime: node
-    plan: starter
-    region: ohio
-    schedule: "*/30 * * * *"
-    buildCommand: bun install --frozen-lockfile
-    startCommand: bun run cleanup:sessions
-    envVars:
-      - key: SUPABASE_URL
-        sync: false
-      - key: SUPABASE_SERVICE_ROLE_KEY
-        sync: false
-      - key: SUPABASE_STORAGE_BUCKET
-        value: rag-uploads
-      - key: CLEANUP_BATCH_SIZE
-        value: "100"
 
 previews:
   generation: manual

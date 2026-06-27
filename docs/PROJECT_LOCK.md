@@ -27,8 +27,10 @@ The V1 workflow is:
   retrieval, traces, and retention.
 - Use Perplexity for embeddings.
 - Use OpenRouter for V1 answer generation.
-- Use Render for the backend app service and cleanup cron only from the
-  dedicated `rag-lens` workspace.
+- Use Render for the backend app service only from the dedicated `rag-lens`
+  workspace.
+- Use Supabase Cron plus a Supabase Edge Function for scheduled abandoned-upload
+  cleanup.
 - Do not introduce Python unless the TypeScript ingestion path becomes a proven
   blocker. If Python is added later, use Poetry.
 
@@ -40,6 +42,8 @@ The V1 workflow is:
 - The browser must never receive `SUPABASE_SERVICE_ROLE_KEY`,
   `PERPLEXITY_API_KEY`, or `OPENROUTER_API_KEY`.
 - Cleanup must remove both database rows and storage objects.
+- Session access expires quickly, manual delete is immediate, and abandoned
+  uploads are purged by a monthly Supabase cleanup batch.
 - V1 bundled examples are first-party unless a future slice explicitly records a
   third-party license review.
 
@@ -50,10 +54,10 @@ services must not be created in unrelated workspaces. The dedicated Render
 workspace is `rag-lens` (`tea-d8vvqob7uimc738uflsg`). Run
 `bun run preflight:render` before any Render dashboard, Blueprint, CLI creation,
 or service update workflow. The guard must validate local package scripts,
-hosted Blueprint shape, web `free` plan, cleanup cron `starter` plan, secret
-placeholders, cleanup cron env scope, and the active Render workspace. Once the
-dedicated workspace exists, pin `RENDER_EXPECTED_WORKSPACE_ID` locally so the
-guard does not rely on name-only matching.
+hosted Blueprint shape, web `free` plan, absence of Render cron services,
+secret placeholders, and the active Render workspace. Once the dedicated
+workspace exists, pin `RENDER_EXPECTED_WORKSPACE_ID` locally so the guard does
+not rely on name-only matching.
 
 The deferred portfolio topology is:
 
@@ -88,9 +92,8 @@ As of June 27, 2026:
   Supabase vector retrieval.
 - `bun run preflight:render` is the required local package, Blueprint, and
   workspace guard before Render cloud resource changes.
-- Render services now live in the dedicated `rag-lens` workspace:
-  `rag-lens` (`srv-d900drho3t8c73bpvr80`) and
-  `rag-lens-session-cleanup` (`crn-d900e86q1p3s73aal01g`).
+- Render service now lives in the dedicated `rag-lens` workspace:
+  `rag-lens` (`srv-d900drho3t8c73bpvr80`).
 - The current Render web URL is `https://rag-lens-mx20.onrender.com`.
 - Public route hardening, upload cleanup, trace persistence, and experiment
   comparison slices are implemented and committed.

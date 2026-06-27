@@ -12,7 +12,9 @@ Examples make the recruiter demo reliable. Uploads make the app real and disting
 
 - Default to examples.
 - Uploads are optional.
-- Anonymous sessions expire after 2 hours and hard-expire after 23.5 hours so
-  the 30-minute cleanup cadence still fits the 24-hour deletion promise.
-- Users can delete their session immediately.
-- Cleanup runs every 30 minutes.
+- Anonymous sessions expire after 2 hours.
+- Abandoned uploads become purge-eligible after about 24 hours and are
+  physically purged by a monthly Supabase cleanup batch.
+- Users can delete their session immediately; delete-now removes Storage
+  objects first, then session-scoped database rows.
+- Cleanup scheduling is owned by Supabase Cron, not Render.

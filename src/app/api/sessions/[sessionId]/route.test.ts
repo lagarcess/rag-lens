@@ -100,7 +100,7 @@ describe("DELETE /api/sessions/:sessionId", () => {
         purgeStatus: "retry-pending",
         purgeRetryScheduled: true,
         warning:
-          "Session deleted. Immediate file cleanup could not be confirmed, so scheduled cleanup will retry within 24 hours.",
+          "Session deleted. Immediate file cleanup could not be confirmed, so scheduled cleanup will retry during the monthly purge.",
       });
     } finally {
       console.warn = previousWarn;

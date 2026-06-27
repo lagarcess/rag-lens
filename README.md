@@ -27,9 +27,9 @@ notebook or toy chat UI:
 - It shows the full RAG loop from document ingestion to answer generation.
 - It makes failure modes inspectable through retrieved chunks, scores, prompts,
   timings, and model metadata.
-- It uses real hosted infrastructure: Render for the app and cleanup cron,
-  Supabase for storage plus `pgvector`, Perplexity for embeddings, and
-  OpenRouter for low-cost answer generation.
+- It uses real hosted infrastructure: Render for the app, Supabase for storage,
+  `pgvector`, and monthly cleanup, Perplexity for embeddings, and OpenRouter
+  for low-cost answer generation.
 - It treats public uploads as temporary demo data with explicit limits,
   immediate delete, and scheduled cleanup.
 - It keeps examples first-party so visitors can try the app without uploading
@@ -54,7 +54,7 @@ flowchart LR
   Next --> Supabase["Supabase Postgres + Storage + pgvector"]
   Next --> Perplexity["Perplexity embeddings"]
   Next --> OpenRouter["OpenRouter chat generation"]
-  RenderCron["Render cleanup cron"] --> Supabase
+  SupabaseCron["Supabase monthly cleanup"] --> Supabase
 ```
 
 The long-term public entry point is a static GitHub Pages landing page that
@@ -68,7 +68,7 @@ current app runs as a Next.js full-stack service.
 - Supabase Storage, Postgres, and `pgvector`.
 - Perplexity embeddings.
 - OpenRouter chat generation.
-- Render web service plus cleanup cron.
+- Render web service.
 
 ## Getting Started
 
@@ -136,8 +136,8 @@ bun run build
 
 - GitHub: [lagarcess/rag-lens](https://github.com/lagarcess/rag-lens)
 - Supabase: hosted project in the dedicated `RAG Lens` organization.
-- Render: web service and cleanup cron are live in the dedicated `rag-lens`
-  workspace. The assigned app origin is
+- Render: web service is live in the dedicated `rag-lens` workspace. The
+  assigned app origin is
   `https://rag-lens-mx20.onrender.com`; this is treated as the sandbox/backend
   origin, not the long-term public share URL.
 - Deployment guard: run `bun run preflight:render` before any Render dashboard,
@@ -154,7 +154,8 @@ Working locally against the hosted Supabase project:
   `OPENROUTER_API_KEY` are configured.
 - Persisted upload-session traces that can be reopened while the session is
   active.
-- Expired-session cleanup dry run and destructive cleanup script.
+- Expired-session cleanup dry run, manual cleanup script, and Supabase monthly
+  cleanup path.
 
 ## Known Limitations
 

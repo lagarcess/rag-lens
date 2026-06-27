@@ -67,7 +67,7 @@ V1 defaults:
   stored in Supabase.
 - Upload bucket: `rag-uploads`
 - Anonymous session soft TTL: `2` hours.
-- Anonymous session hard purge target: `23.5` hours.
+- Anonymous session purge eligibility target: `24` hours.
 - Public API throttles: `20` queries, `6` uploads, and `10` session creates per
   minute per client address on the active app instance.
 - Render preflight workspace name: `rag-lens`.

@@ -242,7 +242,8 @@ Response:
 ```
 
 Status: implemented. The session is anonymous, active, and receives both a soft
-expiry (`expiresAt`) and physical purge deadline (`hardExpiresAt`).
+expiry (`expiresAt`) and abandoned-upload purge eligibility timestamp
+(`hardExpiresAt`).
 
 ### `DELETE /api/sessions/:sessionId`
 
@@ -276,7 +277,7 @@ has ended.
   "sessionId": "uuid",
   "purgeStatus": "retry-pending",
   "purgeRetryScheduled": true,
-  "warning": "Session deleted. Immediate file cleanup could not be confirmed, so scheduled cleanup will retry within 24 hours."
+  "warning": "Session deleted. Immediate file cleanup could not be confirmed, so scheduled cleanup will retry during the monthly purge."
 }
 ```
 
