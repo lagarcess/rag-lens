@@ -179,9 +179,49 @@ describe("render-preflight helpers", () => {
         valid: true,
         totalActions: 2,
         services: ["rag-lens", "rag-lens-session-cleanup"],
+        errors: [],
       },
     });
     expect(outputs).toEqual([formatPreflightLog(result)]);
+  });
+
+  test("defaults to the dedicated rag-lens workspace name", async () => {
+    const runner = createMemoryCommandRunner({
+      "render workspace current -o json": {
+        exitCode: 0,
+        stdout: JSON.stringify({
+          id: "tea-d8vvqob7uimc738uflsg",
+          name: "rag-lens",
+          type: "team",
+        }),
+        stderr: "",
+      },
+      "render blueprints validate ./render.yaml --output json": {
+        exitCode: 0,
+        stdout: JSON.stringify({
+          valid: true,
+          plan: {
+            services: ["rag-lens", "rag-lens-session-cleanup"],
+            totalActions: 2,
+          },
+        }),
+        stderr: "",
+      },
+    });
+
+    await expect(
+      runRenderPreflight({
+        env: {},
+        runCommand: runner,
+        writeOutput: () => undefined,
+      }),
+    ).resolves.toMatchObject({
+      ok: true,
+      workspace: {
+        id: "tea-d8vvqob7uimc738uflsg",
+        name: "rag-lens",
+      },
+    });
   });
 
   test("rejects a workspace ID mismatch even when the name matches", async () => {
@@ -244,6 +284,36 @@ describe("render-preflight helpers", () => {
     ).rejects.toThrow("Render Blueprint validation failed");
   });
 
+  test("surfaces safe Blueprint validation error codes", async () => {
+    const runner = createMemoryCommandRunner({
+      "render workspace current -o json": {
+        exitCode: 0,
+        stdout: JSON.stringify({
+          id: "tea-d8vvqob7uimc738uflsg",
+          name: "rag-lens",
+          type: "team",
+        }),
+        stderr: "",
+      },
+      "render blueprints validate ./render.yaml --output json": {
+        exitCode: 0,
+        stdout: JSON.stringify({
+          valid: false,
+          errors: [{ error: "need_payment_info", path: "services[1]" }],
+        }),
+        stderr: "",
+      },
+    });
+
+    await expect(
+      runRenderPreflight({
+        env: {},
+        runCommand: runner,
+        writeOutput: () => undefined,
+      }),
+    ).rejects.toThrow("Render Blueprint validation failed: need_payment_info");
+  });
+
   test("formats sanitized error JSON without command stderr or secrets", () => {
     const line = formatPreflightErrorLog({
       error: new Error("Command failed with SUPABASE_SERVICE_ROLE_KEY=secret"),
@@ -270,6 +340,23 @@ describe("render-preflight helpers", () => {
         ok: false,
         error: "Render preflight failed",
         reason: "Active Render workspace is argus-prod; expected RAG Lens.",
+      }),
+    );
+  });
+
+  test("formats known Blueprint validation codes with an actionable safe reason", () => {
+    const line = formatPreflightErrorLog({
+      error: new Error(
+        "Render Blueprint validation failed: need_payment_info Run render blueprints validate ./render.yaml --output json and fix render.yaml before deploying.",
+      ),
+    });
+
+    expect(line).toBe(
+      JSON.stringify({
+        ok: false,
+        error: "Render preflight failed",
+        reason:
+          "Render Blueprint validation failed: need_payment_info Run render blueprints validate ./render.yaml --output json and fix render.yaml before deploying.",
       }),
     );
   });

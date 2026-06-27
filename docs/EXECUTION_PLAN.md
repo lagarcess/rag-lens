@@ -95,8 +95,9 @@ Current non-deferred V1 focus after Slice 9.1:
 2. Keep `render.yaml` and deployment docs aligned with hosted V1 behavior:
    Supabase vector retrieval, OpenRouter chat generation, and minimal cleanup
    cron env.
-3. Deploy only after a dedicated RAG Lens Render workspace exists or the user
-   explicitly authorizes the target workspace.
+3. Deploy only from the dedicated `rag-lens` Render workspace
+   (`tea-d8vvqob7uimc738uflsg`) or after the user explicitly authorizes a
+   different target workspace.
 4. Run `bun run preflight:render` before any Render dashboard, Blueprint, or CLI
    creation step.
 
@@ -582,7 +583,7 @@ Deliverables:
 
 Verification:
 
-- Render preflight passes in the dedicated RAG Lens workspace.
+- Render preflight passes in the dedicated `rag-lens` workspace.
 - Render build succeeds.
 - Render health endpoint returns OK.
 - Example corpus trace works on Render.
@@ -597,18 +598,18 @@ git commit -m "chore(deploy): finalize Render backend deployment"
 
 Status: partially progressed. The dedicated RAG Lens Supabase project has all
 checked-in migrations applied, Supabase advisors return no warning-level issues,
-cleanup dry-run succeeds, `render.yaml` validates, and
+cleanup dry-run succeeds, and
 `bun run preflight:render` now validates local package/Blueprint invariants
-before blocking the active wrong-workspace Render context. The local `main`
-branch currently contains
-deployment-readiness commits that are ahead of `origin/main`; do not push them
-unless the user explicitly asks. Render will not see those local commits until
-they are published to GitHub. The Blueprint is configured for hosted V1 with
-`RAG_RETRIEVAL_BACKEND=supabase`; local lexical retrieval remains a development
-fallback. Do not deploy the Render services yet: the active Render account
-currently only exposes `argus-prod` and `payment-ledger`, not a dedicated RAG
-Lens workspace. Create or grant access to that workspace before creating the
-backend web service or cleanup cron.
+before Render cloud resource creation. The local `main` branch currently
+contains deployment-readiness commits that are ahead of `origin/main`; do not
+push them unless the user explicitly asks. Render will not see those local
+commits until they are published to GitHub. The Blueprint is configured for
+hosted V1 with `RAG_RETRIEVAL_BACKEND=supabase`; local lexical retrieval remains
+a development fallback. The active Render CLI workspace has been corrected to
+`rag-lens` (`tea-d8vvqob7uimc738uflsg`), but the `rag-lens` workspace currently
+has no services and Blueprint validation fails with `need_payment_info` on the
+starter cleanup cron. Remove the wrong-workspace `rag-lens` and `rag-lens-web`
+services from `argus-prod` only after explicit project-owner confirmation.
 
 ### Slice 12 - Portfolio Polish
 
@@ -640,8 +641,9 @@ git commit -m "docs: polish RAG Lens portfolio materials"
 Status: implemented for the current portfolio package. README now includes
 screenshots, architecture, setup, environment notes, demo flow, current status,
 and known limitations. Browser QA captured the landing page and a completed
-workbench trace on June 27, 2026. Render deployment remains blocked until a
-dedicated RAG Lens workspace exists.
+workbench trace on June 27, 2026. Render deployment remains blocked until the
+dedicated `rag-lens` workspace passes Blueprint validation; current validation
+fails with `need_payment_info` on the starter cleanup cron.
 
 ## Review Checklist
 

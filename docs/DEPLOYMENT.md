@@ -56,22 +56,25 @@ intended hosted V1 behavior because the dedicated Supabase project has seeded
 example vectors and uploaded documents are indexed into Supabase. Keep
 `RAG_RETRIEVAL_BACKEND=local` only for zero-dependency local example traces.
 
-Current blocker on June 27, 2026: do not deploy from the currently selected
-Render workspace. The Render CLI account only exposes these workspaces:
+Current Render workspace status on June 27, 2026:
 
-- `argus-prod`
-- `payment-ledger`
+- Dedicated workspace: `rag-lens` (`tea-d8vvqob7uimc738uflsg`).
+- CLI active workspace has been corrected to `rag-lens`.
+- `render services --output json` returns `null` in `rag-lens`, so no RAG Lens
+  services exist there yet.
+- `render blueprints validate ./render.yaml --output json` currently fails with
+  `need_payment_info` on the cleanup cron service because the Blueprint uses the
+  required `starter` cron plan.
 
-Neither is the dedicated `RAG Lens` workspace required for this project. Create
-or grant access to a dedicated Render workspace named `RAG Lens`, then run:
+Before any Render creation or update, verify the dedicated workspace:
 
 ```bash
 render workspaces
-render workspace set <rag-lens-workspace-id>
+render workspace set tea-d8vvqob7uimc738uflsg
 render workspace current -o json
 ```
 
-Only after `render workspace current` shows the dedicated RAG Lens workspace
+Only after `render workspace current` shows the dedicated `rag-lens` workspace
 should the web service or cleanup cron be created.
 
 Before using the Render dashboard, Blueprint flow, or any CLI creation command,
@@ -88,22 +91,28 @@ the package name, required package scripts, web service shape, the web
 `RAG_RETRIEVAL_BACKEND=supabase`, secret placeholders, absence of
 `SUPABASE_PROJECT_REF`, and the narrow cleanup cron env surface. It
 intentionally fails while the CLI is pointed at `argus-prod` or any workspace
-other than `RAG Lens`. After the dedicated workspace exists, set
+other than `rag-lens`. Set
 `RENDER_EXPECTED_WORKSPACE_ID` in local `.env` so the guard checks the pinned
 workspace ID instead of relying on the display name alone.
 
-Provisional hosted web service in the wrong workspace:
+Wrong-workspace Render services to remove from `argus-prod` after confirming no
+active traffic depends on them:
 
 - Name: `rag-lens`
 - Service ID: `srv-d8vmhc3tqb8s73evn9f0`
 - URL: `https://rag-lens.onrender.com`
 - Plan: `free`
 - Region: `ohio`
+- Name: `rag-lens-web`
+- Service ID: `srv-d8vmf88k1i2s73et9odg`
+- URL: `https://rag-lens-web.onrender.com`
+- Plan: `free`
+- Region: `ohio`
 
 These resources were created during setup in `argus-prod`. Do not treat them as
 the long-term home for the project, and do not use them for recruiter-facing
-deployment evidence. Remove or ignore them after the dedicated Render workspace
-is available.
+deployment evidence. Deleting them is destructive and should be done only after
+explicit confirmation from the project owner.
 
 Do not use the Render URL as the public share link for the project. Render is
 the app/backend origin for the sandbox and warmup path. The recruiter-facing

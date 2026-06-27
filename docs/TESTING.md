@@ -103,7 +103,7 @@ Before creating or updating Render services, run:
 bun run preflight:render
 ```
 
-This check must pass in the dedicated `RAG Lens` workspace before any Render
+This check must pass in the dedicated `rag-lens` workspace before any Render
 dashboard, Blueprint, or CLI deployment step. It validates local package,
 Blueprint, plan-tier, secret-placeholder, and cleanup-cron invariants before it
 asks the Render CLI for workspace or Blueprint state. It is expected to fail

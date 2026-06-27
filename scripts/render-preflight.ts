@@ -20,6 +20,7 @@ export interface RenderBlueprintSummary {
   valid: boolean;
   totalActions: number | null;
   services: string[];
+  errors: string[];
 }
 
 export interface RenderPreflightResult {
@@ -159,7 +160,7 @@ export async function runRenderPreflight(options: RenderPreflightOptions = {}) {
     options.projectFiles ??
     (await (options.readProjectFiles ?? readLocalRenderProjectFiles)());
   const expectedWorkspaceName =
-    env.RENDER_EXPECTED_WORKSPACE_NAME?.trim() || "RAG Lens";
+    env.RENDER_EXPECTED_WORKSPACE_NAME?.trim() || "rag-lens";
   const expectedWorkspaceId = env.RENDER_EXPECTED_WORKSPACE_ID?.trim();
 
   validateLocalRenderProject(projectFiles);
@@ -173,7 +174,7 @@ export async function runRenderPreflight(options: RenderPreflightOptions = {}) {
 
   if (workspaceCommand.exitCode !== 0) {
     throw new Error(
-      "Render workspace lookup failed. Run render login and select the dedicated RAG Lens workspace before deploying.",
+      "Render workspace lookup failed. Run render login and select the dedicated rag-lens workspace before deploying.",
     );
   }
 
@@ -195,7 +196,7 @@ export async function runRenderPreflight(options: RenderPreflightOptions = {}) {
 
   if (blueprintCommand.exitCode !== 0 || !blueprint.valid) {
     throw new Error(
-      "Render Blueprint validation failed. Run render blueprints validate ./render.yaml --output json and fix render.yaml before deploying.",
+      formatBlueprintValidationFailure(blueprint),
     );
   }
 
@@ -285,12 +286,45 @@ function parseBlueprintSummary(rawJson: string): RenderBlueprintSummary {
     : [];
   const totalActions =
     typeof plan.totalActions === "number" ? plan.totalActions : null;
+  const errors = parseBlueprintErrors(parsed.errors);
 
   return {
     valid,
     totalActions,
     services,
+    errors,
   };
+}
+
+function parseBlueprintErrors(value: unknown) {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .map((entry) => {
+      if (!isRecord(entry)) {
+        return null;
+      }
+
+      if (typeof entry.error === "string") {
+        return entry.error;
+      }
+
+      if (typeof entry.message === "string") {
+        return entry.message;
+      }
+
+      return null;
+    })
+    .filter((message): message is string => Boolean(message));
+}
+
+function formatBlueprintValidationFailure(blueprint: RenderBlueprintSummary) {
+  const suffix =
+    blueprint.errors.length > 0 ? `: ${blueprint.errors.join(", ")}` : ".";
+
+  return `Render Blueprint validation failed${suffix} Run render blueprints validate ./render.yaml --output json and fix render.yaml before deploying.`;
 }
 
 function parseJsonObject(rawJson: string, label: string) {
@@ -498,7 +532,7 @@ function getSafeErrorReason(error: unknown) {
     "Active Render workspace is ",
     "Local Render project check failed.",
     "Render workspace lookup failed.",
-    "Render Blueprint validation failed.",
+    "Render Blueprint validation failed",
     "Render workspace current output is ",
     "Render Blueprint validation output is ",
   ];

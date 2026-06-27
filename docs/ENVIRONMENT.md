@@ -46,7 +46,7 @@ Next.js runtime or Render services:
 - `RENDER_EXPECTED_WORKSPACE_NAME`
 - `RENDER_EXPECTED_WORKSPACE_ID`
 
-`RENDER_EXPECTED_WORKSPACE_NAME` defaults to `RAG Lens` for
+`RENDER_EXPECTED_WORKSPACE_NAME` defaults to `rag-lens` for
 `bun run preflight:render`. Set `RENDER_EXPECTED_WORKSPACE_ID` after the
 dedicated Render workspace exists so deployment checks use the pinned workspace
 ID. These values are local operations guards and should not be added to Render

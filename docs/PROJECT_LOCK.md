@@ -27,8 +27,8 @@ The V1 workflow is:
   retrieval, traces, and retention.
 - Use Perplexity for embeddings.
 - Use OpenRouter for V1 answer generation.
-- Use Render for the backend app service and cleanup cron once a dedicated RAG
-  Lens workspace is available.
+- Use Render for the backend app service and cleanup cron only from the
+  dedicated `rag-lens` workspace.
 - Do not introduce Python unless the TypeScript ingestion path becomes a proven
   blocker. If Python is added later, use Poetry.
 
@@ -46,15 +46,14 @@ The V1 workflow is:
 ## Deployment Lock
 
 The Supabase project belongs in the dedicated `RAG Lens` organization. Render
-services must not be created in unrelated workspaces. Deployment is blocked
-until a dedicated RAG Lens Render workspace is available. Run
+services must not be created in unrelated workspaces. The dedicated Render
+workspace is `rag-lens` (`tea-d8vvqob7uimc738uflsg`). Run
 `bun run preflight:render` before any Render dashboard, Blueprint, CLI creation,
 or service update workflow. The guard must validate local package scripts,
 hosted Blueprint shape, web `free` plan, cleanup cron `starter` plan, secret
 placeholders, cleanup cron env scope, and the active Render workspace. Once the
-dedicated workspace exists, pin
-`RENDER_EXPECTED_WORKSPACE_ID` locally so the guard does not rely on name-only
-matching.
+dedicated workspace exists, pin `RENDER_EXPECTED_WORKSPACE_ID` locally so the
+guard does not rely on name-only matching.
 
 The deferred portfolio topology is:
 
@@ -89,7 +88,8 @@ As of June 27, 2026:
   Supabase vector retrieval.
 - `bun run preflight:render` is the required local package, Blueprint, and
   workspace guard before Render cloud resource changes.
-- Render deployment is intentionally blocked by missing dedicated workspace
-  access.
+- Render deployment is intentionally blocked until the wrong-workspace services
+  in `argus-prod` are removed and the `rag-lens` workspace can pass Blueprint
+  validation.
 - Public route hardening, upload cleanup, trace persistence, and experiment
   comparison slices are implemented and committed.
