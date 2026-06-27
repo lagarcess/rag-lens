@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { getOpenRouterEnvFrom } from "./env";
+import { getCleanupEnvFrom, getOpenRouterEnvFrom } from "./env";
 
 describe("getOpenRouterEnvFrom", () => {
   test("parses OpenRouter env without requiring Supabase or Perplexity secrets", () => {
@@ -26,6 +26,24 @@ describe("getOpenRouterEnvFrom", () => {
       maxCompletionTokens: 900,
       reasoningEffort: "none",
       reasoningExclude: true,
+    });
+  });
+});
+
+describe("getCleanupEnvFrom", () => {
+  test("parses cleanup env without requiring model provider keys", () => {
+    const env = getCleanupEnvFrom({
+      SUPABASE_URL: "https://example.supabase.co",
+      SUPABASE_SERVICE_ROLE_KEY: "service-role",
+      SUPABASE_STORAGE_BUCKET: "rag-uploads",
+      CLEANUP_BATCH_SIZE: "25",
+    });
+
+    expect(env).toEqual({
+      SUPABASE_URL: "https://example.supabase.co",
+      SUPABASE_SERVICE_ROLE_KEY: "service-role",
+      SUPABASE_STORAGE_BUCKET: "rag-uploads",
+      CLEANUP_BATCH_SIZE: 25,
     });
   });
 });

@@ -1,8 +1,8 @@
-import { getServerEnv } from "../src/lib/env";
+import { getCleanupEnv } from "../src/lib/env";
 import { createSupabaseAdminClient } from "../src/lib/supabase-admin";
 
 async function main() {
-  const env = getServerEnv();
+  const env = getCleanupEnv();
   const supabase = createSupabaseAdminClient();
   const now = new Date().toISOString();
 

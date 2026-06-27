@@ -31,8 +31,26 @@ services:
         value: pplx-embed-v1-0.6b
       - key: PERPLEXITY_CONTEXT_EMBEDDING_MODEL
         value: pplx-embed-context-v1-0.6b
-      - key: PERPLEXITY_CHAT_MODEL
-        value: sonar-pro
+      - key: CHAT_PROVIDER
+        value: openrouter
+      - key: OPENROUTER_API_KEY
+        sync: false
+      - key: OPENROUTER_BASE_URL
+        value: https://openrouter.ai/api/v1
+      - key: OPENROUTER_CHAT_MODEL
+        value: deepseek/deepseek-v4-flash
+      - key: OPENROUTER_HTTP_REFERER
+        sync: false
+      - key: OPENROUTER_APP_TITLE
+        value: RAG Lens
+      - key: OPENROUTER_TEMPERATURE
+        value: "0.2"
+      - key: OPENROUTER_MAX_COMPLETION_TOKENS
+        value: "900"
+      - key: OPENROUTER_REASONING_EFFORT
+        value: none
+      - key: OPENROUTER_REASONING_EXCLUDE
+        value: "true"
 
   - type: cron
     name: rag-lens-session-cleanup
@@ -50,8 +68,6 @@ services:
         sync: false
       - key: SUPABASE_STORAGE_BUCKET
         value: rag-uploads
-      - key: PERPLEXITY_API_KEY
-        sync: false
       - key: CLEANUP_BATCH_SIZE
         value: "100"
 

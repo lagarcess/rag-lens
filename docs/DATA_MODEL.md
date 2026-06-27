@@ -41,6 +41,7 @@ Important columns:
 - `extracted_text`.
 - `status`.
 - `expires_at`.
+- `hard_expires_at`.
 
 ### `rag_document_chunks`
 
@@ -57,6 +58,7 @@ Important columns:
 - `embedding_mode`
 - `embedding vector(1024)`
 - `metadata`
+- `expires_at` and `hard_expires_at` for uploaded/session chunks.
 
 ### `rag_queries`
 
@@ -72,6 +74,7 @@ Important columns:
 - `chunk_overlap`
 - `prompt`
 - `trace`
+- `expires_at` and `hard_expires_at` for session traces.
 
 ### `rag_retrievals`
 
@@ -85,6 +88,7 @@ Important columns:
 - `similarity`
 - `distance`
 - `selected`
+- `session_id`, `expires_at`, and `hard_expires_at` for session-derived rows.
 
 ## Vector Policy
 
@@ -98,11 +102,13 @@ Examples:
 
 - `session_id` is null.
 - `expires_at` is null.
+- `hard_expires_at` is null.
 - Never deleted by cleanup.
 
 Uploads:
 
 - `session_id` is required.
-- `expires_at` is required.
+- `expires_at` is required and marks active demo expiry.
+- `hard_expires_at` is required and marks the physical purge deadline.
 - Anonymous upload files and derived rows are deleted within 24 hours.
 - Cleanup removes Storage files before database rows.

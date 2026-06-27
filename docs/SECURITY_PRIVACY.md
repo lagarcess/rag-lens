@@ -28,7 +28,9 @@ Only `NEXT_PUBLIC_*` values can appear in client bundles.
 
 - Enable RLS on every public table.
 - V1 browser access goes through server routes.
+- Explicitly grant V1 table/function access only to `service_role`.
 - Do not add broad `anon` policies.
+- Do not grant broad `anon` or `authenticated` Data API access in V1.
 - If direct browser reads are added later, write narrow RLS policies and test them.
 
 ## Data Cleanup

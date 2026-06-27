@@ -106,9 +106,30 @@ Response:
 }
 ```
 
+Status: implemented. The session is anonymous, active, and receives both a soft
+expiry (`expiresAt`) and physical purge deadline (`hardExpiresAt`).
+
 ### `DELETE /api/sessions/:sessionId`
 
 Deletes a session and queued/uploaded data.
+
+Status: implemented as a soft delete marker. Cleanup physically removes expired
+or deleted session data.
+
+### `POST /api/sessions/:sessionId/heartbeat`
+
+Updates `last_seen_at` for an active, unexpired anonymous session.
+
+Response:
+
+```json
+{
+  "ok": true,
+  "sessionId": "uuid",
+  "expiresAt": "iso timestamp",
+  "hardExpiresAt": "iso timestamp"
+}
+```
 
 ### `GET /api/corpora`
 

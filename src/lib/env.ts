@@ -20,6 +20,16 @@ const serverEnvSchema = z.object({
   CLEANUP_BATCH_SIZE: z.coerce.number().int().positive().default(100),
 });
 
+const supabaseAdminEnvSchema = z.object({
+  SUPABASE_URL: z.string().url(),
+  SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
+});
+
+const cleanupEnvSchema = supabaseAdminEnvSchema.extend({
+  SUPABASE_STORAGE_BUCKET: z.string().default("rag-uploads"),
+  CLEANUP_BATCH_SIZE: z.coerce.number().int().positive().default(100),
+});
+
 const openRouterEnvSchema = z.object({
   OPENROUTER_API_KEY: z.string().min(1),
   OPENROUTER_BASE_URL: z
@@ -43,6 +53,18 @@ const openRouterEnvSchema = z.object({
 
 export function getServerEnv() {
   return serverEnvSchema.parse(process.env);
+}
+
+export function getSupabaseAdminEnv() {
+  return supabaseAdminEnvSchema.parse(process.env);
+}
+
+export function getCleanupEnv() {
+  return getCleanupEnvFrom(process.env);
+}
+
+export function getCleanupEnvFrom(source: Record<string, string | undefined>) {
+  return cleanupEnvSchema.parse(source);
 }
 
 export function getOpenRouterEnv() {
