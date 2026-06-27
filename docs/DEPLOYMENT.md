@@ -71,6 +71,19 @@ render workspace current -o json
 Only after `render workspace current` shows the dedicated RAG Lens workspace
 should the web service or cleanup cron be created.
 
+Before using the Render dashboard, Blueprint flow, or any CLI creation command,
+run the local preflight:
+
+```bash
+bun run preflight:render
+```
+
+The preflight checks the active Render workspace before validating
+`render.yaml`. It intentionally fails while the CLI is pointed at `argus-prod`
+or any workspace other than `RAG Lens`. After the dedicated workspace exists,
+set `RENDER_EXPECTED_WORKSPACE_ID` in local `.env` so the guard checks the
+pinned workspace ID instead of relying on the display name alone.
+
 Provisional hosted web service in the wrong workspace:
 
 - Name: `rag-lens`
@@ -91,6 +104,7 @@ entry point should eventually be a static GitHub Pages landing page.
 Render services require a pushed Git remote for the normal Blueprint flow. After GitHub exists:
 
 ```bash
+bun run preflight:render
 render blueprints validate ./render.yaml
 ```
 

@@ -43,6 +43,14 @@ These are useful for local Supabase CLI workflows but are not required by the
 Next.js runtime or Render services:
 
 - `SUPABASE_PROJECT_REF`
+- `RENDER_EXPECTED_WORKSPACE_NAME`
+- `RENDER_EXPECTED_WORKSPACE_ID`
+
+`RENDER_EXPECTED_WORKSPACE_NAME` defaults to `RAG Lens` for
+`bun run preflight:render`. Set `RENDER_EXPECTED_WORKSPACE_ID` after the
+dedicated Render workspace exists so deployment checks use the pinned workspace
+ID. These values are local operations guards and should not be added to Render
+runtime service env vars.
 
 ## Defaults
 
@@ -62,3 +70,4 @@ V1 defaults:
 - Anonymous session hard purge target: `23.5` hours.
 - Public API throttles: `20` queries, `6` uploads, and `10` session creates per
   minute per client address on the active app instance.
+- Render preflight workspace name: `RAG Lens`.

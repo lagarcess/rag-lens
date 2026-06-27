@@ -47,7 +47,11 @@ The V1 workflow is:
 
 The Supabase project belongs in the dedicated `RAG Lens` organization. Render
 services must not be created in unrelated workspaces. Deployment is blocked
-until a dedicated RAG Lens Render workspace is available.
+until a dedicated RAG Lens Render workspace is available. Run
+`bun run preflight:render` before any Render dashboard, Blueprint, CLI creation,
+or service update workflow. Once the dedicated workspace exists, pin
+`RENDER_EXPECTED_WORKSPACE_ID` locally so the guard does not rely on name-only
+matching.
 
 The deferred portfolio topology is:
 
@@ -70,6 +74,7 @@ The deferred portfolio topology is:
   `bun run build`, and `git diff --check` before committing a complete slice.
 - Do not deploy, create, or delete cloud resources in the wrong organization or
   workspace.
+- Treat a failing Render preflight as a hard stop for Render service creation.
 
 ## Reviewed State
 
@@ -79,6 +84,8 @@ As of June 27, 2026:
 - Supabase migrations are applied and advisors report no warning-level issues.
 - Render blueprint validation passes locally and hosted V1 is configured to use
   Supabase vector retrieval.
+- `bun run preflight:render` is the required local guard before Render cloud
+  resource changes.
 - Render deployment is intentionally blocked by missing dedicated workspace
   access.
 - Public route hardening, upload cleanup, trace persistence, and experiment

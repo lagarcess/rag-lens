@@ -37,6 +37,7 @@ The Bun test suite covers:
   and failure-mode notes.
 - Workbench trace history API helpers.
 - Cleanup dry-run behavior and count-only logging helpers.
+- Render deployment preflight workspace and Blueprint validation helpers.
 
 ## Integration Tests To Add
 
@@ -54,6 +55,19 @@ Before public deploy:
 - Example corpus query.
 - Upload rejection states.
 - Session expiry/delete-now flow.
+
+## Deployment Preflight
+
+Before creating or updating Render services, run:
+
+```bash
+bun run preflight:render
+```
+
+This check must pass in the dedicated `RAG Lens` workspace before any Render
+dashboard, Blueprint, or CLI deployment step. It is expected to fail while the
+CLI is pointed at `argus-prod`, `payment-ledger`, or any other unrelated
+workspace.
 
 ## Portfolio QA Status
 

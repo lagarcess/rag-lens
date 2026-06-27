@@ -97,6 +97,8 @@ Current non-deferred V1 focus after Slice 9.1:
    cron env.
 3. Deploy only after a dedicated RAG Lens Render workspace exists or the user
    explicitly authorizes the target workspace.
+4. Run `bun run preflight:render` before any Render dashboard, Blueprint, or CLI
+   creation step.
 
 This excludes the deferred GitHub Pages landing and warmup topology.
 
@@ -178,6 +180,8 @@ Before each commit, run the relevant subset:
 - `curl -fsS http://localhost:3000/api/health` when the dev server is running
 - browser screenshot/interaction checks for UI slices
 - secret scan for env/provider/database slices
+- `bun run preflight:render` before any Render resource creation, update, or
+  dashboard launch workflow
 
 The final slice before deployment must also verify:
 
@@ -551,6 +555,8 @@ share URL.
 
 Deliverables:
 
+- `bun run preflight:render` blocks deployment from unrelated Render
+  workspaces and validates the Blueprint.
 - Render env vars configured.
 - `render.yaml` verified.
 - Health check verified.
@@ -559,6 +565,7 @@ Deliverables:
 
 Verification:
 
+- Render preflight passes in the dedicated RAG Lens workspace.
 - Render build succeeds.
 - Render health endpoint returns OK.
 - Example corpus trace works on Render.

@@ -115,6 +115,7 @@ See [docs/ENVIRONMENT.md](docs/ENVIRONMENT.md) and
 ```bash
 bun test
 bun run seed:examples
+bun run preflight:render
 bun run cleanup:sessions:dry-run
 bun run cleanup:sessions
 bun run lint
@@ -127,7 +128,9 @@ bun run build
 - Supabase: hosted project in the dedicated `RAG Lens` organization.
 - Render: blueprint validates and is configured for Supabase vector retrieval,
   but deployment is blocked until a dedicated RAG Lens Render workspace is
-  available. Do not attach services to existing unrelated Render workspaces.
+  available. Run `bun run preflight:render` before any Render dashboard,
+  Blueprint, or CLI creation step. Do not attach services to existing unrelated
+  Render workspaces.
 
 Working locally against the hosted Supabase project:
 
