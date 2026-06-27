@@ -1,6 +1,7 @@
 services:
   - type: web
     name: rag-lens-web
+    repo: https://github.com/lagarcess/rag-lens
     runtime: node
     plan: free
     region: oregon
@@ -35,8 +36,9 @@ services:
 
   - type: cron
     name: rag-lens-session-cleanup
+    repo: https://github.com/lagarcess/rag-lens
     runtime: node
-    plan: free
+    plan: starter
     region: oregon
     schedule: "*/30 * * * *"
     buildCommand: npm install -g bun@1.3.14 && bun install --frozen-lockfile
