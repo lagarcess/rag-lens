@@ -56,6 +56,10 @@ export interface WorkbenchState {
     activeQueryId: string | null;
     error: string | null;
   };
+  experiment: {
+    baseline: RagTraceResponse | null;
+    candidate: RagTraceResponse | null;
+  };
   query: {
     status: QueryStatus;
     error: string | null;
@@ -94,7 +98,9 @@ export type WorkbenchAction =
   | { type: "traceHistoryLoaded"; traces: TraceSummary[] }
   | { type: "traceHistoryFailed"; error: string }
   | { type: "traceReloadStarted" }
-  | { type: "traceReloaded"; result: RagTraceResponse };
+  | { type: "traceReloaded"; result: RagTraceResponse }
+  | { type: "experimentBaselinePinned"; result: RagTraceResponse }
+  | { type: "experimentComparisonCleared" };
 
 export function createInitialWorkbenchState(): WorkbenchState {
   return {
@@ -150,6 +156,10 @@ export function createInitialWorkbenchState(): WorkbenchState {
       activeQueryId: null,
       error: null,
     },
+    experiment: {
+      baseline: null,
+      candidate: null,
+    },
     query: {
       status: "idle",
       error: null,
@@ -167,11 +177,13 @@ export function workbenchReducer(
       return {
         ...state,
         selectedCorpusSlug: action.corpusSlug,
+        experiment: createEmptyExperimentState(),
       };
     case "questionChanged":
       return {
         ...state,
         question: action.question,
+        experiment: createEmptyExperimentState(),
       };
     case "settingChanged":
       return {
@@ -244,6 +256,7 @@ export function workbenchReducer(
           activeQueryId: null,
           error: null,
         },
+        experiment: createEmptyExperimentState(),
       };
     case "sessionDeleteFailed":
       return {
@@ -339,6 +352,14 @@ export function workbenchReducer(
               ? action.result.queryId
               : state.history.activeQueryId,
         },
+        experiment: {
+          ...state.experiment,
+          candidate:
+            state.experiment.baseline &&
+            state.experiment.baseline.queryId !== action.result.queryId
+              ? action.result
+              : state.experiment.candidate,
+        },
         query: {
           status: "success",
           error: null,
@@ -404,9 +425,29 @@ export function workbenchReducer(
           result: action.result,
         },
       };
+    case "experimentBaselinePinned":
+      return {
+        ...state,
+        experiment: {
+          baseline: action.result,
+          candidate: null,
+        },
+      };
+    case "experimentComparisonCleared":
+      return {
+        ...state,
+        experiment: createEmptyExperimentState(),
+      };
     default:
       return state;
   }
+}
+
+function createEmptyExperimentState() {
+  return {
+    baseline: null,
+    candidate: null,
+  };
 }
 
 function normalizeSettingValue(

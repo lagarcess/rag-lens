@@ -200,6 +200,12 @@ Verification:
 - Rerun creates separate query trace.
 - Comparison UI clearly shows changed parameters and retrieval differences.
 
+Status: implemented locally with a center workbench comparison panel, baseline
+pinning, variant reruns, settings diffs, retrieval overlap, prompt-length deltas,
+and compact failure-mode notes. Uploaded-document comparisons are currently
+query-time only: top-k can change, while chunking and embedding profile changes
+require a later re-indexing/profile slice.
+
 ## Slice 9 - Deployment And Portfolio Polish
 
 Goal: Ship a public demo suitable for GitHub and recruiter review.

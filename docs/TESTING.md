@@ -26,6 +26,9 @@ The Bun test suite covers:
 - Trace persistence row construction, session expiry blocking, summary listing,
   and reload mapping.
 - Workbench session/upload/query/history state.
+- Workbench experiment baseline/candidate state.
+- Experiment comparison helpers for settings, retrieval overlap, prompt deltas,
+  and failure-mode notes.
 - Workbench trace history API helpers.
 - Cleanup dry-run behavior and count-only logging helpers.
 

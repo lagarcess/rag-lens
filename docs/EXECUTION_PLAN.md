@@ -448,6 +448,12 @@ Commit:
 git commit -m "feat(experiment): compare RAG trace settings"
 ```
 
+Status: implemented locally for example and upload workbench traces. Example
+corpora can compare top-k, chunk size, overlap, and embedding mode at query
+time. Uploaded-session documents can compare top-k immediately; changing chunk
+size, overlap, or embedding profile for uploads requires a future re-indexing
+profile slice so the UI labels those controls as locked for uploads.
+
 ### Slice 11 - Render Backend Deployment
 
 Goal: Deploy the backend/app origin correctly without treating it as the public

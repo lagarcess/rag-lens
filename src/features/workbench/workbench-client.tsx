@@ -3,10 +3,13 @@
 import {
   Activity,
   ArrowRight,
+  BarChart3,
+  Check,
   Database,
   FileText,
   GitBranch,
   Loader2,
+  RotateCcw,
   ShieldCheck,
   SlidersHorizontal,
   UploadCloud,
@@ -21,11 +24,12 @@ import {
   runTraceQuery,
   uploadDocument,
 } from "@/features/workbench/workbench-api";
+import { buildExperimentComparison } from "@/features/workbench/experiment-compare";
 import {
   createInitialWorkbenchState,
   workbenchReducer,
 } from "@/features/workbench/workbench-state";
-import type { RagRetrievalRow } from "@/lib/rag/trace";
+import type { RagRetrievalRow, RagTraceResponse } from "@/lib/rag/trace";
 import type { TraceSummary } from "@/lib/rag/trace-persistence";
 
 export function WorkbenchClient() {
@@ -46,6 +50,7 @@ export function WorkbenchClient() {
     state.uploads.status === "processing" ||
     state.session.status === "creating";
   const isDeletingSession = state.session.status === "deleting";
+  const runButtonLabel = state.experiment.baseline ? "Run variant" : "Run trace";
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -388,7 +393,7 @@ export function WorkbenchClient() {
                   </>
                 ) : (
                   <>
-                    Run trace
+                    {runButtonLabel}
                     <ArrowRight className="size-4" />
                   </>
                 )}
@@ -409,6 +414,16 @@ export function WorkbenchClient() {
         </div>
 
         <AnswerPanel isLoading={isLoading} result={result} />
+        <ExperimentPanel
+          experiment={state.experiment}
+          isLoading={isLoading}
+          result={result}
+          selectedUploadSource={selectedUploadSource}
+          onClear={() => dispatch({ type: "experimentComparisonCleared" })}
+          onPinBaseline={(trace) =>
+            dispatch({ type: "experimentBaselinePinned", result: trace })
+          }
+        />
       </section>
 
       <TraceInspector
@@ -435,6 +450,16 @@ function formatNumber(value: number) {
   return new Intl.NumberFormat().format(value);
 }
 
+function formatSignedNumber(value: number) {
+  return value > 0 ? `+${formatNumber(value)}` : formatNumber(value);
+}
+
+function formatSignedDecimal(value: number) {
+  const formatted = value.toFixed(3);
+
+  return value > 0 ? `+${formatted}` : formatted;
+}
+
 function formatSourceCount(source: { documentCount: number; sourceKind: string }) {
   const label = source.documentCount === 1 ? "doc" : "docs";
   const scope = source.sourceKind === "upload" ? "session" : "indexed";
@@ -457,19 +482,23 @@ function RetrievalControls({
   dispatch: WorkbenchDispatch;
 }) {
   const uploadProfileLocked = selectedSource?.sourceKind === "upload";
+  const numericSettings = [
+    ["topK", "top_k", 1, 12, 1],
+    ["chunkSize", "chunk_size", 160, 2000, 40],
+    ["chunkOverlap", "overlap", 0, state.settings.chunkSize - 1, 40],
+  ] as const;
 
   return (
     <div className="rounded-lg border border-[var(--border)] bg-[var(--surface-elevated)] p-4">
       <div className="mb-3 flex items-center gap-2 text-sm font-medium">
         <Database className="size-4 text-[var(--accent-strong)]" />
-        Retrieval config
+        Experiment settings
       </div>
+      <p className="mb-3 text-xs leading-5 text-[var(--muted)]">
+        Change one setting, rerun, then compare the trace.
+      </p>
       <div className="space-y-3 font-mono text-xs text-[var(--muted)]">
-        {[
-          ["topK", "top_k", 1, 12],
-          ["chunkSize", "chunk_size", 160, 2000],
-          ["chunkOverlap", "overlap", 0, state.settings.chunkSize - 1],
-        ].map(([key, label, min, max]) => {
+        {numericSettings.map(([key, label, min, max, step]) => {
           const locked = uploadProfileLocked && key !== "topK";
           const value =
             key === "chunkSize" && locked
@@ -477,14 +506,40 @@ function RetrievalControls({
               : key === "chunkOverlap" && locked
                 ? 120
                 : state.settings[key as keyof typeof state.settings];
+          const inputId = `setting-input-${key}`;
+          const rangeId = `setting-range-${key}`;
 
           return (
-            <label className="block" key={String(key)}>
-              <span className="mb-1 flex justify-between">
-                <span>{label}</span>
-                <span>{value}</span>
-              </span>
+            <div className="block" key={String(key)}>
+              <div className="mb-1 flex items-center justify-between gap-3">
+                <label htmlFor={rangeId} id={`setting-${key}`}>
+                  {label}
+                </label>
+                <input
+                  aria-label={`${label} value`}
+                  className="h-7 w-16 rounded-md border border-[var(--border)] bg-[var(--surface-muted)] px-2 text-right font-mono text-xs text-[var(--foreground)] outline-none ring-[var(--accent)] transition focus:ring-2 disabled:opacity-50"
+                  disabled={locked}
+                  id={inputId}
+                  max={Number(max)}
+                  min={Number(min)}
+                  onChange={(event) => {
+                    if (!event.target.value) {
+                      return;
+                    }
+
+                    dispatch({
+                      type: "settingChanged",
+                      key,
+                      value: event.target.value,
+                    });
+                  }}
+                  step={Number(step)}
+                  type="number"
+                  value={Number(value)}
+                />
+              </div>
               <input
+                aria-labelledby={`setting-${key}`}
                 className="w-full accent-[var(--accent-strong)] disabled:opacity-50"
                 disabled={locked}
                 max={Number(max)}
@@ -492,24 +547,376 @@ function RetrievalControls({
                 onChange={(event) =>
                   dispatch({
                     type: "settingChanged",
-                    key: key as keyof typeof state.settings,
+                    key,
                     value: event.target.value,
                   })
                 }
-                step={key === "topK" ? 1 : 40}
+                step={Number(step)}
                 type="range"
+                id={rangeId}
                 value={Number(value)}
               />
-            </label>
+            </div>
           );
         })}
       </div>
+      <fieldset className="mt-4">
+        <legend className="mb-2 font-mono text-xs text-[var(--muted)]">
+          embedding
+        </legend>
+        <div className="grid grid-cols-2 rounded-lg border border-[var(--border)] bg-[var(--surface-muted)] p-1">
+          {[
+            ["standard", "Standard"],
+            ["contextualized", "Contextual"],
+          ].map(([value, label]) => {
+            const active = state.settings.embeddingMode === value;
+
+            return (
+              <button
+                aria-pressed={active}
+                className={[
+                  "rounded-md px-2 py-2 text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-50",
+                  active
+                    ? "bg-[var(--foreground)] text-[var(--background)]"
+                    : "text-[var(--muted)] hover:text-[var(--foreground)]",
+                ].join(" ")}
+                disabled={uploadProfileLocked}
+                key={value}
+                onClick={() =>
+                  dispatch({
+                    type: "settingChanged",
+                    key: "embeddingMode",
+                    value,
+                  })
+                }
+                type="button"
+              >
+                {label}
+              </button>
+            );
+          })}
+        </div>
+      </fieldset>
       {uploadProfileLocked ? (
         <p className="mt-3 text-xs leading-5 text-[var(--muted)]">
-          Uploaded documents use the default indexed chunk profile for this
-          slice.
+          Uploaded documents use their indexed chunk and embedding profile for
+          this slice. Adjust top_k to compare retrieval breadth.
         </p>
       ) : null}
+    </div>
+  );
+}
+
+function ExperimentPanel({
+  experiment,
+  isLoading,
+  result,
+  selectedUploadSource,
+  onClear,
+  onPinBaseline,
+}: {
+  experiment: WorkbenchState["experiment"];
+  isLoading: boolean;
+  result: RagTraceResponse | null;
+  selectedUploadSource: boolean;
+  onClear: () => void;
+  onPinBaseline: (trace: RagTraceResponse) => void;
+}) {
+  const comparison =
+    experiment.baseline && experiment.candidate
+      ? buildExperimentComparison({
+          baseline: experiment.baseline,
+          candidate: experiment.candidate,
+        })
+      : null;
+
+  return (
+    <section
+      aria-labelledby="experiment-heading"
+      className="border-t border-[var(--border)] p-5"
+    >
+      <div className="rounded-lg border border-[var(--border)] bg-[var(--surface-elevated)] p-5">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <div className="mb-2 flex items-center gap-2 text-sm font-semibold">
+              <BarChart3 className="size-4 text-[var(--accent-strong)]" />
+              <h2 id="experiment-heading">Trace comparison</h2>
+            </div>
+            <p className="max-w-2xl text-sm leading-6 text-[var(--muted)]">
+              Pin the current trace as A, change the settings, then run a
+              variant to compare retrieval and prompt behavior.
+            </p>
+          </div>
+          <div className="flex shrink-0 gap-2">
+            <button
+              className="inline-flex min-h-9 items-center justify-center gap-2 rounded-md bg-[var(--foreground)] px-3 text-sm font-semibold text-[var(--background)] disabled:cursor-not-allowed disabled:opacity-55"
+              disabled={!result || isLoading}
+              onClick={() => result && onPinBaseline(result)}
+              type="button"
+            >
+              <Check className="size-4" />
+              {experiment.baseline ? "Pin current as A" : "Pin baseline"}
+            </button>
+            {experiment.baseline || experiment.candidate ? (
+              <button
+                className="inline-flex min-h-9 items-center justify-center gap-2 rounded-md border border-[var(--border)] px-3 text-sm font-medium text-[var(--muted)] transition hover:border-[var(--accent-strong)] hover:text-[var(--foreground)]"
+                onClick={onClear}
+                type="button"
+              >
+                <RotateCcw className="size-4" />
+                Clear
+              </button>
+            ) : null}
+          </div>
+        </div>
+
+        <div
+          aria-live="polite"
+          className="mt-4 rounded-lg border border-[var(--border)] bg-[var(--surface-muted)] p-4"
+        >
+          {!experiment.baseline ? (
+            <p className="text-sm leading-6 text-[var(--muted)]">
+              Run a trace, then pin it as the baseline before testing a variant.
+            </p>
+          ) : comparison ? (
+            <TraceComparison comparison={comparison} />
+          ) : (
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <TraceSnapshot
+                label="A baseline"
+                trace={experiment.baseline}
+              />
+              <p className="max-w-sm text-sm leading-6 text-[var(--muted)]">
+                Baseline pinned. Change one setting and run a variant to fill B.
+              </p>
+            </div>
+          )}
+        </div>
+
+        {selectedUploadSource ? (
+          <p className="mt-3 text-xs leading-5 text-[var(--muted)]">
+            Upload experiments compare query-time retrieval settings. Chunking
+            and embedding profile changes require re-indexing, which is
+            deferred to a later slice.
+          </p>
+        ) : null}
+      </div>
+    </section>
+  );
+}
+
+function TraceComparison({
+  comparison,
+}: {
+  comparison: ReturnType<typeof buildExperimentComparison>;
+}) {
+  return (
+    <div className="space-y-4">
+      <div className="grid gap-3 md:grid-cols-2">
+        <TraceMetricCard
+          label="A baseline"
+          promptChars={comparison.retrieval.baselinePromptChars}
+          retrievedCount={comparison.retrieval.baselineRetrievedCount}
+          topScore={comparison.retrieval.baselineTopScore}
+        />
+        <TraceMetricCard
+          label="B variant"
+          promptChars={comparison.retrieval.candidatePromptChars}
+          promptCharsDelta={comparison.retrieval.promptCharsDelta}
+          retrievedCount={comparison.retrieval.candidateRetrievedCount}
+          retrievedDelta={comparison.retrieval.retrievedDelta}
+          topScoreDelta={comparison.retrieval.topScoreDelta}
+          topScore={comparison.retrieval.candidateTopScore}
+        />
+      </div>
+
+      <div>
+        <h3 className="mb-2 font-mono text-[11px] uppercase text-[var(--muted)]">
+          Settings
+        </h3>
+        <div className="grid gap-2 sm:grid-cols-2">
+          {comparison.settings.map((setting) => (
+            <div
+              className={[
+                "rounded-md border p-3 font-mono text-[11px]",
+                setting.changed
+                  ? "border-[var(--accent-strong)] bg-[var(--badge-bg)] text-[var(--badge-fg)]"
+                  : "border-[var(--border)] bg-[var(--surface-elevated)] text-[var(--muted)]",
+              ].join(" ")}
+              key={setting.key}
+            >
+              <div className="mb-1 text-[var(--foreground)]">
+                {setting.label}
+              </div>
+              <div className="flex items-center justify-between gap-2">
+                <span>A {setting.baseline}</span>
+                <span>B {setting.candidate}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="grid gap-3 md:grid-cols-3">
+        <ChunkIdList
+          label="Shared chunks"
+          ids={comparison.retrieval.sharedChunkIds}
+        />
+        <ChunkIdList
+          label="Only in A"
+          ids={comparison.retrieval.baselineOnlyChunkIds}
+        />
+        <ChunkIdList
+          label="Only in B"
+          ids={comparison.retrieval.candidateOnlyChunkIds}
+        />
+      </div>
+
+      <div>
+        <h3 className="mb-2 font-mono text-[11px] uppercase text-[var(--muted)]">
+          Failure-mode notes
+        </h3>
+        {comparison.notes.length > 0 ? (
+          <ul className="space-y-2">
+            {comparison.notes.map((note) => (
+              <li
+                className="rounded-md border border-[var(--border)] bg-[var(--surface-elevated)] p-3 text-sm leading-6 text-[var(--muted)]"
+                key={note}
+              >
+                {note}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="rounded-md border border-[var(--border)] bg-[var(--surface-elevated)] p-3 text-sm leading-6 text-[var(--muted)]">
+            No obvious retrieval warning in the variant.
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function TraceSnapshot({
+  label,
+  trace,
+}: {
+  label: string;
+  trace: RagTraceResponse;
+}) {
+  return (
+    <div className="rounded-md border border-[var(--border)] bg-[var(--surface-elevated)] p-3">
+      <div className="text-sm font-semibold">{label}</div>
+      <dl className="mt-2 grid grid-cols-3 gap-3 font-mono text-[11px] text-[var(--muted)]">
+        <div>
+          <dt>top_k</dt>
+          <dd className="text-[var(--foreground)]">{trace.trace.settings.topK}</dd>
+        </div>
+        <div>
+          <dt>chunks</dt>
+          <dd className="text-[var(--foreground)]">
+            {trace.trace.retrieval.rows.length}
+          </dd>
+        </div>
+        <div>
+          <dt>prompt</dt>
+          <dd className="text-[var(--foreground)]">
+            {formatNumber(trace.trace.prompt.rendered.length)}
+          </dd>
+        </div>
+      </dl>
+    </div>
+  );
+}
+
+function TraceMetricCard({
+  label,
+  promptChars,
+  promptCharsDelta,
+  retrievedCount,
+  retrievedDelta,
+  topScore,
+  topScoreDelta,
+}: {
+  label: string;
+  promptChars: number;
+  promptCharsDelta?: number;
+  retrievedCount: number;
+  retrievedDelta?: number;
+  topScore: number;
+  topScoreDelta?: number;
+}) {
+  return (
+    <div className="rounded-md border border-[var(--border)] bg-[var(--surface-elevated)] p-3">
+      <div className="text-sm font-semibold">{label}</div>
+      <dl className="mt-3 grid grid-cols-3 gap-3 font-mono text-[11px] text-[var(--muted)]">
+        <div>
+          <dt>top score</dt>
+          <dd className="text-[var(--foreground)]">
+            {topScore.toFixed(3)}
+            {topScoreDelta === undefined ? null : (
+              <>
+                {" "}
+                <span className="text-[var(--muted)]">
+                  (delta {formatSignedDecimal(topScoreDelta)})
+                </span>
+              </>
+            )}
+          </dd>
+        </div>
+        <div>
+          <dt>retrieved</dt>
+          <dd className="text-[var(--foreground)]">
+            {formatNumber(retrievedCount)}
+            {retrievedDelta === undefined ? null : (
+              <>
+                {" "}
+                <span className="text-[var(--muted)]">
+                  (delta {formatSignedNumber(retrievedDelta)})
+                </span>
+              </>
+            )}
+          </dd>
+        </div>
+        <div>
+          <dt>prompt</dt>
+          <dd className="text-[var(--foreground)]">
+            {formatNumber(promptChars)}
+            {promptCharsDelta === undefined ? null : (
+              <>
+                {" "}
+                <span className="text-[var(--muted)]">
+                  (delta {formatSignedNumber(promptCharsDelta)})
+                </span>
+              </>
+            )}
+          </dd>
+        </div>
+      </dl>
+    </div>
+  );
+}
+
+function ChunkIdList({ label, ids }: { label: string; ids: string[] }) {
+  return (
+    <div className="rounded-md border border-[var(--border)] bg-[var(--surface-elevated)] p-3">
+      <h3 className="font-mono text-[11px] uppercase text-[var(--muted)]">
+        {label}
+      </h3>
+      <div className="mt-2 flex flex-wrap gap-1.5">
+        {ids.length > 0 ? (
+          ids.map((id) => (
+            <span
+              className="max-w-full truncate rounded-full border border-[var(--border)] bg-[var(--surface-muted)] px-2 py-1 font-mono text-[10px] text-[var(--muted)]"
+              key={id}
+            >
+              {id}
+            </span>
+          ))
+        ) : (
+          <span className="text-sm text-[var(--muted)]">None</span>
+        )}
+      </div>
     </div>
   );
 }

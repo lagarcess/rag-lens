@@ -271,4 +271,121 @@ describe("workbenchReducer", () => {
     expect(reloaded.query.status).toBe("success");
     expect(reloaded.query.result?.answer).toBe("Reloaded answer");
   });
+
+  test("pins a baseline trace and stores the next successful rerun as the candidate", () => {
+    const initial = createInitialWorkbenchState();
+    const baseline = createStateTrace("baseline-query", {
+      topK: 5,
+      chunkSize: 800,
+      chunkOverlap: 120,
+    });
+    const candidate = createStateTrace("candidate-query", {
+      topK: 3,
+      chunkSize: 1200,
+      chunkOverlap: 40,
+    });
+
+    const withBaselineResult = workbenchReducer(initial, {
+      type: "querySucceeded",
+      result: baseline,
+    });
+    const pinned = workbenchReducer(withBaselineResult, {
+      type: "experimentBaselinePinned",
+      result: baseline,
+    });
+
+    expect(pinned.experiment.baseline?.queryId).toBe("baseline-query");
+    expect(pinned.experiment.candidate).toBeNull();
+
+    const withCandidate = workbenchReducer(pinned, {
+      type: "querySucceeded",
+      result: candidate,
+    });
+
+    expect(withCandidate.experiment.baseline?.queryId).toBe("baseline-query");
+    expect(withCandidate.experiment.candidate?.queryId).toBe("candidate-query");
+
+    const cleared = workbenchReducer(withCandidate, {
+      type: "experimentComparisonCleared",
+    });
+    expect(cleared.experiment).toEqual({
+      baseline: null,
+      candidate: null,
+    });
+  });
+
+  test("clears experiment comparison when the question or source changes", () => {
+    const initial = createInitialWorkbenchState();
+    const pinned = workbenchReducer(initial, {
+      type: "experimentBaselinePinned",
+      result: createStateTrace("baseline-query", {
+        topK: 5,
+        chunkSize: 800,
+        chunkOverlap: 120,
+      }),
+    });
+
+    expect(
+      workbenchReducer(pinned, {
+        type: "questionChanged",
+        question: "A different question?",
+      }).experiment,
+    ).toEqual({
+      baseline: null,
+      candidate: null,
+    });
+    expect(
+      workbenchReducer(pinned, {
+        type: "sourceSelected",
+        corpusSlug: "rag-concepts-primer",
+      }).experiment,
+    ).toEqual({
+      baseline: null,
+      candidate: null,
+    });
+  });
 });
+
+function createStateTrace(
+  queryId: string,
+  settings: {
+    topK: number;
+    chunkSize: number;
+    chunkOverlap: number;
+  },
+) {
+  return {
+    queryId,
+    answer: "Answer from model",
+    citations: [],
+    trace: {
+      settings: {
+        ...settings,
+        embeddingMode: "standard" as const,
+      },
+      corpus: {
+        slug: "rag-concepts-primer",
+        title: "RAG Concepts Primer",
+        sourceKind: "example" as const,
+        documentCount: 1,
+      },
+      extraction: { documents: [] },
+      chunking: { totalChunks: 0, chunks: [] },
+      retrieval: {
+        method: "deterministic-lexical-overlap" as const,
+        rows: [],
+      },
+      prompt: { rendered: "Prompt", contextChunkIds: [] },
+      models: {
+        embedding: { provider: "none" as const, model: "local-lexical" },
+        answer: { provider: "openrouter" as const, model: "model" },
+      },
+      timingsMs: { total: 1, retrieval: 1, generation: 1 },
+      persistence: {
+        mode: "ephemeral" as const,
+        store: "local-example-runner" as const,
+      },
+      warnings: [],
+    },
+  };
+}
