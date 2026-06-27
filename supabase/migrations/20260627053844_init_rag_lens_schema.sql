@@ -111,7 +111,7 @@ create index rag_retrievals_query_id_idx on public.rag_retrievals (query_id);
 
 create index rag_chunks_embedding_hnsw_idx
 on public.rag_document_chunks
-using hnsw (embedding vector_cosine_ops)
+using hnsw (embedding extensions.vector_cosine_ops)
 where embedding is not null;
 
 alter table public.rag_sessions enable row level security;
