@@ -53,3 +53,14 @@ Before public deploy:
 - Example corpus query.
 - Upload rejection states.
 - Session expiry/delete-now flow.
+
+## Portfolio QA Status
+
+Last checked on June 27, 2026:
+
+- Local health endpoint returned `200` with `{"ok":true}`.
+- Landing page screenshot captured at `docs/assets/screenshots/landing.png`.
+- Workbench example query completed with an OpenRouter answer and visible trace
+  inspector.
+- Workbench screenshot captured at `docs/assets/screenshots/workbench.png`.
+- Browser console had no error-level logs on the captured workbench view.

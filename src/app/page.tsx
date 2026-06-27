@@ -7,7 +7,7 @@ const landingCards = [
   {
     icon: FileText,
     title: "Add your docs",
-    text: "Use a sample set now, then upload your own files when the sandbox is connected.",
+    text: "Start with a sample set or upload a small file for a temporary session.",
   },
   {
     icon: ScanSearch,

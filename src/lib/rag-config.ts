@@ -12,7 +12,6 @@ export const RAG_LIMITS = {
 export const RAG_MODELS = {
   standardEmbedding: "pplx-embed-v1-0.6b",
   contextualEmbedding: "pplx-embed-context-v1-0.6b",
-  chat: "sonar-pro",
   embeddingDimensions: 1024,
 } as const;
 

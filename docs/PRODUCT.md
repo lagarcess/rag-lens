@@ -40,5 +40,6 @@ A visitor can:
 - Real user-owned documents, with safe public cleanup.
 - Persistent trace records in Supabase.
 - Supabase pgvector instead of browser-only vector operations.
-- Perplexity standard/contextual embeddings comparison.
+- Perplexity standard embeddings for V1 retrieval, with contextualized
+  embedding profiles deferred until re-indexed vector profiles are tracked.
 - Debugger/workbench layout instead of tutorial stage cards.

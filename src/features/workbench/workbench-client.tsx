@@ -400,7 +400,10 @@ export function WorkbenchClient() {
               </button>
             </div>
             {state.query.error ? (
-              <p className="mt-3 text-sm text-[var(--danger)]">
+              <p
+                className="mt-3 text-sm text-[var(--danger)]"
+                role="alert"
+              >
                 {state.query.error}
               </p>
             ) : null}
@@ -1140,11 +1143,11 @@ function RecentTracesList({
 function TraceRow({ row }: { row: RagRetrievalRow }) {
   return (
     <details className="rounded-lg border border-[var(--trace-border)] bg-[var(--trace-card)] p-3">
-      <summary className="cursor-pointer list-none">
+      <summary className="cursor-pointer">
         <div className="mb-2 flex items-center justify-between font-mono text-[11px]">
           <span className="text-[var(--accent)]">rank {row.rank}</span>
           <span className="text-[var(--trace-muted)]">
-            {row.similarity.toFixed(3)}
+            similarity {row.similarity.toFixed(3)}
           </span>
         </div>
         <div className="font-mono text-xs text-[var(--trace-foreground)]">

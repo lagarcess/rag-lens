@@ -516,6 +516,12 @@ Commit:
 git commit -m "docs: polish RAG Lens portfolio materials"
 ```
 
+Status: implemented for the current portfolio package. README now includes
+screenshots, architecture, setup, environment notes, demo flow, current status,
+and known limitations. Browser QA captured the landing page and a completed
+workbench trace on June 27, 2026. Render deployment remains blocked until a
+dedicated RAG Lens workspace exists.
+
 ## Review Checklist
 
 - The plan implements the V1 product promise without cloning RAG Play.

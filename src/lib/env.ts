@@ -20,7 +20,6 @@ const serverEnvSchema = z.object({
   PERPLEXITY_CONTEXT_EMBEDDING_MODEL: z
     .string()
     .default("pplx-embed-context-v1-0.6b"),
-  PERPLEXITY_CHAT_MODEL: z.string().default("sonar-pro"),
   CLEANUP_BATCH_SIZE: z.coerce.number().int().positive().default(100),
 });
 

@@ -2,7 +2,7 @@
 
 ## Core Shape
 
-RAG Lens is a Next.js full-stack app deployed on Render.
+RAG Lens is a Next.js full-stack app designed to deploy on Render.
 
 ```mermaid
 flowchart LR

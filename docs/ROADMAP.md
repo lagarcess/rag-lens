@@ -174,7 +174,7 @@ Goal: Generate answers from retrieved context and show citations.
 Deliverables:
 
 - Prompt assembly service.
-- Perplexity chat route.
+- OpenRouter chat route.
 - Answer card with citations linked to chunks.
 - Prompt preview in trace inspector.
 - "I do not know from this context" behavior when retrieval is weak.

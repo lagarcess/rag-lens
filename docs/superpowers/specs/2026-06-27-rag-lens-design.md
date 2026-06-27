@@ -17,7 +17,7 @@ rag-lens is a practical RAG debugger: upload your own docs, persist them for a t
 
 ## Architecture
 
-Next.js owns UI and server routes. Supabase owns Storage, Postgres, pgvector, and trace persistence. Perplexity owns embeddings and generation. Render owns deployment and cleanup cron.
+Next.js owns UI and server routes. Supabase owns Storage, Postgres, pgvector, and trace persistence. Perplexity owns embeddings. OpenRouter owns V1 answer generation. Render owns deployment and cleanup cron.
 
 ## Visual System
 

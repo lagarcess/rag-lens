@@ -88,6 +88,7 @@ export function ThemeToggle({ compact = false }: { compact?: boolean }) {
       className={`inline-flex rounded-full border border-[var(--control-border)] bg-[var(--control-bg)] shadow-sm ${
         compact ? "p-0.5" : "p-0.5 sm:p-1"
       }`}
+      role="group"
     >
       {themeOptions.map((option) => {
         const Icon = option.icon;
