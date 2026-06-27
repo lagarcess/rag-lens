@@ -1,0 +1,57 @@
+services:
+  - type: web
+    name: rag-lens-web
+    runtime: node
+    plan: free
+    region: oregon
+    branch: main
+    autoDeploy: true
+    buildCommand: npm install -g bun@1.3.14 && bun install --frozen-lockfile && bun run build
+    startCommand: bun run start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NEXT_PUBLIC_SITE_URL
+        sync: false
+      - key: NEXT_PUBLIC_SUPABASE_URL
+        sync: false
+      - key: NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: SUPABASE_STORAGE_BUCKET
+        value: rag-uploads
+      - key: PERPLEXITY_API_KEY
+        sync: false
+      - key: PERPLEXITY_EMBEDDING_MODEL
+        value: pplx-embed-v1-0.6b
+      - key: PERPLEXITY_CONTEXT_EMBEDDING_MODEL
+        value: pplx-embed-context-v1-0.6b
+      - key: PERPLEXITY_CHAT_MODEL
+        value: sonar-pro
+
+  - type: cron
+    name: rag-lens-session-cleanup
+    runtime: node
+    plan: free
+    region: oregon
+    schedule: "*/30 * * * *"
+    buildCommand: npm install -g bun@1.3.14 && bun install --frozen-lockfile
+    startCommand: bun run cleanup:sessions
+    envVars:
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: SUPABASE_STORAGE_BUCKET
+        value: rag-uploads
+      - key: PERPLEXITY_API_KEY
+        sync: false
+      - key: CLEANUP_BATCH_SIZE
+        value: "100"
+
+previews:
+  generation: manual
