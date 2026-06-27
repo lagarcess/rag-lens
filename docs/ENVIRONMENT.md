@@ -70,4 +70,7 @@ V1 defaults:
 - Anonymous session hard purge target: `23.5` hours.
 - Public API throttles: `20` queries, `6` uploads, and `10` session creates per
   minute per client address on the active app instance.
-- Render preflight workspace name: `RAG Lens`.
+- Render preflight workspace name: `rag-lens`.
+- Render preflight workspace ID: `tea-d8vvqob7uimc738uflsg`.
+- Current Render web URL for hosted origin values:
+  `https://rag-lens-mx20.onrender.com`.
