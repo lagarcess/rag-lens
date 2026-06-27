@@ -9,10 +9,16 @@ import {
   Loader2,
   ShieldCheck,
   SlidersHorizontal,
+  UploadCloud,
 } from "lucide-react";
-import { FormEvent, useMemo, useReducer } from "react";
+import { ChangeEvent, FormEvent, useMemo, useReducer, useState } from "react";
 
-import { runTraceQuery } from "@/features/workbench/workbench-api";
+import {
+  createAnonymousSession,
+  deleteAnonymousSession,
+  runTraceQuery,
+  uploadDocument,
+} from "@/features/workbench/workbench-api";
 import {
   createInitialWorkbenchState,
   workbenchReducer,
@@ -25,11 +31,17 @@ export function WorkbenchClient() {
     undefined,
     createInitialWorkbenchState,
   );
+  const [uploadFile, setUploadFile] = useState<File | null>(null);
   const selectedSource = state.sources.find(
     (source) => source.slug === state.selectedCorpusSlug,
   );
   const result = state.query.result;
   const isLoading = state.query.status === "loading";
+  const isUploading =
+    state.uploads.status === "uploading" ||
+    state.uploads.status === "processing" ||
+    state.session.status === "creating";
+  const isDeletingSession = state.session.status === "deleting";
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -61,6 +73,65 @@ export function WorkbenchClient() {
     }
   }
 
+  async function handleUploadSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!uploadFile || isUploading) {
+      return;
+    }
+
+    dispatch({ type: "uploadStarted", fileName: uploadFile.name });
+
+    try {
+      let sessionId = state.session.sessionId;
+
+      if (!sessionId) {
+        dispatch({ type: "sessionCreateStarted" });
+        const session = await createAnonymousSession();
+        dispatch({ type: "sessionCreated", session });
+        sessionId = session.sessionId;
+      }
+
+      const document = await uploadDocument({
+        sessionId,
+        file: uploadFile,
+      });
+
+      dispatch({ type: "uploadSucceeded", document });
+      setUploadFile(null);
+    } catch (error) {
+      dispatch({
+        type: "uploadFailed",
+        error:
+          error instanceof Error ? error.message : "Unable to upload document",
+      });
+    }
+  }
+
+  function handleUploadFileChange(event: ChangeEvent<HTMLInputElement>) {
+    setUploadFile(event.target.files?.[0] ?? null);
+  }
+
+  async function handleDeleteSession() {
+    if (!state.session.sessionId || isDeletingSession) {
+      return;
+    }
+
+    dispatch({ type: "sessionDeleteStarted" });
+
+    try {
+      await deleteAnonymousSession(state.session.sessionId);
+      dispatch({ type: "sessionDeleted" });
+      setUploadFile(null);
+    } catch (error) {
+      dispatch({
+        type: "sessionDeleteFailed",
+        error:
+          error instanceof Error ? error.message : "Unable to delete session",
+      });
+    }
+  }
+
   return (
     <section className="mx-auto grid w-full max-w-7xl min-w-0 flex-1 gap-6 px-6 py-8 lg:grid-cols-[280px_minmax(0,1fr)_380px]">
       <aside className="min-w-0 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4">
@@ -87,6 +158,7 @@ export function WorkbenchClient() {
                     : "cursor-not-allowed opacity-60",
                 ].join(" ")}
                 disabled={!ready}
+                aria-pressed={selected}
                 key={source.slug}
                 onClick={() =>
                   dispatch({
@@ -114,16 +186,101 @@ export function WorkbenchClient() {
             );
           })}
         </div>
-        <div className="mt-4 rounded-lg border border-dashed border-[var(--border)] bg-[var(--surface-muted)] p-4">
+        <form
+          className="mt-4 rounded-lg border border-dashed border-[var(--border)] bg-[var(--surface-muted)] p-4"
+          onSubmit={handleUploadSubmit}
+        >
           <div className="mb-2 flex items-center gap-2 text-sm font-medium">
             <ShieldCheck className="size-4 text-[var(--accent-strong)]" />
             Public upload policy
           </div>
           <p className="text-sm leading-6 text-[var(--muted)]">
-            Anonymous uploads will be session-scoped, size-limited, and deleted
-            within 24 hours.
+            Do not upload secrets, private files, or personal data. Anonymous
+            uploads are session-scoped, size-limited, and deleted within 24
+            hours.
           </p>
-        </div>
+          <label
+            className="mt-4 block text-xs font-medium text-[var(--muted)]"
+            htmlFor="document-upload"
+          >
+            PDF, text, or markdown
+          </label>
+          <input
+            accept=".pdf,.txt,.md,.markdown,application/pdf,text/plain,text/markdown,text/x-markdown"
+            className="mt-2 block w-full cursor-pointer rounded-md border border-[var(--border)] bg-[var(--surface-elevated)] text-xs text-[var(--muted)] file:mr-3 file:border-0 file:bg-[var(--surface)] file:px-3 file:py-2 file:text-xs file:font-medium file:text-[var(--foreground)]"
+            id="document-upload"
+            onChange={handleUploadFileChange}
+            type="file"
+          />
+          <button
+            className="mt-3 inline-flex min-h-9 w-full items-center justify-center gap-2 rounded-md bg-[var(--foreground)] px-3 text-sm font-semibold text-[var(--background)] disabled:cursor-not-allowed disabled:opacity-55"
+            disabled={!uploadFile || isUploading}
+            type="submit"
+          >
+            {isUploading ? (
+              <>
+                <Loader2 className="size-4 animate-spin" />
+                Uploading
+              </>
+            ) : (
+              <>
+                <UploadCloud className="size-4" />
+                Upload document
+              </>
+            )}
+          </button>
+          {state.session.expiresAt ? (
+            <div className="mt-3 flex items-center justify-between gap-3">
+              <p className="font-mono text-[11px] text-[var(--muted)]">
+                session expires {formatDateTime(state.session.expiresAt)}
+              </p>
+              <button
+                className="rounded-md border border-[var(--border)] px-2 py-1 text-xs font-medium text-[var(--muted)] transition hover:border-[var(--danger)] hover:text-[var(--danger)] disabled:cursor-not-allowed disabled:opacity-60"
+                disabled={isDeletingSession}
+                onClick={handleDeleteSession}
+                type="button"
+              >
+                {isDeletingSession ? "Deleting" : "Delete now"}
+              </button>
+            </div>
+          ) : null}
+          {state.session.error ? (
+            <p className="mt-3 text-sm text-[var(--danger)]" role="alert">
+              {state.session.error}
+            </p>
+          ) : null}
+          {state.uploads.error ? (
+            <p className="mt-3 text-sm text-[var(--danger)]" role="alert">
+              {state.uploads.error}
+            </p>
+          ) : null}
+          {state.uploads.documents.length > 0 ? (
+            <div className="mt-4 space-y-2" role="status" aria-live="polite">
+              {state.uploads.documents.map((document) => (
+                <div
+                  className="rounded-md border border-[var(--border)] bg-[var(--surface-elevated)] p-3"
+                  key={`${document.documentId ?? "pending"}-${document.fileName}`}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <span className="min-w-0 truncate text-sm font-medium">
+                      {document.fileName}
+                    </span>
+                    <span className="rounded-full bg-[var(--badge-bg)] px-2 py-0.5 font-mono text-[10px] text-[var(--badge-fg)]">
+                      {document.status === "ready"
+                        ? "extracted"
+                        : document.status}
+                    </span>
+                  </div>
+                  <p className="mt-1 text-xs leading-5 text-[var(--muted)]">
+                    {document.extractedCharacters
+                      ? `${formatNumber(document.extractedCharacters)} characters extracted. Indexing comes next.`
+                      : "Preparing upload for extraction."}
+                  </p>
+                </div>
+              ))}
+            </div>
+          ) : null}
+        </form>
       </aside>
 
       <section className="min-w-0 rounded-xl border border-[var(--border)] bg-[var(--surface)]">
@@ -204,6 +361,17 @@ export function WorkbenchClient() {
       />
     </section>
   );
+}
+
+function formatDateTime(value: string) {
+  return new Intl.DateTimeFormat(undefined, {
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(new Date(value));
+}
+
+function formatNumber(value: number) {
+  return new Intl.NumberFormat().format(value);
 }
 
 type WorkbenchState = ReturnType<typeof createInitialWorkbenchState>;

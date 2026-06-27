@@ -90,8 +90,6 @@ Response:
 }
 ```
 
-## Planned
-
 ### `POST /api/sessions`
 
 Creates an anonymous session.
@@ -139,11 +137,45 @@ Lists example corpora and active session documents.
 
 Accepts a file upload for an active anonymous session.
 
+Request: `multipart/form-data`
+
+- `sessionId`: active anonymous session UUID.
+- `file`: PDF, `.txt`, `.md`, or `.markdown` file.
+
 Limits:
 
 - 3 files per session.
 - 10 MB total per session.
 - PDF, text, and markdown only.
+- Route rejects oversized multipart requests before parsing the body when the
+  `Content-Length` header exceeds the configured request cap.
+
+This V1 slice performs synchronous text extraction. A successful upload writes
+the original file to Supabase Storage, inserts a `ready` `rag_documents` row,
+and returns document metadata. Failed extraction is rejected and does not create
+a document row.
+
+Response:
+
+```json
+{
+  "documentId": "uuid",
+  "sessionId": "uuid",
+  "fileName": "notes.md",
+  "mimeType": "text/markdown",
+  "byteSize": 1234,
+  "storagePath": "sessions/session-id/document-id-notes.md",
+  "status": "ready",
+  "extractedCharacters": 987,
+  "expiresAt": "iso timestamp",
+  "hardExpiresAt": "iso timestamp"
+}
+```
+
+Status: implemented for upload and extraction. Chunking and embedding uploaded
+documents remain in the next ingestion slice.
+
+## Planned
 
 ### `POST /api/ingest/:documentId`
 

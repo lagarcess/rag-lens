@@ -83,8 +83,9 @@ Deliverables:
 - File size/type validation.
 - Supabase Storage write under `sessions/{session_id}/...`.
 - Text extraction service.
-- Ingestion status states: pending, processing, ready, failed.
+- Workbench upload state: processing, ready, and failed.
 - User-facing privacy warning.
+- Delete-now control for anonymous upload sessions.
 
 Verification:
 
@@ -92,6 +93,9 @@ Verification:
 - Reject files beyond limit.
 - Uploaded file row carries `session_id` and expiry.
 - Delete session removes file metadata and storage objects.
+
+Status: implemented for synchronous upload and extraction. Uploaded-document
+chunking and embeddings are covered by Slice 5.
 
 ## Slice 5 - Chunking And Embeddings
 

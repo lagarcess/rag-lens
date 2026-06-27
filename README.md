@@ -46,7 +46,9 @@ Open `http://localhost:3000`.
 
 ## Current Status
 
-Foundation is initialized locally with the first recruiter-facing workbench screen.
+Foundation, the recruiter-facing workbench, anonymous sessions, seeded example
+vectors, model-backed answers, and session-scoped upload/extraction are working
+locally against the hosted RAG Lens Supabase project.
 
 - GitHub: https://github.com/lagarcess/rag-lens
 - Render: provisional app/backend service exists, but the Render URL is not the
@@ -54,7 +56,7 @@ Foundation is initialized locally with the first recruiter-facing workbench scre
   landing page that warms the Render sandbox when needed.
 - Supabase: hosted project exists inside the dedicated `RAG Lens` organization at `https://yyqmlfisijerlcrbcuvy.supabase.co`.
 
-Secrets still needed for full RAG behavior:
+Secrets needed for full local behavior:
 
 - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY`
@@ -63,3 +65,11 @@ Secrets still needed for full RAG behavior:
 Already configured locally:
 
 - `PERPLEXITY_API_KEY`
+
+Useful commands:
+
+```bash
+bun test
+bun run seed:examples
+bun run cleanup:sessions
+```

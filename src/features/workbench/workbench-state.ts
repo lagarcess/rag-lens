@@ -1,7 +1,18 @@
 import { RAG_LIMITS } from "@/lib/rag-config";
 import type { EmbeddingMode, RagTraceResponse } from "@/lib/rag/trace";
+import type {
+  WorkbenchSessionResponse,
+  WorkbenchUploadResponse,
+} from "./workbench-api";
 
 export type QueryStatus = "idle" | "loading" | "success" | "error";
+export type SessionStatus = "idle" | "creating" | "active" | "deleting" | "error";
+export type UploadStatus =
+  | "idle"
+  | "uploading"
+  | "processing"
+  | "ready"
+  | "error";
 
 export interface WorkbenchSource {
   slug: string;
@@ -23,6 +34,18 @@ export interface WorkbenchState {
   selectedCorpusSlug: string;
   question: string;
   settings: WorkbenchSettings;
+  session: {
+    status: SessionStatus;
+    sessionId: string | null;
+    expiresAt: string | null;
+    hardExpiresAt: string | null;
+    error: string | null;
+  };
+  uploads: {
+    status: UploadStatus;
+    documents: WorkbenchUploadedDocument[];
+    error: string | null;
+  };
   query: {
     status: QueryStatus;
     error: string | null;
@@ -30,10 +53,30 @@ export interface WorkbenchState {
   };
 }
 
+export interface WorkbenchUploadedDocument {
+  documentId: string | null;
+  sessionId: string | null;
+  fileName: string;
+  mimeType: string | null;
+  byteSize: number | null;
+  status: "pending" | "processing" | "ready" | "failed";
+  extractedCharacters: number | null;
+  error: string | null;
+}
+
 export type WorkbenchAction =
   | { type: "sourceSelected"; corpusSlug: string }
   | { type: "questionChanged"; question: string }
   | { type: "settingChanged"; key: keyof WorkbenchSettings; value: number | string }
+  | { type: "sessionCreateStarted" }
+  | { type: "sessionCreated"; session: WorkbenchSessionResponse }
+  | { type: "sessionFailed"; error: string }
+  | { type: "sessionDeleteStarted" }
+  | { type: "sessionDeleted" }
+  | { type: "sessionDeleteFailed"; error: string }
+  | { type: "uploadStarted"; fileName: string }
+  | { type: "uploadSucceeded"; document: WorkbenchUploadResponse }
+  | { type: "uploadFailed"; error: string }
   | { type: "queryStarted" }
   | { type: "querySucceeded"; result: RagTraceResponse }
   | { type: "queryFailed"; error: string };
@@ -71,6 +114,18 @@ export function createInitialWorkbenchState(): WorkbenchState {
       chunkOverlap: RAG_LIMITS.defaultChunkOverlap,
       embeddingMode: "standard",
     },
+    session: {
+      status: "idle",
+      sessionId: null,
+      expiresAt: null,
+      hardExpiresAt: null,
+      error: null,
+    },
+    uploads: {
+      status: "idle",
+      documents: [],
+      error: null,
+    },
     query: {
       status: "idle",
       error: null,
@@ -100,6 +155,126 @@ export function workbenchReducer(
         settings: {
           ...state.settings,
           [action.key]: normalizeSettingValue(action.key, action.value),
+        },
+      };
+    case "sessionCreateStarted":
+      return {
+        ...state,
+        session: {
+          ...state.session,
+          status: "creating",
+          error: null,
+        },
+      };
+    case "sessionCreated":
+      return {
+        ...state,
+        session: {
+          status: "active",
+          sessionId: action.session.sessionId,
+          expiresAt: action.session.expiresAt,
+          hardExpiresAt: action.session.hardExpiresAt,
+          error: null,
+        },
+      };
+    case "sessionFailed":
+      return {
+        ...state,
+        session: {
+          ...state.session,
+          status: "error",
+          error: action.error,
+        },
+      };
+    case "sessionDeleteStarted":
+      return {
+        ...state,
+        session: {
+          ...state.session,
+          status: "deleting",
+          error: null,
+        },
+      };
+    case "sessionDeleted":
+      return {
+        ...state,
+        session: {
+          status: "idle",
+          sessionId: null,
+          expiresAt: null,
+          hardExpiresAt: null,
+          error: null,
+        },
+        uploads: {
+          status: "idle",
+          documents: [],
+          error: null,
+        },
+      };
+    case "sessionDeleteFailed":
+      return {
+        ...state,
+        session: {
+          ...state.session,
+          status: "error",
+          error: action.error,
+        },
+      };
+    case "uploadStarted":
+      return {
+        ...state,
+        uploads: {
+          status: "uploading",
+          error: null,
+          documents: [
+            {
+              documentId: null,
+              sessionId: state.session.sessionId,
+              fileName: action.fileName,
+              mimeType: null,
+              byteSize: null,
+              status: "processing",
+              extractedCharacters: null,
+              error: null,
+            },
+            ...state.uploads.documents,
+          ],
+        },
+      };
+    case "uploadSucceeded":
+      return {
+        ...state,
+        uploads: {
+          status: "ready",
+          error: null,
+          documents: [
+            {
+              documentId: action.document.documentId,
+              sessionId: action.document.sessionId,
+              fileName: action.document.fileName,
+              mimeType: action.document.mimeType,
+              byteSize: action.document.byteSize,
+              status: action.document.status,
+              extractedCharacters: action.document.extractedCharacters,
+              error: null,
+            },
+            ...state.uploads.documents.filter(
+              (document) => document.status !== "processing",
+            ),
+          ],
+        },
+      };
+    case "uploadFailed":
+      return {
+        ...state,
+        uploads: {
+          status: "error",
+          error: action.error,
+          documents: state.uploads.documents.map((document, index) =>
+            index === 0 && document.status === "processing"
+              ? { ...document, status: "failed", error: action.error }
+              : document,
+          ),
         },
       };
     case "queryStarted":

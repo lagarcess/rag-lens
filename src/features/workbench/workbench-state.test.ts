@@ -71,4 +71,79 @@ describe("workbenchReducer", () => {
     expect(error.query.error).toBe("The request failed");
     expect(error.query.result?.answer).toBe("Answer from model");
   });
+
+  test("tracks anonymous session and upload state", () => {
+    const initial = createInitialWorkbenchState();
+    const creating = workbenchReducer(initial, { type: "sessionCreateStarted" });
+
+    expect(creating.session.status).toBe("creating");
+
+    const active = workbenchReducer(creating, {
+      type: "sessionCreated",
+      session: {
+        sessionId: "11111111-1111-4111-8111-111111111111",
+        expiresAt: "2026-06-27T12:00:00.000Z",
+        hardExpiresAt: "2026-06-28T10:00:00.000Z",
+      },
+    });
+
+    expect(active.session).toMatchObject({
+      status: "active",
+      sessionId: "11111111-1111-4111-8111-111111111111",
+      error: null,
+    });
+
+    const uploading = workbenchReducer(active, {
+      type: "uploadStarted",
+      fileName: "notes.md",
+    });
+
+    expect(uploading.uploads.status).toBe("uploading");
+    expect(uploading.uploads.documents[0]).toMatchObject({
+      fileName: "notes.md",
+      status: "processing",
+    });
+
+    const uploaded = workbenchReducer(uploading, {
+      type: "uploadSucceeded",
+      document: {
+        documentId: "22222222-2222-4222-8222-222222222222",
+        sessionId: "11111111-1111-4111-8111-111111111111",
+        fileName: "notes.md",
+        mimeType: "text/markdown",
+        byteSize: 19,
+        status: "ready",
+        extractedCharacters: 19,
+        expiresAt: "2026-06-27T12:00:00.000Z",
+        hardExpiresAt: "2026-06-28T10:00:00.000Z",
+      },
+    });
+
+    expect(uploaded.uploads.status).toBe("ready");
+    expect(uploaded.uploads.documents[0]).toMatchObject({
+      documentId: "22222222-2222-4222-8222-222222222222",
+      status: "ready",
+      extractedCharacters: 19,
+    });
+
+    const failed = workbenchReducer(uploaded, {
+      type: "uploadFailed",
+      error: "Upload failed",
+    });
+
+    expect(failed.uploads.status).toBe("error");
+    expect(failed.uploads.error).toBe("Upload failed");
+
+    const deleting = workbenchReducer(uploaded, { type: "sessionDeleteStarted" });
+    expect(deleting.session.status).toBe("deleting");
+
+    const deleted = workbenchReducer(deleting, { type: "sessionDeleted" });
+    expect(deleted.session).toMatchObject({
+      status: "idle",
+      sessionId: null,
+      expiresAt: null,
+      hardExpiresAt: null,
+    });
+    expect(deleted.uploads.documents).toEqual([]);
+  });
 });
