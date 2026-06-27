@@ -101,7 +101,20 @@ Do not use the Render URL as the public share link for the project. Render is
 the app/backend origin for the sandbox and warmup path. The recruiter-facing
 entry point should eventually be a static GitHub Pages landing page.
 
-Render services require a pushed Git remote for the normal Blueprint flow. After GitHub exists:
+Render services require a pushed Git remote for the normal Blueprint flow.
+Before creating or updating Render services, confirm whether local commits are
+published:
+
+```bash
+git status --short --branch
+git log --oneline origin/main..HEAD
+```
+
+Render will only build commits that are available on GitHub. Keep the execution
+rule intact: do not push unless the user explicitly asks.
+
+After the intended commits are published and the dedicated workspace is
+selected:
 
 ```bash
 bun run preflight:render

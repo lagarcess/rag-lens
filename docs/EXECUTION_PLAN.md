@@ -578,10 +578,14 @@ Commit:
 git commit -m "chore(deploy): finalize Render backend deployment"
 ```
 
-Status: partially progressed. GitHub `main` is pushed, the dedicated RAG Lens
-Supabase project has all checked-in migrations applied, Supabase advisors return
-no warning-level issues, cleanup dry-run succeeds, and `render.yaml` validates.
-The Blueprint is configured for hosted V1 with
+Status: partially progressed. The dedicated RAG Lens Supabase project has all
+checked-in migrations applied, Supabase advisors return no warning-level issues,
+cleanup dry-run succeeds, `render.yaml` validates, and
+`bun run preflight:render` now blocks the active wrong-workspace Render context
+before any service creation. The local `main` branch currently contains
+deployment-readiness commits that are ahead of `origin/main`; do not push them
+unless the user explicitly asks. Render will not see those local commits until
+they are published to GitHub. The Blueprint is configured for hosted V1 with
 `RAG_RETRIEVAL_BACKEND=supabase`; local lexical retrieval remains a development
 fallback. Do not deploy the Render services yet: the active Render account
 currently only exposes `argus-prod` and `payment-ledger`, not a dedicated RAG
