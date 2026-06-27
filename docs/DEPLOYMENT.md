@@ -59,12 +59,26 @@ example vectors and uploaded documents are indexed into Supabase. Keep
 Current Render workspace status on June 27, 2026:
 
 - Dedicated workspace: `rag-lens` (`tea-d8vvqob7uimc738uflsg`).
-- CLI active workspace has been corrected to `rag-lens`.
-- `render services --output json` returns `null` in `rag-lens`, so no RAG Lens
-  services exist there yet.
-- `render blueprints validate ./render.yaml --output json` currently fails with
-  `need_payment_info` on the cleanup cron service because the Blueprint uses the
-  required `starter` cron plan.
+- CLI active workspace is `rag-lens`.
+- Web service: `rag-lens` (`srv-d900drho3t8c73bpvr80`).
+- Web URL: `https://rag-lens-mx20.onrender.com`.
+- Cleanup cron: `rag-lens-session-cleanup` (`crn-d900e86q1p3s73aal01g`).
+- `bun run preflight:render` passes against the dedicated workspace and
+  validates the two-service Blueprint shape.
+- The web deploy is live on commit
+  `2f88c49effd1d5e3819f9fd3fc886aeec9b7704a`.
+- The cleanup cron deploy is live on commit
+  `2f88c49effd1d5e3819f9fd3fc886aeec9b7704a`.
+- Live smoke checks passed for `/api/health`, `/api/corpora`, and one
+  `/api/query` request using Supabase pgvector retrieval plus OpenRouter answer
+  generation.
+
+The first web service creation predicted `https://rag-lens.onrender.com`, but
+Render assigned `https://rag-lens-mx20.onrender.com`. If future code starts
+depending on canonical origin metadata, update the Render web service env vars
+`NEXT_PUBLIC_SITE_URL` and `OPENROUTER_HTTP_REFERER` to the assigned URL. Render
+CLI v2.20.0 can set env vars during service creation but does not expose an env
+var update command; use the Render dashboard or API for that correction.
 
 Before any Render creation or update, verify the dedicated workspace:
 
@@ -95,8 +109,8 @@ other than `rag-lens`. Set
 `RENDER_EXPECTED_WORKSPACE_ID` in local `.env` so the guard checks the pinned
 workspace ID instead of relying on the display name alone.
 
-Wrong-workspace Render services to remove from `argus-prod` after confirming no
-active traffic depends on them:
+Wrong-workspace Render services removed from `argus-prod` after project-owner
+confirmation:
 
 - Name: `rag-lens`
 - Service ID: `srv-d8vmhc3tqb8s73evn9f0`
@@ -109,10 +123,9 @@ active traffic depends on them:
 - Plan: `free`
 - Region: `ohio`
 
-These resources were created during setup in `argus-prod`. Do not treat them as
-the long-term home for the project, and do not use them for recruiter-facing
-deployment evidence. Deleting them is destructive and should be done only after
-explicit confirmation from the project owner.
+These resources were created during setup in `argus-prod` and removed before
+the dedicated `rag-lens` workspace deployment. Do not recreate RAG Lens services
+in `argus-prod` or any unrelated workspace.
 
 Do not use the Render URL as the public share link for the project. Render is
 the app/backend origin for the sandbox and warmup path. The recruiter-facing
@@ -139,9 +152,9 @@ render blueprints validate ./render.yaml
 ```
 
 The CLI available in this workspace can validate Blueprints but does not expose
-a Blueprint launch command. Create the services from the Render dashboard using
-the checked-in `render.yaml`, or use `render services create` only after the
-dedicated workspace is selected.
+a Blueprint launch command. The initial Render resources were created with
+`render services create` only after the dedicated workspace was selected and
+`bun run preflight:render` passed.
 
 Do not add `SUPABASE_PROJECT_REF` to Render runtime env vars. It is local
 CLI/operations metadata for `supabase link`, not a value consumed by the

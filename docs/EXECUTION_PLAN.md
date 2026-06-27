@@ -596,20 +596,20 @@ Commit:
 git commit -m "chore(deploy): finalize Render backend deployment"
 ```
 
-Status: partially progressed. The dedicated RAG Lens Supabase project has all
-checked-in migrations applied, Supabase advisors return no warning-level issues,
-cleanup dry-run succeeds, and
-`bun run preflight:render` now validates local package/Blueprint invariants
-before Render cloud resource creation. The local `main` branch currently
-contains deployment-readiness commits that are ahead of `origin/main`; do not
-push them unless the user explicitly asks. Render will not see those local
-commits until they are published to GitHub. The Blueprint is configured for
-hosted V1 with `RAG_RETRIEVAL_BACKEND=supabase`; local lexical retrieval remains
-a development fallback. The active Render CLI workspace has been corrected to
-`rag-lens` (`tea-d8vvqob7uimc738uflsg`), but the `rag-lens` workspace currently
-has no services and Blueprint validation fails with `need_payment_info` on the
-starter cleanup cron. Remove the wrong-workspace `rag-lens` and `rag-lens-web`
-services from `argus-prod` only after explicit project-owner confirmation.
+Status: implemented for the current backend/app deployment. The dedicated RAG
+Lens Supabase project has all checked-in migrations applied, Supabase advisors
+return no warning-level issues, cleanup dry-run succeeds, and
+`bun run preflight:render` validates local package/Blueprint invariants before
+Render cloud resource creation. The deployment commits were pushed to GitHub
+after explicit approval so Render could build the current `main` branch. The
+Blueprint is configured for hosted V1 with `RAG_RETRIEVAL_BACKEND=supabase`;
+local lexical retrieval remains a development fallback. The active Render CLI
+workspace is `rag-lens` (`tea-d8vvqob7uimc738uflsg`). The dedicated workspace
+now contains `rag-lens` (`srv-d900drho3t8c73bpvr80`) at
+`https://rag-lens-mx20.onrender.com` and `rag-lens-session-cleanup`
+(`crn-d900e86q1p3s73aal01g`). Both deploys are live on commit
+`2f88c49effd1d5e3819f9fd3fc886aeec9b7704a`, and live smoke checks passed for
+health, source catalog, and one Supabase pgvector plus OpenRouter query.
 
 ### Slice 12 - Portfolio Polish
 
@@ -641,9 +641,8 @@ git commit -m "docs: polish RAG Lens portfolio materials"
 Status: implemented for the current portfolio package. README now includes
 screenshots, architecture, setup, environment notes, demo flow, current status,
 and known limitations. Browser QA captured the landing page and a completed
-workbench trace on June 27, 2026. Render deployment remains blocked until the
-dedicated `rag-lens` workspace passes Blueprint validation; current validation
-fails with `need_payment_info` on the starter cleanup cron.
+workbench trace on June 27, 2026. Render app/backend deployment is live in the
+dedicated `rag-lens` workspace at `https://rag-lens-mx20.onrender.com`.
 
 ## Review Checklist
 

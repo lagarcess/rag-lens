@@ -88,8 +88,9 @@ As of June 27, 2026:
   Supabase vector retrieval.
 - `bun run preflight:render` is the required local package, Blueprint, and
   workspace guard before Render cloud resource changes.
-- Render deployment is intentionally blocked until the wrong-workspace services
-  in `argus-prod` are removed and the `rag-lens` workspace can pass Blueprint
-  validation.
+- Render services now live in the dedicated `rag-lens` workspace:
+  `rag-lens` (`srv-d900drho3t8c73bpvr80`) and
+  `rag-lens-session-cleanup` (`crn-d900e86q1p3s73aal01g`).
+- The current Render web URL is `https://rag-lens-mx20.onrender.com`.
 - Public route hardening, upload cleanup, trace persistence, and experiment
   comparison slices are implemented and committed.
