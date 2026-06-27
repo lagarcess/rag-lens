@@ -1,5 +1,8 @@
 import { createClient } from "@supabase/supabase-js";
 import { getSupabaseAdminEnv } from "./env";
+import { assertServerRuntime } from "./server-runtime";
+
+assertServerRuntime();
 
 export function createSupabaseAdminClient() {
   const env = getSupabaseAdminEnv();

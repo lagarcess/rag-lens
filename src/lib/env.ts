@@ -1,4 +1,8 @@
 import { z } from "zod";
+import { RAG_LIMITS } from "./rag-config";
+import { assertServerRuntime } from "./server-runtime";
+
+assertServerRuntime();
 
 const booleanStringSchema = z
   .union([z.boolean(), z.string()])
@@ -40,6 +44,17 @@ const perplexityEmbeddingEnvSchema = z.object({
 
 const ragRuntimeEnvSchema = z.object({
   RAG_RETRIEVAL_BACKEND: z.enum(["local", "supabase"]).default("local"),
+});
+
+const retentionEnvSchema = z.object({
+  RAG_SESSION_SOFT_TTL_HOURS: z.coerce
+    .number()
+    .positive()
+    .default(RAG_LIMITS.softSessionTtlHours),
+  RAG_SESSION_HARD_TTL_HOURS: z.coerce
+    .number()
+    .positive()
+    .default(RAG_LIMITS.hardSessionTtlHours),
 });
 
 const openRouterEnvSchema = z.object({
@@ -106,6 +121,21 @@ export function getRagRuntimeEnvFrom(
 
   return {
     retrievalBackend: env.RAG_RETRIEVAL_BACKEND,
+  };
+}
+
+export function getRetentionEnv() {
+  return getRetentionEnvFrom(process.env);
+}
+
+export function getRetentionEnvFrom(
+  source: Record<string, string | undefined>,
+) {
+  const env = retentionEnvSchema.parse(source);
+
+  return {
+    softSessionTtlHours: env.RAG_SESSION_SOFT_TTL_HOURS,
+    hardSessionTtlHours: env.RAG_SESSION_HARD_TTL_HOURS,
   };
 }
 

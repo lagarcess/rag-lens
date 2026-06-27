@@ -26,14 +26,16 @@ export async function GET(
 
     return Response.json({ traces });
   } catch (error) {
+    if (error instanceof TracePersistenceError) {
+      return Response.json(
+        { error: "Trace history is unavailable for this session." },
+        { status: error.statusCode },
+      );
+    }
+
     return Response.json(
-      {
-        error:
-          error instanceof Error
-            ? error.message
-            : "Unable to list trace history",
-      },
-      { status: error instanceof TracePersistenceError ? error.statusCode : 500 },
+      { error: "Unable to list trace history." },
+      { status: 500 },
     );
   }
 }

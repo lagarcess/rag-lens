@@ -53,6 +53,18 @@ services:
         value: "true"
       - key: RAG_RETRIEVAL_BACKEND
         value: local
+      - key: RAG_SESSION_SOFT_TTL_HOURS
+        value: "2"
+      - key: RAG_SESSION_HARD_TTL_HOURS
+        value: "23.5"
+      - key: RAG_RATE_LIMIT_WINDOW_MS
+        value: "60000"
+      - key: RAG_RATE_LIMIT_QUERY_MAX
+        value: "20"
+      - key: RAG_RATE_LIMIT_UPLOAD_MAX
+        value: "6"
+      - key: RAG_RATE_LIMIT_SESSION_MAX
+        value: "10"
 
   - type: cron
     name: rag-lens-session-cleanup

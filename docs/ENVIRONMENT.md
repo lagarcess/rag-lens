@@ -29,6 +29,12 @@ These must never use `NEXT_PUBLIC_`:
 - `OPENROUTER_REASONING_EFFORT`
 - `OPENROUTER_REASONING_EXCLUDE`
 - `RAG_RETRIEVAL_BACKEND`
+- `RAG_SESSION_SOFT_TTL_HOURS`
+- `RAG_SESSION_HARD_TTL_HOURS`
+- `RAG_RATE_LIMIT_WINDOW_MS`
+- `RAG_RATE_LIMIT_QUERY_MAX`
+- `RAG_RATE_LIMIT_UPLOAD_MAX`
+- `RAG_RATE_LIMIT_SESSION_MAX`
 - `CLEANUP_BATCH_SIZE`
 
 ## Defaults
@@ -41,3 +47,7 @@ V1 defaults:
 - Chat model: `deepseek/deepseek-v4-flash`
 - Retrieval backend: `local` until Supabase examples are seeded, then `supabase`
 - Upload bucket: `rag-uploads`
+- Anonymous session soft TTL: `2` hours.
+- Anonymous session hard purge target: `23.5` hours.
+- Public API throttles: `20` queries, `6` uploads, and `10` session creates per
+  minute per client address on the active app instance.

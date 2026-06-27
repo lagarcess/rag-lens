@@ -5,6 +5,7 @@ import {
   getOpenRouterEnvFrom,
   getPerplexityEmbeddingEnvFrom,
   getRagRuntimeEnvFrom,
+  getRetentionEnvFrom,
 } from "./env";
 
 describe("getOpenRouterEnvFrom", () => {
@@ -78,6 +79,20 @@ describe("getRagRuntimeEnvFrom", () => {
       getRagRuntimeEnvFrom({ RAG_RETRIEVAL_BACKEND: "supabase" }),
     ).toEqual({
       retrievalBackend: "supabase",
+    });
+  });
+});
+
+describe("getRetentionEnvFrom", () => {
+  test("parses anonymous session retention overrides", () => {
+    expect(
+      getRetentionEnvFrom({
+        RAG_SESSION_SOFT_TTL_HOURS: "4",
+        RAG_SESSION_HARD_TTL_HOURS: "23.5",
+      }),
+    ).toEqual({
+      softSessionTtlHours: 4,
+      hardSessionTtlHours: 23.5,
     });
   });
 });

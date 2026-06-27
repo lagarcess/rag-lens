@@ -16,9 +16,14 @@ The Bun test suite covers:
 
 - Base64 int8 embedding decode.
 - L2 normalization.
+- Public API throttling before expensive session, upload, query, provider, and
+  database paths.
+- Public-safe API error responses for query setup failures.
+- Server-runtime assertions for secret-bearing modules.
 - Chunking boundaries and overlap.
 - Prompt assembly.
 - Session expiry calculations.
+- Anonymous session retention env parsing.
 - Upload validation.
 - Upload extraction.
 - Upload chunk-row construction and ingestion orchestration.

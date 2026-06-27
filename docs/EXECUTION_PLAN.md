@@ -481,6 +481,14 @@ Commit:
 git commit -m "chore(deploy): finalize Render backend deployment"
 ```
 
+Status: partially progressed. GitHub `main` is pushed, the dedicated RAG Lens
+Supabase project has all checked-in migrations applied, Supabase advisors return
+no warning-level issues, cleanup dry-run succeeds, and `render.yaml` validates.
+Do not deploy the Render services yet: the active Render account currently only
+exposes `argus-prod` and `payment-ledger`, not a dedicated RAG Lens workspace.
+Create or grant access to that workspace before creating the backend web service
+or cleanup cron.
+
 ### Slice 12 - Portfolio Polish
 
 Goal: Make the project understandable and credible for recruiters and GitHub

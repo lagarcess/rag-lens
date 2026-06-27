@@ -1,9 +1,21 @@
+import { getRetentionEnv } from "@/lib/env";
+import { getPublicApiRateLimitResponse } from "@/lib/public-api-rate-limit";
 import { createSessionTimestamps } from "@/lib/rag-retention";
 import { createSupabaseAdminClient } from "@/lib/supabase-admin";
 
-export async function POST() {
+export async function POST(request: Request) {
+  const rateLimitResponse = getPublicApiRateLimitResponse(request, "session");
+
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
+
   const supabase = createSupabaseAdminClient();
-  const timestamps = createSessionTimestamps();
+  const retention = getRetentionEnv();
+  const timestamps = createSessionTimestamps(undefined, {
+    softTtlHours: retention.softSessionTtlHours,
+    hardTtlHours: retention.hardSessionTtlHours,
+  });
 
   const { data, error } = await supabase
     .from("rag_sessions")

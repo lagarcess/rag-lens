@@ -24,6 +24,11 @@ The earlier provisional project in `ARGUS QUANTITATIVE` was deleted. Add the
 publishable key and service role key from the `RAG Lens` project dashboard to
 local `.env` and Render environment variables.
 
+Status on June 27, 2026: the local CLI is linked to the dedicated `RAG Lens`
+project ref `yyqmlfisijerlcrbcuvy`, all checked-in migrations are applied on
+the remote project, security and performance advisors return no warning-level
+issues, and `bun run cleanup:sessions:dry-run` succeeds with count-only output.
+
 Apply migrations after a hosted project exists:
 
 ```bash
@@ -43,7 +48,25 @@ Use the Supabase dashboard for API keys:
 - `rag-lens`: Next.js web service.
 - `rag-lens-session-cleanup`: cron job every 30 minutes.
 
-Provisional hosted web service:
+Current blocker on June 27, 2026: do not deploy from the currently selected
+Render workspace. The Render CLI account only exposes these workspaces:
+
+- `argus-prod`
+- `payment-ledger`
+
+Neither is the dedicated `RAG Lens` workspace required for this project. Create
+or grant access to a dedicated Render workspace named `RAG Lens`, then run:
+
+```bash
+render workspaces
+render workspace set <rag-lens-workspace-id>
+render workspace current -o json
+```
+
+Only after `render workspace current` shows the dedicated RAG Lens workspace
+should the web service or cleanup cron be created.
+
+Provisional hosted web service in the wrong workspace:
 
 - Name: `rag-lens`
 - Service ID: `srv-d8vmhc3tqb8s73evn9f0`
@@ -51,10 +74,10 @@ Provisional hosted web service:
 - Plan: `free`
 - Region: `ohio`
 
-These resources were created during setup in existing provider workspaces. The
-target production posture is a dedicated Supabase organization/project and a
-dedicated Render workspace for `rag-lens`; do not treat the provisional
-resources as the long-term home for the project.
+These resources were created during setup in `argus-prod`. Do not treat them as
+the long-term home for the project, and do not use them for recruiter-facing
+deployment evidence. Remove or ignore them after the dedicated Render workspace
+is available.
 
 Do not use the Render URL as the public share link for the project. Render is
 the app/backend origin for the sandbox and warmup path. The recruiter-facing
@@ -63,10 +86,13 @@ entry point should eventually be a static GitHub Pages landing page.
 Render services require a pushed Git remote for the normal Blueprint flow. After GitHub exists:
 
 ```bash
-render blueprint launch
+render blueprints validate ./render.yaml
 ```
 
-or create from the Render dashboard using the checked-in `render.yaml`.
+The CLI available in this workspace can validate Blueprints but does not expose
+a Blueprint launch command. Create the services from the Render dashboard using
+the checked-in `render.yaml`, or use `render services create` only after the
+dedicated workspace is selected.
 
 Note: the cleanup cron is intentionally safe to defer. Render rejected `free`
 for cron services in CLI validation, so the Blueprint uses `starter`. Create it
@@ -152,6 +178,13 @@ Set these on the `rag-lens` web service:
 - `OPENROUTER_MAX_COMPLETION_TOKENS`
 - `OPENROUTER_REASONING_EFFORT`
 - `OPENROUTER_REASONING_EXCLUDE`
+- `RAG_RETRIEVAL_BACKEND`
+- `RAG_SESSION_SOFT_TTL_HOURS`
+- `RAG_SESSION_HARD_TTL_HOURS`
+- `RAG_RATE_LIMIT_WINDOW_MS`
+- `RAG_RATE_LIMIT_QUERY_MAX`
+- `RAG_RATE_LIMIT_UPLOAD_MAX`
+- `RAG_RATE_LIMIT_SESSION_MAX`
 
 ### Cleanup cron
 

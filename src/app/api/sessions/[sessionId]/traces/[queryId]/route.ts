@@ -27,12 +27,16 @@ export async function GET(
 
     return Response.json(trace);
   } catch (error) {
+    if (error instanceof TracePersistenceError) {
+      return Response.json(
+        { error: "Trace not found or session expired." },
+        { status: error.statusCode },
+      );
+    }
+
     return Response.json(
-      {
-        error:
-          error instanceof Error ? error.message : "Unable to load trace",
-      },
-      { status: error instanceof TracePersistenceError ? error.statusCode : 500 },
+      { error: "Unable to load trace." },
+      { status: 500 },
     );
   }
 }

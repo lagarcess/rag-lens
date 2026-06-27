@@ -1,5 +1,6 @@
 import { RAG_LIMITS } from "@/lib/rag-config";
 import { getPerplexityEmbeddingEnv } from "@/lib/env";
+import { getPublicApiRateLimitResponse } from "@/lib/public-api-rate-limit";
 import { embedTextsWithPerplexity } from "@/lib/rag/perplexity-embeddings";
 import { createSupabaseUploadIngestionRepository } from "@/lib/rag/supabase-upload-ingestion-store";
 import { ingestUploadedDocument } from "@/lib/rag/upload-ingestion";
@@ -19,6 +20,12 @@ const MAX_UPLOAD_REQUEST_BYTES = RAG_LIMITS.maxAnonymousBytes + 1024 * 1024;
 
 export async function POST(request: Request) {
   try {
+    const rateLimitResponse = getPublicApiRateLimitResponse(request, "upload");
+
+    if (rateLimitResponse) {
+      return rateLimitResponse;
+    }
+
     if (isOversizedUploadRequest(request)) {
       return Response.json(
         { error: "Upload request is too large." },

@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { getPublicApiRateLimitResponse } from "@/lib/public-api-rate-limit";
 import {
   getOpenRouterEnv,
   getPerplexityEmbeddingEnv,
@@ -30,6 +31,12 @@ const queryRequestSchema = z.object({
 });
 
 export async function POST(request: Request) {
+  const rateLimitResponse = getPublicApiRateLimitResponse(request, "query");
+
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
+
   const parsed = queryRequestSchema.safeParse(await request.json());
 
   if (!parsed.success) {
@@ -165,14 +172,16 @@ export async function POST(request: Request) {
 
     return Response.json(result);
   } catch (error) {
+    if (error instanceof TracePersistenceError) {
+      return Response.json(
+        { error: "Session not found or expired." },
+        { status: error.statusCode },
+      );
+    }
+
     return Response.json(
-      {
-        error:
-          error instanceof Error
-            ? error.message
-            : "Unable to run RAG trace for this request",
-      },
-      { status: error instanceof TracePersistenceError ? error.statusCode : 404 },
+      { error: "Unable to run RAG trace for this request." },
+      { status: 500 },
     );
   }
 }
