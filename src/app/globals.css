@@ -25,12 +25,14 @@
   --control-muted: #66736d;
   --control-selected: #ffffff;
   --control-selected-fg: #151917;
-  --trace-surface: #090a0a;
-  --trace-card: #151817;
-  --trace-code-bg: rgba(0, 0, 0, 0.2);
-  --trace-border: #303834;
-  --trace-foreground: #f4f7f5;
-  --trace-muted: #a8b4af;
+  --range-track: #dbe5df;
+  --trace-surface: #141c18;
+  --trace-card: #1b2520;
+  --trace-code-bg: rgba(248, 250, 249, 0.045);
+  --trace-border: #303f38;
+  --trace-foreground: #edf5f1;
+  --trace-muted: #b3bfb9;
+  --trace-accent: #86d0bd;
   --danger: #d64545;
   --warning: #b7791f;
 }
@@ -60,12 +62,14 @@ html[data-theme="dark"] {
   --control-muted: #8d9893;
   --control-selected: #f4f7f5;
   --control-selected-fg: #101211;
-  --trace-surface: #090a0a;
-  --trace-card: #151817;
-  --trace-code-bg: rgba(0, 0, 0, 0.2);
-  --trace-border: #303834;
-  --trace-foreground: #f4f7f5;
-  --trace-muted: #a8b4af;
+  --range-track: #29322e;
+  --trace-surface: #0f1512;
+  --trace-card: #151d19;
+  --trace-code-bg: rgba(248, 250, 249, 0.04);
+  --trace-border: #29352f;
+  --trace-foreground: #eaf2ee;
+  --trace-muted: #a6b4ae;
+  --trace-accent: #78c7b5;
 }
 
 @theme inline {
@@ -101,6 +105,60 @@ html[data-theme="dark"] .theme-logo-dark {
 
 input {
   color: var(--foreground);
+}
+
+.rag-range {
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+  height: 1rem;
+}
+
+.rag-range::-webkit-slider-runnable-track {
+  background: linear-gradient(
+    to right,
+    var(--accent-strong) 0 var(--range-progress, 0%),
+    var(--range-track) var(--range-progress, 0%) 100%
+  );
+  border-radius: 999px;
+  height: 0.25rem;
+}
+
+.rag-range::-webkit-slider-thumb {
+  appearance: none;
+  background: var(--surface);
+  border: 2px solid var(--accent-strong);
+  border-radius: 999px;
+  box-shadow: 0 1px 4px rgba(21, 25, 23, 0.16);
+  height: 1rem;
+  margin-top: -0.375rem;
+  width: 1rem;
+}
+
+.rag-range::-moz-range-track {
+  background: var(--range-track);
+  border-radius: 999px;
+  height: 0.25rem;
+}
+
+.rag-range::-moz-range-progress {
+  background: var(--accent-strong);
+  border-radius: 999px;
+  height: 0.25rem;
+}
+
+.rag-range::-moz-range-thumb {
+  background: var(--surface);
+  border: 2px solid var(--accent-strong);
+  border-radius: 999px;
+  box-shadow: 0 1px 4px rgba(21, 25, 23, 0.16);
+  height: 1rem;
+  width: 1rem;
+}
+
+.rag-range:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
 }
 
 ::selection {

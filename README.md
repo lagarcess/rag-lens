@@ -8,12 +8,6 @@ angle. RAG Play shows the pipeline as a demo. RAG Lens turns the pipeline into a
 workbench with session-scoped documents, Supabase vector retrieval, persisted
 traces, and OpenRouter answer generation.
 
-## Screenshots
-
-![RAG Lens landing page](docs/assets/screenshots/landing.png)
-
-![RAG Lens workbench](docs/assets/screenshots/workbench.png)
-
 ## What It Demonstrates
 
 - Temporary anonymous uploads with size limits and cleanup.
@@ -24,6 +18,22 @@ traces, and OpenRouter answer generation.
   profiles.
 - Server-side provider boundaries so Supabase service keys, Perplexity keys,
   and OpenRouter keys never reach the browser.
+
+## Portfolio Highlights
+
+RAG Lens is built as a full-stack AI systems project rather than a static
+notebook or toy chat UI:
+
+- It shows the full RAG loop from document ingestion to answer generation.
+- It makes failure modes inspectable through retrieved chunks, scores, prompts,
+  timings, and model metadata.
+- It uses real hosted infrastructure: Render for the app and cleanup cron,
+  Supabase for storage plus `pgvector`, Perplexity for embeddings, and
+  OpenRouter for low-cost answer generation.
+- It treats public uploads as temporary demo data with explicit limits,
+  immediate delete, and scheduled cleanup.
+- It keeps examples first-party so visitors can try the app without uploading
+  private files.
 
 ## Demo Flow
 
@@ -126,9 +136,11 @@ bun run build
 
 - GitHub: [lagarcess/rag-lens](https://github.com/lagarcess/rag-lens)
 - Supabase: hosted project in the dedicated `RAG Lens` organization.
-- Render: blueprint validates and is configured for Supabase vector retrieval,
-  but deployment is blocked until a dedicated RAG Lens Render workspace is
-  available. Run `bun run preflight:render` before any Render dashboard,
+- Render: web service and cleanup cron are live in the dedicated `rag-lens`
+  workspace. The assigned app origin is
+  `https://rag-lens-mx20.onrender.com`; this is treated as the sandbox/backend
+  origin, not the long-term public share URL.
+- Deployment guard: run `bun run preflight:render` before any Render dashboard,
   Blueprint, or CLI creation step. Do not attach services to existing unrelated
   Render workspaces.
 

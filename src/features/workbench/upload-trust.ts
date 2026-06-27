@@ -14,6 +14,8 @@ export interface UploadTrustSummary {
   currentUploadedBytes: number;
   fileCountLabel: string;
   totalBytesLabel: string;
+  fileUsageLabel: string;
+  totalUsageLabel: string;
 }
 
 export function summarizeUploadTrust(
@@ -35,6 +37,10 @@ export function summarizeUploadTrust(
     currentUploadedBytes,
     fileCountLabel: `${activeDocuments.length} / ${RAG_LIMITS.maxAnonymousFiles} files`,
     totalBytesLabel: `${formatCompactBytes(currentUploadedBytes)} / ${formatCompactBytes(
+      RAG_LIMITS.maxAnonymousBytes,
+    )}`,
+    fileUsageLabel: `${activeDocuments.length} of ${RAG_LIMITS.maxAnonymousFiles}`,
+    totalUsageLabel: `${formatCompactBytes(currentUploadedBytes)} of ${formatCompactBytes(
       RAG_LIMITS.maxAnonymousBytes,
     )}`,
   };

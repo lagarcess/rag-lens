@@ -12,51 +12,54 @@ describe("buildTraceEvidence", () => {
   test("summarizes the trace stages that explain a RAG answer", () => {
     const evidence = buildTraceEvidence(createTrace());
 
+    expect(evidence.summary).toBe(
+      "2 evidence matches found; 1 chunk sent to the model prompt.",
+    );
     expect(evidence.stages).toEqual([
       {
-        label: "extraction",
+        label: "Read documents",
         value: "1 doc",
         detail: "guide.md · 1,280 chars",
       },
       {
-        label: "chunking",
+        label: "Split into chunks",
         value: "4 chunks",
-        detail: "800 size · 120 overlap",
+        detail: "800 characters each · 120 overlap",
       },
       {
-        label: "embedding",
+        label: "Compared meaning",
         value: "perplexity",
         detail: "query: pplx-query · docs: pplx-doc",
       },
       {
-        label: "retrieval",
-        value: "supabase-pgvector-cosine",
-        detail: "2 rows · 1 selected",
+        label: "Found evidence",
+        value: "2 matches",
+        detail: "2 rows · 1 sent to prompt · supabase-pgvector-cosine",
       },
       {
-        label: "prompt",
+        label: "Built prompt",
         value: "53 chars",
         detail: "1 context chunk",
       },
       {
-        label: "answer",
+        label: "Generated answer",
         value: "openrouter",
         detail: "deepseek/deepseek-v4-flash · stop",
       },
     ]);
     expect(evidence.timingRows).toEqual([
-      ["total", "42 ms"],
-      ["retrieval", "17 ms"],
-      ["generation", "25 ms"],
+      ["full run", "42 ms"],
+      ["finding evidence", "17 ms"],
+      ["writing answer", "25 ms"],
     ]);
     expect(evidence.modelRows).toEqual([
-      ["embedding", "perplexity / pplx-base"],
-      ["query model", "pplx-query"],
-      ["document model", "pplx-doc"],
-      ["answer", "openrouter / deepseek/deepseek-v4-flash"],
-      ["finish", "stop"],
-      ["tokens", "118 in · 24 out · 142 total"],
-      ["persistence", "session / supabase-trace-history"],
+      ["embedding model", "perplexity / pplx-base"],
+      ["question vectors", "pplx-query"],
+      ["document vectors", "pplx-doc"],
+      ["chat model", "openrouter / deepseek/deepseek-v4-flash"],
+      ["finish reason", "stop"],
+      ["token use", "118 in · 24 out · 142 total"],
+      ["stored as", "session / supabase-trace-history"],
     ]);
     expect(evidence.warnings).toEqual(["Low similarity"]);
   });
@@ -142,7 +145,7 @@ describe("buildAnswerCitations", () => {
     expect(citations).toEqual([
       {
         label: "[1]",
-        detail: "guide.md · chunk-a · similarity 0.810",
+        detail: "guide.md · chunk-a · match score 0.810",
       },
     ]);
   });

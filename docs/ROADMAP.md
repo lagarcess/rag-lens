@@ -218,7 +218,8 @@ Deliverables:
 
 - Render deployment.
 - Supabase hosted project and migrations applied.
-- README with screenshots and architecture diagram.
+- README with architecture diagram and text-first portfolio copy; screenshots
+  stay deferred until the UI stabilizes.
 - Demo data seeded.
 - Environment variable checklist.
 - Final browser QA.
@@ -229,6 +230,43 @@ Verification:
 - Example corpus works without upload.
 - Upload session expires and cleans up.
 - No secrets in repository or browser bundle.
+
+## Deferred Slice - Beginner Trace Guidance
+
+Goal: Make the workbench understandable to visitors who do not already know RAG
+terminology.
+
+Problem:
+
+- The current center workbench and right trace inspector are technically useful
+  but assume the user can already interpret terms like `top_k`, chunk overlap,
+  similarity score, prompt length, embedding mode, and shared chunks.
+- The comparison panel shows accurate A/B data, but it needs an explicit
+  "what changed / did it help / why" summary for first-time RAG learners.
+- Locked upload controls are technically correct, but the reason should be
+  easier to understand without knowing how indexing works.
+
+Deliverables:
+
+- Plain-language trace summary above technical metrics.
+- Beginner labels or tooltips for `top_k`, chunk size, overlap, embeddings,
+  similarity score, prompt length, and citations.
+- Trace comparison summary that states whether the variant improved retrieval,
+  changed the selected evidence, expanded the prompt, or had no practical
+  effect.
+- Right-panel progressive disclosure: concise stage overview first, raw IDs and
+  prompt details second.
+- Clear locked-state explanation for uploads: chunk size, overlap, and
+  embedding mode are fixed after upload because changing them requires
+  re-chunking and re-embedding the uploaded file.
+
+Verification:
+
+- A non-RAG user can explain what happened after one example query.
+- A/B comparison includes an answer in plain English before raw metrics.
+- Locked upload controls explain what is locked, why, and what can still be
+  changed.
+- Browser QA covers empty state, completed trace, comparison, and upload mode.
 
 ## Deferred Slice - Static Landing And Warmup
 

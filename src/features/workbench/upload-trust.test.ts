@@ -13,6 +13,8 @@ describe("summarizeUploadTrust", () => {
       currentUploadedBytes: 0,
       fileCountLabel: "0 / 3 files",
       totalBytesLabel: "0 B / 10 MB",
+      fileUsageLabel: "0 of 3",
+      totalUsageLabel: "0 B of 10 MB",
     });
   });
 
@@ -37,6 +39,8 @@ describe("summarizeUploadTrust", () => {
       currentUploadedBytes: 2048,
       fileCountLabel: "2 / 3 files",
       totalBytesLabel: "2 KB / 10 MB",
+      fileUsageLabel: "2 of 3",
+      totalUsageLabel: "2 KB of 10 MB",
     });
   });
 

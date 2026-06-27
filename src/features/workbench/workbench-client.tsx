@@ -8,6 +8,7 @@ import {
   Database,
   FileText,
   GitBranch,
+  Info,
   Loader2,
   RotateCcw,
   ShieldCheck,
@@ -15,11 +16,13 @@ import {
   UploadCloud,
 } from "lucide-react";
 import {
+  type CSSProperties,
   ChangeEvent,
   FormEvent,
   useEffect,
   useMemo,
   useReducer,
+  useRef,
   useState,
 } from "react";
 
@@ -59,10 +62,18 @@ export function WorkbenchClient() {
     createInitialWorkbenchState,
   );
   const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const uploadInputRef = useRef<HTMLInputElement | null>(null);
   const selectedSource = state.sources.find(
     (source) => source.slug === state.selectedCorpusSlug,
   );
   const selectedUploadSource = selectedSource?.sourceKind === "upload";
+  const exampleSources = state.sources.filter(
+    (source) => source.sourceKind === "example",
+  );
+  const uploadSources = state.sources.filter(
+    (source) => source.sourceKind === "upload",
+  );
   const result = state.query.result;
   const isLoading = state.query.status === "loading";
   const isUploading =
@@ -75,6 +86,9 @@ export function WorkbenchClient() {
   const uploadTrust = useMemo(
     () => summarizeUploadTrust(state.uploads.documents),
     [state.uploads.documents],
+  );
+  const hasReadyUpload = state.uploads.documents.some(
+    (document) => document.status === "ready",
   );
 
   useEffect(() => {
@@ -153,6 +167,18 @@ export function WorkbenchClient() {
       window.clearInterval(intervalId);
     };
   }, [heartbeatSessionId]);
+
+  useEffect(() => {
+    if (!toastMessage) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setToastMessage(null);
+    }, 6000);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [toastMessage]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -264,6 +290,12 @@ export function WorkbenchClient() {
 
       dispatch({ type: "uploadSucceeded", document });
       setUploadFile(null);
+      if (uploadInputRef.current) {
+        uploadInputRef.current.value = "";
+      }
+      setToastMessage(
+        "Document uploaded. Session files are removable anytime and deleted within 24 hours.",
+      );
     } catch (error) {
       dispatch({
         type: "uploadFailed",
@@ -288,6 +320,15 @@ export function WorkbenchClient() {
       const result = await deleteAnonymousSession(state.session.sessionId);
       dispatch({ type: "sessionDeleted", warning: result.warning });
       setUploadFile(null);
+      if (uploadInputRef.current) {
+        uploadInputRef.current.value = "";
+      }
+      setToastMessage(
+        result.purgeStatus === "completed"
+          ? "Uploaded documents deleted. Session files, chunks, and traces were removed."
+          : (result.warning ??
+              "Delete requested. Cleanup will retry automatically if anything could not be removed immediately."),
+      );
     } catch (error) {
       dispatch({
         type: "sessionDeleteFailed",
@@ -298,7 +339,18 @@ export function WorkbenchClient() {
   }
 
   return (
-    <section className="mx-auto grid w-full max-w-7xl min-w-0 flex-1 gap-6 px-6 py-8 lg:grid-cols-[280px_minmax(0,1fr)_380px]">
+    <section className="mx-auto grid w-full max-w-[1800px] min-w-0 flex-1 gap-6 px-6 py-8 lg:grid-cols-[280px_minmax(0,1fr)_380px] xl:grid-cols-[300px_minmax(0,1fr)_420px] 2xl:grid-cols-[320px_minmax(0,1fr)_460px] lg:px-8">
+      {toastMessage ? (
+        <div
+          className="fixed bottom-6 right-6 z-50 max-w-sm rounded-lg border border-[var(--border)] bg-[var(--surface)] p-4 text-sm leading-6 text-[var(--foreground)] shadow-lg"
+          role="status"
+        >
+          <div className="flex items-start gap-3">
+            <ShieldCheck className="mt-0.5 size-4 shrink-0 text-[var(--accent-strong)]" />
+            <p>{toastMessage}</p>
+          </div>
+        </div>
+      ) : null}
       <aside className="min-w-0 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-sm font-semibold">Knowledge sources</h2>
@@ -306,48 +358,20 @@ export function WorkbenchClient() {
             sources
           </span>
         </div>
-        <div className="space-y-2">
-          {state.sources.map((source) => {
-            const selected = source.slug === state.selectedCorpusSlug;
-            const ready = source.status === "ready";
-
-            return (
-              <button
-                className={[
-                  "flex w-full items-start gap-3 rounded-lg border p-3 text-left transition",
-                  selected
-                    ? "border-[var(--accent-strong)] bg-[var(--surface-muted)]"
-                    : "border-[var(--border)] bg-[var(--surface-elevated)]",
-                  ready
-                    ? "hover:border-[var(--accent-strong)]"
-                    : "cursor-not-allowed opacity-60",
-                ].join(" ")}
-                disabled={!ready}
-                aria-pressed={selected}
-                key={source.slug}
-                onClick={() =>
-                  dispatch({
-                    type: "sourceSelected",
-                    corpusSlug: source.slug,
-                  })
-                }
-                type="button"
-              >
-                <FileText className="mt-0.5 size-4 text-[var(--accent-strong)]" />
-                <span>
-                  <span className="block text-sm font-medium">
-                    {source.title}
-                  </span>
-                  <span className="font-mono text-[11px] text-[var(--muted)]">
-                    {ready ? formatSourceCount(source) : "coming soon"}
-                  </span>
-                  <span className="mt-1 block text-xs leading-5 text-[var(--muted)]">
-                    {source.description}
-                  </span>
-                </span>
-              </button>
-            );
-          })}
+        <div className="space-y-4">
+          <SourcePickerGroup
+            dispatch={dispatch}
+            selectedCorpusSlug={state.selectedCorpusSlug}
+            sources={exampleSources}
+            title="Examples"
+          />
+          <SourcePickerGroup
+            dispatch={dispatch}
+            emptyText="Upload a file below to add a session source."
+            selectedCorpusSlug={state.selectedCorpusSlug}
+            sources={uploadSources}
+            title="Uploaded documents"
+          />
         </div>
         <form
           className="mt-4 rounded-lg border border-dashed border-[var(--border)] bg-[var(--surface-muted)] p-4"
@@ -361,36 +385,24 @@ export function WorkbenchClient() {
             Do not upload secrets, private files, or personal data. Uploads stay
             session-scoped, removable on demand, and deleted within 24 hours.
           </p>
-          <dl className="mt-3 grid grid-cols-2 gap-2 font-mono text-[11px] text-[var(--muted)]">
-            <div className="rounded-md border border-[var(--border)] bg-[var(--surface-elevated)] p-2">
-              <dt>files</dt>
-              <dd className="mt-1 text-[var(--foreground)]">
-                {uploadTrust.fileCountLabel}
-              </dd>
-            </div>
-            <div className="rounded-md border border-[var(--border)] bg-[var(--surface-elevated)] p-2">
-              <dt>total</dt>
-              <dd className="mt-1 text-[var(--foreground)]">
-                {uploadTrust.totalBytesLabel}
-              </dd>
-            </div>
-            <div className="rounded-md border border-[var(--border)] bg-[var(--surface-elevated)] p-2">
-              <dt>active until</dt>
-              <dd className="mt-1 text-[var(--foreground)]">
-                {state.session.expiresAt
-                  ? formatDateTime(state.session.expiresAt)
-                  : "after upload"}
-              </dd>
-            </div>
-            <div className="rounded-md border border-[var(--border)] bg-[var(--surface-elevated)] p-2">
-              <dt>deleted by</dt>
-              <dd className="mt-1 text-[var(--foreground)]">
-                {state.session.hardExpiresAt
-                  ? formatDateTime(state.session.hardExpiresAt)
-                  : "within 24h"}
-              </dd>
-            </div>
-          </dl>
+          <div className="mt-3 space-y-3 rounded-md border border-[var(--border)] bg-[var(--surface-elevated)] p-3">
+            <UploadLimitMeter
+              label="Files"
+              percent={getUsagePercent(
+                uploadTrust.currentDocumentCount,
+                uploadTrust.maxFileCount,
+              )}
+              value={uploadTrust.fileUsageLabel}
+            />
+            <UploadLimitMeter
+              label="Size"
+              percent={getUsagePercent(
+                uploadTrust.currentUploadedBytes,
+                uploadTrust.maxTotalBytes,
+              )}
+              value={uploadTrust.totalUsageLabel}
+            />
+          </div>
           <label
             className="mt-4 block text-xs font-medium text-[var(--muted)]"
             htmlFor="document-upload"
@@ -402,10 +414,11 @@ export function WorkbenchClient() {
             className="mt-2 block w-full cursor-pointer rounded-md border border-[var(--border)] bg-[var(--surface-elevated)] text-xs text-[var(--muted)] file:mr-3 file:border-0 file:bg-[var(--surface)] file:px-3 file:py-2 file:text-xs file:font-medium file:text-[var(--foreground)]"
             id="document-upload"
             onChange={handleUploadFileChange}
+            ref={uploadInputRef}
             type="file"
           />
           <button
-            className="mt-3 inline-flex min-h-9 w-full items-center justify-center gap-2 rounded-md bg-[var(--foreground)] px-3 text-sm font-semibold text-[var(--background)] disabled:cursor-not-allowed disabled:opacity-55"
+            className="mt-3 inline-flex min-h-9 w-full items-center justify-center gap-2 rounded-md bg-[var(--accent-strong)] px-3 text-sm font-semibold text-[var(--accent-button-fg)] transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-55"
             disabled={!uploadFile || isUploading}
             type="submit"
           >
@@ -421,22 +434,33 @@ export function WorkbenchClient() {
               </>
             )}
           </button>
-          {state.session.expiresAt ? (
-            <div className="mt-3 flex items-center justify-between gap-3">
-              <div className="font-mono text-[11px] leading-5 text-[var(--muted)]">
-                <p>session active until {formatDateTime(state.session.expiresAt)}</p>
-                {state.session.hardExpiresAt ? (
-                  <p>uploads deleted by {formatDateTime(state.session.hardExpiresAt)}</p>
-                ) : null}
+          {hasReadyUpload && state.session.expiresAt ? (
+            <div className="mt-3 rounded-md border border-[var(--border)] bg-[var(--surface-elevated)] p-3">
+              <div className="flex items-start justify-between gap-3">
+                <p className="text-xs leading-5 text-[var(--muted)]">
+                  Session active until{" "}
+                  <span className="font-mono text-[var(--foreground)]">
+                    {formatDateTime(state.session.expiresAt)}
+                  </span>
+                  {state.session.hardExpiresAt ? (
+                    <>
+                      {" "}
+                      · deleted by{" "}
+                      <span className="font-mono text-[var(--foreground)]">
+                        {formatDateTime(state.session.hardExpiresAt)}
+                      </span>
+                    </>
+                  ) : null}
+                </p>
+                <button
+                  className="shrink-0 rounded-md border border-[var(--border)] px-2 py-1 text-xs font-medium text-[var(--muted)] transition hover:border-[var(--danger)] hover:text-[var(--danger)] disabled:cursor-not-allowed disabled:opacity-60"
+                  disabled={isDeletingSession}
+                  onClick={handleDeleteSession}
+                  type="button"
+                >
+                  {isDeletingSession ? "Deleting" : "Delete now"}
+                </button>
               </div>
-              <button
-                className="rounded-md border border-[var(--border)] px-2 py-1 text-xs font-medium text-[var(--muted)] transition hover:border-[var(--danger)] hover:text-[var(--danger)] disabled:cursor-not-allowed disabled:opacity-60"
-                disabled={isDeletingSession}
-                onClick={handleDeleteSession}
-                type="button"
-              >
-                {isDeletingSession ? "Deleting" : "Delete now"}
-              </button>
             </div>
           ) : null}
           {state.session.error ? (
@@ -604,10 +628,170 @@ function formatSourceCount(source: { documentCount: number; sourceKind: string }
   return `${source.documentCount} ${label} ${scope}`;
 }
 
+function getUsagePercent(value: number, max: number) {
+  if (max <= 0) {
+    return 0;
+  }
+
+  return Math.min(100, Math.max(0, (value / max) * 100));
+}
+
 type WorkbenchState = ReturnType<typeof createInitialWorkbenchState>;
 type WorkbenchDispatch = React.Dispatch<
   Parameters<typeof workbenchReducer>[1]
 >;
+
+function UploadLimitMeter({
+  label,
+  percent,
+  value,
+}: {
+  label: string;
+  percent: number;
+  value: string;
+}) {
+  return (
+    <div>
+      <div className="mb-1 flex items-center justify-between gap-3 text-xs">
+        <span className="font-medium text-[var(--muted)]">{label}</span>
+        <span className="font-mono text-[11px] text-[var(--foreground)]">
+          {value}
+        </span>
+      </div>
+      <div
+        aria-label={`${label} upload limit`}
+        aria-valuemax={100}
+        aria-valuemin={0}
+        aria-valuenow={Math.round(percent)}
+        className="h-1.5 rounded-full bg-[var(--range-track)]"
+        role="meter"
+      >
+        <div
+          className="h-full rounded-full bg-[var(--accent-strong)]"
+          style={{ width: `${percent}%` } as CSSProperties}
+        />
+      </div>
+    </div>
+  );
+}
+
+function SourcePickerGroup({
+  dispatch,
+  emptyText,
+  selectedCorpusSlug,
+  sources,
+  title,
+}: {
+  dispatch: WorkbenchDispatch;
+  emptyText?: string;
+  selectedCorpusSlug: string;
+  sources: WorkbenchState["sources"];
+  title: string;
+}) {
+  return (
+    <div>
+      <div className="mb-2 flex items-center justify-between gap-3">
+        <h3 className="font-mono text-[11px] uppercase tracking-normal text-[var(--muted)]">
+          {title}
+        </h3>
+        <span className="font-mono text-[10px] text-[var(--muted)]">
+          {sources.length}
+        </span>
+      </div>
+      {sources.length > 0 ? (
+        <div className="space-y-1.5">
+          {sources.map((source) => (
+            <SourcePickerRow
+              dispatch={dispatch}
+              key={source.slug}
+              selected={source.slug === selectedCorpusSlug}
+              source={source}
+            />
+          ))}
+        </div>
+      ) : (
+        <div className="rounded-lg border border-dashed border-[var(--border)] bg-[var(--surface-muted)] px-3 py-2 text-xs leading-5 text-[var(--muted)]">
+          {emptyText ?? "No sources available."}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SourcePickerRow({
+  dispatch,
+  selected,
+  source,
+}: {
+  dispatch: WorkbenchDispatch;
+  selected: boolean;
+  source: WorkbenchState["sources"][number];
+}) {
+  const ready = source.status === "ready";
+  const descriptionId = `source-description-${source.slug}`;
+  const Icon = source.sourceKind === "upload" ? UploadCloud : FileText;
+
+  return (
+    <button
+      aria-describedby={descriptionId}
+      aria-pressed={selected}
+      className={[
+        "group/source relative flex min-h-12 w-full items-center gap-2 rounded-lg border px-3 py-2 text-left transition",
+        selected
+          ? "border-[var(--accent-strong)] bg-[var(--surface-muted)]"
+          : "border-[var(--border)] bg-[var(--surface-elevated)]",
+        ready
+          ? "hover:border-[var(--accent-strong)] hover:bg-[var(--surface-muted)]"
+          : "cursor-not-allowed opacity-60",
+      ].join(" ")}
+      disabled={!ready}
+      onClick={() =>
+        dispatch({
+          type: "sourceSelected",
+          corpusSlug: source.slug,
+        })
+      }
+      type="button"
+    >
+      <Icon className="size-4 shrink-0 text-[var(--accent-strong)]" />
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-sm font-medium">
+          {source.title}
+        </span>
+        <span className="mt-0.5 flex items-center gap-2 font-mono text-[10px] text-[var(--muted)]">
+          <span>{formatSourceCount(source)}</span>
+          <span
+            className={[
+              "inline-flex items-center gap-1",
+              ready ? "text-[var(--accent-strong)]" : "text-[var(--muted)]",
+            ].join(" ")}
+          >
+            <span className="size-1.5 rounded-full bg-current" />
+            {ready ? "ready" : "soon"}
+          </span>
+        </span>
+      </span>
+      <span
+        className="pointer-events-none absolute left-0 top-[calc(100%+6px)] z-40 hidden w-full rounded-md border border-[var(--border)] bg-[var(--surface)] p-3 text-xs leading-5 text-[var(--foreground)] shadow-lg group-hover/source:block group-focus-visible/source:block"
+        id={descriptionId}
+        role="tooltip"
+      >
+        {source.description}
+      </span>
+    </button>
+  );
+}
+
+const PARAMETER_HELP = {
+  topK:
+    "RAG term: top_k. The maximum number of matching chunks the retriever can bring back. Higher values widen the search, but only help when more useful evidence exists.",
+  chunkSize:
+    "RAG term: chunk_size. The amount of text saved in each searchable piece when a document is indexed.",
+  chunkOverlap:
+    "RAG term: chunk_overlap. The repeated text shared by neighboring chunks so an answer does not lose context at a boundary.",
+  embedding:
+    "RAG term: embedding profile. The vector representation used to compare the meaning of your question against document chunks.",
+} as const;
 
 function RetrievalControls({
   selectedSource,
@@ -620,9 +804,9 @@ function RetrievalControls({
 }) {
   const uploadProfileLocked = selectedSource?.sourceKind === "upload";
   const numericSettings = [
-    ["topK", "top_k", 1, 12, 1],
-    ["chunkSize", "chunk_size", 160, 2000, 40],
-    ["chunkOverlap", "overlap", 0, state.settings.chunkSize - 1, 40],
+    ["topK", "Evidence to retrieve", 1, 12, 1],
+    ["chunkSize", "Chunk length", 160, 2000, 40],
+    ["chunkOverlap", "Overlap", 0, state.settings.chunkSize - 1, 40],
   ] as const;
 
   return (
@@ -634,7 +818,7 @@ function RetrievalControls({
       <p className="mb-3 text-xs leading-5 text-[var(--muted)]">
         Change one setting, rerun, then compare the trace.
       </p>
-      <div className="space-y-3 font-mono text-xs text-[var(--muted)]">
+      <div className="space-y-3 text-xs text-[var(--muted)]">
         {numericSettings.map(([key, label, min, max, step]) => {
           const locked = uploadProfileLocked && key !== "topK";
           const value =
@@ -645,20 +829,45 @@ function RetrievalControls({
                 : state.settings[key as keyof typeof state.settings];
           const inputId = `setting-input-${key}`;
           const rangeId = `setting-range-${key}`;
+          const numericMin = Number(min);
+          const numericMax = Number(max);
+          const numericValue = Number(value);
+          const rangeProgress =
+            numericMax === numericMin
+              ? 0
+              : Math.min(
+                  100,
+                  Math.max(
+                    0,
+                    ((numericValue - numericMin) / (numericMax - numericMin)) *
+                      100,
+                  ),
+                );
 
           return (
             <div className="block" key={String(key)}>
               <div className="mb-1 flex items-center justify-between gap-3">
-                <label htmlFor={rangeId} id={`setting-${key}`}>
-                  {label}
+                <label
+                  className="flex min-w-0 items-center gap-1.5"
+                  htmlFor={rangeId}
+                  id={`setting-${key}`}
+                >
+                  <span className="text-sm font-medium text-[var(--foreground)]">
+                    {label}
+                  </span>
+                  <ParameterHelp
+                    label={label}
+                    text={PARAMETER_HELP[key]}
+                    tooltipId={`setting-help-${key}`}
+                  />
                 </label>
                 <input
                   aria-label={`${label} value`}
                   className="h-7 w-16 rounded-md border border-[var(--border)] bg-[var(--surface-muted)] px-2 text-right font-mono text-xs text-[var(--foreground)] outline-none ring-[var(--accent)] transition focus:ring-2 disabled:opacity-50"
                   disabled={locked}
                   id={inputId}
-                  max={Number(max)}
-                  min={Number(min)}
+                  max={numericMax}
+                  min={numericMin}
                   onChange={(event) => {
                     if (!event.target.value) {
                       return;
@@ -672,15 +881,15 @@ function RetrievalControls({
                   }}
                   step={Number(step)}
                   type="number"
-                  value={Number(value)}
+                  value={numericValue}
                 />
               </div>
               <input
                 aria-labelledby={`setting-${key}`}
-                className="w-full accent-[var(--accent-strong)] disabled:opacity-50"
+                className="rag-range w-full disabled:opacity-50"
                 disabled={locked}
-                max={Number(max)}
-                min={Number(min)}
+                max={numericMax}
+                min={numericMin}
                 onChange={(event) =>
                   dispatch({
                     type: "settingChanged",
@@ -689,17 +898,25 @@ function RetrievalControls({
                   })
                 }
                 step={Number(step)}
+                style={
+                  { "--range-progress": `${rangeProgress}%` } as CSSProperties
+                }
                 type="range"
                 id={rangeId}
-                value={Number(value)}
+                value={numericValue}
               />
             </div>
           );
         })}
       </div>
       <fieldset className="mt-4">
-        <legend className="mb-2 font-mono text-xs text-[var(--muted)]">
-          embedding
+        <legend className="mb-2 flex items-center gap-1.5 text-sm font-medium text-[var(--foreground)]">
+          <span>Embedding</span>
+          <ParameterHelp
+            label="Embedding"
+            text={PARAMETER_HELP.embedding}
+            tooltipId="setting-help-embedding"
+          />
         </legend>
         <div className="grid grid-cols-2 rounded-lg border border-[var(--border)] bg-[var(--surface-muted)] p-1">
           {[
@@ -714,8 +931,8 @@ function RetrievalControls({
                 className={[
                   "rounded-md px-2 py-2 text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-50",
                   active
-                    ? "bg-[var(--foreground)] text-[var(--background)]"
-                    : "text-[var(--muted)] hover:text-[var(--foreground)]",
+                    ? "bg-[var(--accent-strong)] text-[var(--accent-button-fg)]"
+                    : "text-[var(--muted)] hover:bg-[var(--surface-elevated)] hover:text-[var(--foreground)]",
                 ].join(" ")}
                 disabled={uploadProfileLocked}
                 key={value}
@@ -736,11 +953,43 @@ function RetrievalControls({
       </fieldset>
       {uploadProfileLocked ? (
         <p className="mt-3 text-xs leading-5 text-[var(--muted)]">
-          Uploaded documents use their indexed chunk and embedding profile for
-          this slice. Adjust top_k to compare retrieval breadth.
+          Uploaded documents keep the chunking and embedding profile created at
+          upload time. You can still change Evidence to retrieve; changing
+          chunk length, overlap, or embedding mode requires re-indexing the
+          file.
         </p>
       ) : null}
     </div>
+  );
+}
+
+function ParameterHelp({
+  label,
+  text,
+  tooltipId,
+}: {
+  label: string;
+  text: string;
+  tooltipId: string;
+}) {
+  return (
+    <span className="group/help relative inline-flex">
+      <span
+        aria-describedby={tooltipId}
+        aria-label={`About ${label}`}
+        className="inline-flex size-4 items-center justify-center rounded-full text-[var(--muted)] outline-none ring-[var(--accent)] transition hover:text-[var(--foreground)] focus:text-[var(--foreground)] focus:ring-2"
+        tabIndex={0}
+      >
+        <Info aria-hidden="true" className="size-3.5" strokeWidth={2} />
+      </span>
+      <span
+        className="pointer-events-none absolute left-0 top-6 z-30 w-64 rounded-md border border-[var(--border)] bg-[var(--surface)] p-3 font-sans text-xs leading-5 text-[var(--foreground)] opacity-0 shadow-lg transition group-hover/help:opacity-100 group-focus-within/help:opacity-100"
+        id={tooltipId}
+        role="tooltip"
+      >
+        {text}
+      </span>
+    </span>
   );
 }
 
@@ -786,7 +1035,7 @@ function ExperimentPanel({
           </div>
           <div className="flex shrink-0 gap-2">
             <button
-              className="inline-flex min-h-9 items-center justify-center gap-2 rounded-md bg-[var(--foreground)] px-3 text-sm font-semibold text-[var(--background)] disabled:cursor-not-allowed disabled:opacity-55"
+              className="inline-flex min-h-9 items-center justify-center gap-2 rounded-md bg-[var(--accent-strong)] px-3 text-sm font-semibold text-[var(--accent-button-fg)] transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-55"
               disabled={!result || isLoading}
               onClick={() => result && onPinBaseline(result)}
               type="button"
@@ -946,17 +1195,17 @@ function TraceSnapshot({
       <div className="text-sm font-semibold">{label}</div>
       <dl className="mt-2 grid grid-cols-3 gap-3 font-mono text-[11px] text-[var(--muted)]">
         <div>
-          <dt>top_k</dt>
+          <dt>evidence</dt>
           <dd className="text-[var(--foreground)]">{trace.trace.settings.topK}</dd>
         </div>
         <div>
-          <dt>chunks</dt>
+          <dt>retrieved</dt>
           <dd className="text-[var(--foreground)]">
             {trace.trace.retrieval.rows.length}
           </dd>
         </div>
         <div>
-          <dt>prompt</dt>
+          <dt>prompt chars</dt>
           <dd className="text-[var(--foreground)]">
             {formatNumber(trace.trace.prompt.rendered.length)}
           </dd>
@@ -988,7 +1237,7 @@ function TraceMetricCard({
       <div className="text-sm font-semibold">{label}</div>
       <dl className="mt-3 grid grid-cols-3 gap-3 font-mono text-[11px] text-[var(--muted)]">
         <div>
-          <dt>top score</dt>
+          <dt>best match</dt>
           <dd className="text-[var(--foreground)]">
             {topScore.toFixed(3)}
             {topScoreDelta === undefined ? null : (
@@ -1002,7 +1251,7 @@ function TraceMetricCard({
           </dd>
         </div>
         <div>
-          <dt>retrieved</dt>
+          <dt>evidence</dt>
           <dd className="text-[var(--foreground)]">
             {formatNumber(retrievedCount)}
             {retrievedDelta === undefined ? null : (
@@ -1016,7 +1265,7 @@ function TraceMetricCard({
           </dd>
         </div>
         <div>
-          <dt>prompt</dt>
+          <dt>prompt chars</dt>
           <dd className="text-[var(--foreground)]">
             {formatNumber(promptChars)}
             {promptCharsDelta === undefined ? null : (
@@ -1107,9 +1356,9 @@ function AnswerPanel({
 
       <div className="grid gap-3 sm:grid-cols-3">
         {[
-          ["chunks", formatNumber(result.trace.chunking.totalChunks)],
-          ["retrieved", formatNumber(result.trace.retrieval.rows.length)],
-          ["latency_ms", formatNumber(result.trace.timingsMs.total)],
+          ["source chunks", formatNumber(result.trace.chunking.totalChunks)],
+          ["evidence found", formatNumber(result.trace.retrieval.rows.length)],
+          ["run time", `${formatNumber(result.trace.timingsMs.total)} ms`],
         ].map(([label, value]) => (
           <div
             className="rounded-lg border border-[var(--border)] bg-[var(--surface-muted)] p-3"
@@ -1125,10 +1374,10 @@ function AnswerPanel({
 
       <div className="grid gap-3 sm:grid-cols-3">
         {[
-          ["retrieval_ms", result.trace.timingsMs.retrieval],
-          ["generation_ms", result.trace.timingsMs.generation],
+          ["retrieval time", result.trace.timingsMs.retrieval],
+          ["answer time", result.trace.timingsMs.generation],
           [
-            "context_chunks",
+            "prompt evidence",
             result.trace.prompt.contextChunkIds.length,
           ],
         ].map(([label, value]) => (
@@ -1226,6 +1475,9 @@ function TraceInspector({
       <div className="mb-4 flex items-center justify-between">
         <div>
           <h2 className="text-sm font-semibold">Trace inspector</h2>
+          <p className="mt-1 text-xs text-[var(--trace-muted)]">
+            How RAG built this answer
+          </p>
           <p className="font-mono text-[11px] text-[var(--trace-muted)]">
             {isLoading ? "running query" : modelMeta}
           </p>
@@ -1247,12 +1499,12 @@ function TraceInspector({
       <TraceChunkList rows={chunkRows} />
 
       <div className="space-y-3">
-        <div className="font-mono text-[11px] text-[var(--accent-cyan)]">
-          retrieved chunks
+        <div className="font-mono text-[11px] text-[var(--trace-accent)]">
+          ranked evidence
         </div>
         {rows.length === 0 ? (
           <div className="rounded-lg border border-[var(--trace-border)] bg-[var(--trace-card)] p-3 text-sm leading-6 text-[var(--trace-muted)]">
-            Retrieved chunks will appear here.
+            Ranked evidence will appear here.
           </div>
         ) : (
           rows.map((row) => <TraceRow key={row.chunkId} row={row} />)
@@ -1260,12 +1512,12 @@ function TraceInspector({
       </div>
 
       <div className="mt-4 rounded-lg border border-[var(--trace-border)] bg-[var(--trace-code-bg)] p-3">
-        <div className="mb-2 flex items-center gap-2 font-mono text-[11px] text-[var(--accent-cyan)]">
+        <div className="mb-2 flex items-center gap-2 font-mono text-[11px] text-[var(--trace-accent)]">
           <GitBranch className="size-3.5" />
-          prompt assembly
+          prompt sent to model
         </div>
         <pre className="max-h-72 overflow-auto whitespace-pre-wrap font-mono text-xs leading-5 text-[var(--trace-foreground)]">
-          {prompt ?? "Run a trace to inspect the prompt."}
+          {prompt ?? "Run a trace to inspect the model prompt."}
         </pre>
       </div>
     </aside>
@@ -1282,12 +1534,12 @@ function TraceEvidenceStack({
   if (!evidence) {
     return (
       <section className="mb-4 rounded-lg border border-[var(--trace-border)] bg-[var(--trace-card)] p-3">
-        <h3 className="font-mono text-[11px] text-[var(--accent-cyan)]">
-          evidence stack
+        <h3 className="font-mono text-[11px] text-[var(--trace-accent)]">
+          answer path
         </h3>
         <p className="mt-2 text-xs leading-5 text-[var(--trace-muted)]">
-          Run a trace to inspect extraction, chunks, embeddings, retrieval,
-          prompt assembly, and model metadata.
+          Run a trace to see how documents become evidence, prompt context,
+          and an answer.
         </p>
       </section>
     );
@@ -1300,15 +1552,18 @@ function TraceEvidenceStack({
     >
       <div className="flex items-center justify-between gap-3">
         <h3
-          className="font-mono text-[11px] text-[var(--accent-cyan)]"
+          className="font-mono text-[11px] text-[var(--trace-accent)]"
           id="trace-evidence-heading"
         >
-          evidence stack
+          answer path
         </h3>
         <span className="font-mono text-[10px] text-[var(--trace-muted)]">
           {evidence.stages.length} stages
         </span>
       </div>
+      <p className="text-xs leading-5 text-[var(--trace-muted)]">
+        {evidence.summary}
+      </p>
 
       <div className="space-y-2">
         {evidence.stages.map((stage) => (
@@ -1329,16 +1584,16 @@ function TraceEvidenceStack({
         ))}
       </div>
 
-      <TraceKeyValueList title="timings" rows={evidence.timingRows} />
-      <TraceKeyValueList title="models" rows={evidence.modelRows} />
+      <TraceKeyValueList title="run time" rows={evidence.timingRows} />
+      <TraceKeyValueList title="models and storage" rows={evidence.modelRows} />
 
       <div>
-        <div className="mb-2 font-mono text-[11px] text-[var(--accent-cyan)]">
-          selected context
+        <div className="mb-2 font-mono text-[11px] text-[var(--trace-accent)]">
+          evidence sent to prompt
         </div>
         {selectedContextRows.length === 0 ? (
           <p className="rounded-md border border-[var(--trace-border)] bg-[var(--trace-code-bg)] p-2 text-xs leading-5 text-[var(--trace-muted)]">
-            No retrieved chunks reached the prompt context.
+            No retrieved evidence was sent to the prompt context.
           </p>
         ) : (
           <ol className="space-y-2">
@@ -1359,8 +1614,8 @@ function TraceEvidenceStack({
                   <span className="truncate">{row.chunkId}</span>
                   <span className="shrink-0">
                     {row.similarity === null
-                      ? "no score"
-                      : row.similarity.toFixed(3)}
+                      ? "no match score"
+                      : `score ${row.similarity.toFixed(3)}`}
                   </span>
                 </div>
               </li>
@@ -1371,7 +1626,7 @@ function TraceEvidenceStack({
 
       {evidence.warnings.length > 0 ? (
         <div>
-          <div className="mb-2 font-mono text-[11px] text-[var(--accent-cyan)]">
+          <div className="mb-2 font-mono text-[11px] text-[var(--trace-accent)]">
             warnings
           </div>
           <ul className="space-y-1">
@@ -1402,10 +1657,10 @@ function TraceChunkList({
     >
       <div className="mb-3 flex items-center justify-between gap-3">
         <h3
-          className="font-mono text-[11px] text-[var(--accent-cyan)]"
+          className="font-mono text-[11px] text-[var(--trace-accent)]"
           id="trace-chunks-heading"
         >
-          all chunks
+          source chunks
         </h3>
         <span className="font-mono text-[10px] text-[var(--trace-muted)]">
           {rows.length} total
@@ -1414,7 +1669,7 @@ function TraceChunkList({
 
       {rows.length === 0 ? (
         <p className="text-xs leading-5 text-[var(--trace-muted)]">
-          Generated chunk rows will appear after a trace runs.
+          Indexed document chunks will appear after a trace runs.
         </p>
       ) : (
         <div className="max-h-72 space-y-2 overflow-auto pr-1">
@@ -1434,11 +1689,11 @@ function TraceChunkList({
                       row.selected
                         ? "border-[var(--accent)] text-[var(--accent)]"
                         : row.retrieved
-                          ? "border-[var(--accent-cyan)] text-[var(--accent-cyan)]"
+                          ? "border-[var(--trace-accent)] text-[var(--trace-accent)]"
                           : "border-[var(--trace-border)] text-[var(--trace-muted)]",
                     ].join(" ")}
                   >
-                    {row.rank === null ? "not retrieved" : `rank ${row.rank}`}
+                    {row.rank === null ? "not used" : `rank ${row.rank}`}
                   </span>
                 </div>
                 <div className="mt-1 flex items-center justify-between gap-3 font-mono text-[10px] text-[var(--trace-muted)]">
@@ -1453,21 +1708,21 @@ function TraceChunkList({
               </summary>
               <dl className="mt-3 grid grid-cols-2 gap-2 border-t border-[var(--trace-border)] pt-3 font-mono text-[11px] text-[var(--trace-muted)]">
                 <div>
-                  <dt>retrieved</dt>
+                  <dt>matched</dt>
                   <dd>{row.retrieved ? "yes" : "no"}</dd>
                 </div>
                 <div>
-                  <dt>selected</dt>
+                  <dt>used</dt>
                   <dd>{row.selected ? "yes" : "no"}</dd>
                 </div>
                 <div>
-                  <dt>similarity</dt>
+                  <dt>score</dt>
                   <dd>
                     {row.similarity === null ? "n/a" : row.similarity.toFixed(3)}
                   </dd>
                 </div>
                 <div>
-                  <dt>offset</dt>
+                  <dt>text range</dt>
                   <dd>
                     {row.charStart}-{row.charEnd}
                   </dd>
@@ -1490,7 +1745,7 @@ function TraceKeyValueList({
 }) {
   return (
     <div>
-      <div className="mb-2 font-mono text-[11px] text-[var(--accent-cyan)]">
+      <div className="mb-2 font-mono text-[11px] text-[var(--trace-accent)]">
         {title}
       </div>
       <dl className="space-y-1">
@@ -1530,7 +1785,7 @@ function RecentTracesList({
     >
       <div className="mb-3 flex items-center justify-between gap-3">
         <h3
-          className="font-mono text-[11px] text-[var(--accent-cyan)]"
+          className="font-mono text-[11px] text-[var(--trace-accent)]"
           id="recent-traces-heading"
         >
           recent traces
@@ -1565,10 +1820,10 @@ function RecentTracesList({
                 <button
                   aria-current={active ? "true" : undefined}
                   className={[
-                    "w-full rounded-md border p-2 text-left transition focus:outline-none focus:ring-2 focus:ring-[var(--accent-cyan)]",
+                    "w-full rounded-md border p-2 text-left transition focus:outline-none focus:ring-2 focus:ring-[var(--trace-accent)]",
                     active
                       ? "border-[var(--accent)] bg-[var(--trace-code-bg)]"
-                      : "border-[var(--trace-border)] bg-transparent hover:border-[var(--accent-cyan)]",
+                      : "border-[var(--trace-border)] bg-transparent hover:border-[var(--trace-accent)]",
                   ].join(" ")}
                   onClick={() => onTraceSelected(trace.queryId)}
                   type="button"
@@ -1578,7 +1833,7 @@ function RecentTracesList({
                   </span>
                   <span className="mt-1 flex items-center justify-between gap-2 font-mono text-[10px] text-[var(--trace-muted)]">
                     <span>
-                      {trace.retrievedCount} chunks ·{" "}
+                      {trace.retrievedCount} evidence ·{" "}
                       {formatTraceTime(trace.createdAt)}
                     </span>
                     <span>{formatSourceKind(trace)}</span>
@@ -1608,10 +1863,10 @@ function TraceRow({ row }: { row: RagRetrievalRow }) {
                   : "border-[var(--trace-border)] text-[var(--trace-muted)]",
               ].join(" ")}
             >
-              {row.selected ? "selected" : "ignored"}
+              {row.selected ? "used" : "not used"}
             </span>
             <span className="text-[var(--trace-muted)]">
-              similarity {row.similarity.toFixed(3)}
+              match score {row.similarity.toFixed(3)}
             </span>
           </div>
         </div>
@@ -1625,13 +1880,13 @@ function TraceRow({ row }: { row: RagRetrievalRow }) {
       <div className="mt-3 border-t border-[var(--trace-border)] pt-3">
         <dl className="mb-3 grid grid-cols-2 gap-2 font-mono text-[11px] text-[var(--trace-muted)]">
           <div>
-            <dt>offset</dt>
+            <dt>text range</dt>
             <dd>
               {row.charStart}-{row.charEnd}
             </dd>
           </div>
           <div>
-            <dt>terms</dt>
+            <dt>matched terms</dt>
             <dd>{row.matchedTerms.join(", ") || "none"}</dd>
           </div>
           <div>

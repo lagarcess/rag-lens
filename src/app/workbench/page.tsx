@@ -5,9 +5,9 @@ import { WorkbenchClient } from "@/features/workbench/workbench-client";
 export default function Workbench() {
   return (
     <main className="flex min-h-screen flex-col overflow-x-clip bg-[var(--background)] text-[var(--foreground)]">
-      <SiteHeader />
+      <SiteHeader wide />
       <WorkbenchClient />
-      <SiteFooter />
+      <SiteFooter wide />
     </main>
   );
 }

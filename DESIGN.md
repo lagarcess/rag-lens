@@ -31,9 +31,10 @@ The visual tone is calm, precise, and data-native. Avoid decorative gradients, f
 | `ink` | `#151917` | Primary text |
 | `muted` | `#69746f` | Secondary text and metadata |
 | `hairline` | `#d9e1dd` | 1px borders on light panels |
-| `dark-canvas` | `#101211` | Trace inspector and prompt panels |
-| `dark-surface` | `#171a19` | Chunk cards inside trace inspector |
-| `dark-hairline` | `#2a302d` | Borders on dark panels |
+| `trace-surface` | `#141c18` light / `#0f1512` dark | Dark charcoal trace inspector shell |
+| `trace-card` | `#1b2520` light / `#151d19` dark | Chunk cards inside trace inspector |
+| `trace-hairline` | `#303f38` light / `#29352f` dark | Borders on trace panels |
+| `trace-accent` | `#86d0bd` light / `#78c7b5` dark | Muted mint inspector headings and focus states |
 | `accent` | `#2bd99f` | Primary signal color, active state, success |
 | `accent-strong` | `#13b981` | Primary CTA and selected state |
 | `accent-cyan` | `#35c9e8` | Secondary signal for query/prompt stages |
@@ -59,7 +60,7 @@ Primary app layout:
 
 - Left rail: sources, upload, session state, example corpora.
 - Center canvas: question input, answer, citations, retrieval controls.
-- Right inspector: dark trace panel with chunks, similarity scores, prompt preview, and model events.
+- Right inspector: dark charcoal trace panel with chunks, similarity scores, prompt preview, and model events.
 - Secondary tabs or lower panels: experiment controls, chunk viewer, vector details, raw prompt.
 
 Desktop is the primary recruiter demo surface. Mobile must remain readable, but the app may collapse the inspector below the answer.
@@ -75,8 +76,21 @@ Desktop is the primary recruiter demo surface. Mobile must remain readable, but 
 ### Panels
 
 - Light panels: white background, 1px hairline, 10-12px radius.
-- Dark trace panels: dark background, 1px dark hairline, 10-12px radius.
+- Dark trace panels: dark charcoal background, 1px muted hairline, 10-12px radius.
 - Avoid card-inside-card nesting. Use rows, dividers, and section headers inside panels.
+
+### Workbench Controls
+
+The center and left workbench surfaces should stay light in light mode. Primary
+actions, selected segmented controls, and range progress use emerald. Avoid
+near-black selected states outside the trace inspector so the inspector remains
+the only major dark diagnostic surface.
+
+Upload panels should not read like metric dashboards. Before upload, show
+compact stacked quota rows for file count and total size. After a successful
+upload, show session retention in a persistent compact row with the delete
+action; use a toast for confirmation, not as the only place privacy timing
+appears.
 
 ### Inputs
 
@@ -98,6 +112,22 @@ Each retrieved chunk row should show:
 ### Educational Notes
 
 Use compact inline explainers, not large tutorial blocks. A good pattern is a collapsible "Why this matters" note attached to the relevant trace step.
+
+Future trace-clarity iterations should assume the visitor may not know RAG
+terms yet. The center workbench should lead with plain-language outcomes such as
+"what evidence was found," "what changed from the last run," and "did the
+change help." The right trace inspector can keep technical detail, but it should
+progressively disclose it behind beginner-readable labels, short definitions,
+and "why this matters" notes. Avoid making users interpret `top_k`, similarity
+scores, prompt length, chunk IDs, or embedding modes without a nearby
+human-readable explanation.
+
+When controls are locked, explain the system constraint directly. For uploaded
+documents, chunk size, overlap, and embedding mode are part of the indexing
+profile created when the file is uploaded; changing them later requires
+re-chunking and re-embedding the document. Until re-indexing profiles are
+implemented, only query-time settings such as `top_k` should remain adjustable
+for uploads.
 
 ## Do
 

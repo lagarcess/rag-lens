@@ -618,8 +618,9 @@ visitors.
 
 Deliverables:
 
-- README with screenshots, architecture diagram, local setup, env guide, and
-  demo flow.
+- README with architecture diagram, local setup, env guide, demo flow, and
+  text-first portfolio copy. Screenshots stay deferred until the workbench UI
+  stabilizes.
 - Docs aligned with shipped behavior.
 - Final UI copy pass.
 - Final accessibility and responsive pass.
@@ -639,9 +640,10 @@ git commit -m "docs: polish RAG Lens portfolio materials"
 ```
 
 Status: implemented for the current portfolio package. README now includes
-screenshots, architecture, setup, environment notes, demo flow, current status,
-and known limitations. Browser QA captured the landing page and a completed
-workbench trace on June 27, 2026. Render app/backend deployment is live in the
+architecture, setup, environment notes, demo flow, current status, known
+limitations, and text-first portfolio positioning without embedded screenshots.
+Browser QA captured the landing page and a completed workbench trace on June
+27, 2026 as QA artifacts. Render app/backend deployment is live in the
 dedicated `rag-lens` workspace at `https://rag-lens-mx20.onrender.com`.
 
 ## Review Checklist

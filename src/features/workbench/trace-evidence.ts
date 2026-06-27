@@ -1,6 +1,7 @@
 import type { RagCitation, RagTraceResponse } from "@/lib/rag/trace";
 
 export interface TraceEvidence {
+  summary: string;
   stages: Array<{
     label: string;
     value: string;
@@ -47,38 +48,48 @@ export function buildTraceEvidence(result: RagTraceResponse): TraceEvidence {
   const selectedCount = trace.retrieval.rows.filter((row) => row.selected).length;
 
   return {
+    summary: `${formatUnit(
+      trace.retrieval.rows.length,
+      "evidence match",
+      "evidence matches",
+    )} found; ${formatUnit(
+      trace.prompt.contextChunkIds.length,
+      "chunk",
+    )} sent to the model prompt.`,
     stages: [
       {
-        label: "extraction",
+        label: "Read documents",
         value: formatUnit(trace.extraction.documents.length, "doc"),
         detail: extractionDetail || "No documents extracted",
       },
       {
-        label: "chunking",
+        label: "Split into chunks",
         value: formatUnit(trace.chunking.totalChunks, "chunk"),
-        detail: `${trace.settings.chunkSize} size · ${trace.settings.chunkOverlap} overlap`,
+        detail: `${formatNumber(
+          trace.settings.chunkSize,
+        )} characters each · ${formatNumber(trace.settings.chunkOverlap)} overlap`,
       },
       {
-        label: "embedding",
+        label: "Compared meaning",
         value: trace.models.embedding.provider,
         detail: formatEmbeddingDetail(result),
       },
       {
-        label: "retrieval",
-        value: trace.retrieval.method,
+        label: "Found evidence",
+        value: formatUnit(trace.retrieval.rows.length, "match", "matches"),
         detail: `${formatUnit(trace.retrieval.rows.length, "row")} · ${formatUnit(
           selectedCount,
-          "selected",
-          "selected",
-        )}`,
+          "sent to prompt",
+          "sent to prompt",
+        )} · ${trace.retrieval.method}`,
       },
       {
-        label: "prompt",
+        label: "Built prompt",
         value: `${formatNumber(trace.prompt.rendered.length)} chars`,
         detail: formatUnit(trace.prompt.contextChunkIds.length, "context chunk"),
       },
       {
-        label: "answer",
+        label: "Generated answer",
         value: trace.models.answer.provider,
         detail: [
           trace.models.answer.model,
@@ -89,9 +100,9 @@ export function buildTraceEvidence(result: RagTraceResponse): TraceEvidence {
       },
     ],
     timingRows: [
-      ["total", `${formatNumber(trace.timingsMs.total)} ms`],
-      ["retrieval", `${formatNumber(trace.timingsMs.retrieval)} ms`],
-      ["generation", `${formatNumber(trace.timingsMs.generation)} ms`],
+      ["full run", `${formatNumber(trace.timingsMs.total)} ms`],
+      ["finding evidence", `${formatNumber(trace.timingsMs.retrieval)} ms`],
+      ["writing answer", `${formatNumber(trace.timingsMs.generation)} ms`],
     ],
     modelRows: buildModelRows(result),
     warnings: [...trace.warnings],
@@ -150,38 +161,38 @@ function buildModelRows(result: RagTraceResponse): Array<[string, string]> {
   const trace = result.trace;
   const rows: Array<[string, string]> = [
     [
-      "embedding",
+      "embedding model",
       `${trace.models.embedding.provider} / ${trace.models.embedding.model}`,
     ],
   ];
 
   if (trace.models.embedding.queryModel) {
-    rows.push(["query model", trace.models.embedding.queryModel]);
+    rows.push(["question vectors", trace.models.embedding.queryModel]);
   }
 
   if (trace.models.embedding.documentModel) {
-    rows.push(["document model", trace.models.embedding.documentModel]);
+    rows.push(["document vectors", trace.models.embedding.documentModel]);
   }
 
   rows.push([
-    "answer",
+    "chat model",
     `${trace.models.answer.provider} / ${trace.models.answer.model}`,
   ]);
 
   if (trace.models.answer.finishReason) {
-    rows.push(["finish", trace.models.answer.finishReason]);
+    rows.push(["finish reason", trace.models.answer.finishReason]);
   }
 
   if (trace.models.answer.usage) {
     rows.push([
-      "tokens",
+      "token use",
       `${formatNumber(trace.models.answer.usage.promptTokens)} in · ${formatNumber(
         trace.models.answer.usage.completionTokens,
       )} out · ${formatNumber(trace.models.answer.usage.totalTokens)} total`,
     ]);
   }
 
-  rows.push(["persistence", `${trace.persistence.mode} / ${trace.persistence.store}`]);
+  rows.push(["stored as", `${trace.persistence.mode} / ${trace.persistence.store}`]);
 
   return rows;
 }
@@ -197,7 +208,7 @@ function formatEmbeddingDetail(result: RagTraceResponse) {
 function formatCitation(citation: RagCitation): AnswerCitationView {
   return {
     label: `[${citation.rank}]`,
-    detail: `${citation.fileName} · ${citation.chunkId} · similarity ${citation.similarity.toFixed(
+    detail: `${citation.fileName} · ${citation.chunkId} · match score ${citation.similarity.toFixed(
       3,
     )}`,
   };
