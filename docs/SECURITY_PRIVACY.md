@@ -19,7 +19,11 @@ Rules:
   insertion fails.
 - Schedule anonymous uploads for purge at 23.5 hours so the 30-minute cleanup
   cadence stays inside the 24-hour deletion promise.
-- Let users delete the session immediately.
+- Let users delete the session immediately. Delete-now marks the session
+  deleted, removes known Storage objects first, and then deletes the
+  session-scoped database rows.
+- Use scheduled cleanup as the backstop for abandoned sessions and for
+  delete-now attempts whose immediate cleanup cannot be confirmed.
 - Run Render cleanup every 30 minutes.
 
 ## Secret Handling
@@ -28,6 +32,7 @@ Never expose these to browser code:
 
 - `SUPABASE_SERVICE_ROLE_KEY`
 - `PERPLEXITY_API_KEY`
+- `OPENROUTER_API_KEY`
 
 Only `NEXT_PUBLIC_*` values can appear in client bundles.
 
@@ -52,6 +57,11 @@ Cleanup order:
 3. Call `delete_expired_rag_rows` with only the Storage paths processed in
    that run.
 4. Log counts only, never file contents.
+
+Immediate delete-now cleanup uses the same Storage-before-database ordering but
+is scoped to the requested anonymous session. If Storage removal fails, database
+row deletion is skipped so scheduled cleanup can retry from the remaining
+session-scoped rows.
 
 Use `bun run cleanup:sessions:dry-run` before enabling or changing scheduled
 cleanup. Dry-run emits only counts and performs no Storage or database deletes.

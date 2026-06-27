@@ -29,6 +29,9 @@ export interface WorkbenchUploadResponse {
 export interface WorkbenchDeleteSessionResponse {
   ok: boolean;
   sessionId: string;
+  purgeStatus: "completed" | "retry-pending";
+  purgeRetryScheduled: boolean;
+  warning?: string;
 }
 
 export interface WorkbenchTraceHistoryResponse {

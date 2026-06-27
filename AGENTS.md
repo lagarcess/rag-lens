@@ -20,7 +20,8 @@ The locked promise:
 - Next.js App Router, React, TypeScript, Tailwind CSS.
 - Bun for local package management and scripts.
 - Supabase Storage plus Postgres/pgvector for files, chunks, traces, and retrieval.
-- Perplexity for embeddings and answer generation.
+- Perplexity for embeddings.
+- OpenRouter for answer generation.
 - Render for deployment, including a web service and cleanup cron.
 
 Do not introduce Python unless the Node/TypeScript ingestion path becomes a proven blocker. If Python is added later, use Poetry.
@@ -39,7 +40,8 @@ Avoid copying RAG Play's four-card stage layout. The product surface is the prot
 
 ## Provider Safety
 
-- Never expose `SUPABASE_SERVICE_ROLE_KEY` or `PERPLEXITY_API_KEY` to browser code.
+- Never expose `SUPABASE_SERVICE_ROLE_KEY`, `PERPLEXITY_API_KEY`, or
+  `OPENROUTER_API_KEY` to browser code.
 - Browser env vars must use only publishable values.
 - Public uploads are anonymous demo uploads only and must expire.
 - Uploaded files, extracted text, chunks, embeddings, and traces must carry `session_id` plus `expires_at`.

@@ -191,6 +191,20 @@ describe("workbenchReducer", () => {
       deleted.sources.some((source) => source.slug === "session-uploads"),
     ).toBe(false);
     expect(deleted.selectedCorpusSlug).toBe("rag-concepts-primer");
+
+    const retryPending = workbenchReducer(deleting, {
+      type: "sessionDeleted",
+      warning:
+        "Session deleted. Immediate file cleanup could not be confirmed, so scheduled cleanup will retry within 24 hours.",
+    });
+
+    expect(retryPending.session.error).toBe(
+      "Session deleted. Immediate file cleanup could not be confirmed, so scheduled cleanup will retry within 24 hours.",
+    );
+    expect(retryPending.uploads.documents).toEqual([]);
+    expect(
+      retryPending.sources.some((source) => source.slug === "session-uploads"),
+    ).toBe(false);
   });
 
   test("selects the session upload source after upload success and sends session scope", () => {

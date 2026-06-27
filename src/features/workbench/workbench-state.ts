@@ -94,7 +94,7 @@ export type WorkbenchAction =
     }
   | { type: "sessionHeartbeatFailed"; error: string }
   | { type: "sessionDeleteStarted" }
-  | { type: "sessionDeleted" }
+  | { type: "sessionDeleted"; warning?: string }
   | { type: "sessionDeleteFailed"; error: string }
   | { type: "uploadStarted"; fileName: string }
   | { type: "uploadSucceeded"; document: WorkbenchUploadResponse }
@@ -258,7 +258,7 @@ export function workbenchReducer(
           sessionId: null,
           expiresAt: null,
           hardExpiresAt: null,
-          error: null,
+          error: action.warning ?? null,
         },
         uploads: {
           status: "idle",

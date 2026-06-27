@@ -279,8 +279,8 @@ export function WorkbenchClient() {
     dispatch({ type: "sessionDeleteStarted" });
 
     try {
-      await deleteAnonymousSession(state.session.sessionId);
-      dispatch({ type: "sessionDeleted" });
+      const result = await deleteAnonymousSession(state.session.sessionId);
+      dispatch({ type: "sessionDeleted", warning: result.warning });
       setUploadFile(null);
     } catch (error) {
       dispatch({
@@ -353,8 +353,8 @@ export function WorkbenchClient() {
           </div>
           <p className="text-sm leading-6 text-[var(--muted)]">
             Do not upload secrets, private files, or personal data. Anonymous
-            uploads are session-scoped, size-limited, and deleted within 24
-            hours.
+            uploads are session-scoped, size-limited, removable on demand, and
+            deleted within 24 hours.
           </p>
           <label
             className="mt-4 block text-xs font-medium text-[var(--muted)]"

@@ -81,6 +81,24 @@ Findings incorporated into the execution rules:
 - Bundled examples should stay first-party unless a future slice explicitly
   records third-party dataset license review.
 
+## Active Goal And Current Gap
+
+Active goal: drive RAG Lens from this locked roadmap through fully functional
+local and deployed V1 slices, using non-overlapping subagents for independent
+implementation and review work, and committing each cohesive slice after
+verification.
+
+Current non-deferred V1 focus after Slice 9.1:
+
+1. Keep the scheduled cleanup job as a retry/backstop for expired sessions,
+   failed immediate purges, and abandoned browser sessions.
+2. Re-run the deployment readiness checklist after the retention behavior is
+   verified.
+3. Deploy only after a dedicated RAG Lens Render workspace exists or the user
+   explicitly authorizes the target workspace.
+
+This excludes the deferred GitHub Pages landing and warmup topology.
+
 ## Execution Discipline
 
 - Use one cohesive commit per slice.
@@ -112,6 +130,10 @@ Use subagents only when the task can be split cleanly:
   risks.
 - The main agent reviews subagent output before integrating it.
 - Completed subagent threads must be closed after their results are captured.
+- If a subagent is stale, duplicated, or no longer needed, close it before
+  spawning replacement work.
+- Do not keep exploratory worktrees or generated artifacts around after their
+  findings have been integrated.
 
 ## Embedding Profile Rule
 
@@ -449,6 +471,45 @@ Status: implemented locally. Cleanup deletes Storage objects before database
 rows, scopes row deletion to processed Storage paths, and has a local dry-run
 mode for count-only verification. Hosted cron creation remains part of the
 Render deployment slice.
+
+### Slice 9.1 - Immediate Session Deletion
+
+Goal: Make the delete-now action physically purge uploaded data immediately
+instead of relying only on scheduled cleanup.
+
+Deliverables:
+
+- A focused server-side cleanup service for a specific anonymous session.
+- `DELETE /api/sessions/:sessionId` marks the session deleted, removes its
+  Storage objects, and deletes session-scoped rows in Storage-first order.
+- If immediate physical cleanup fails after the session is marked deleted, the
+  route reports the cleanup failure and leaves the scheduled cleanup job able
+  to retry safely.
+- The cleanup path logs counts and identifiers only, never uploaded content.
+- The API contract and privacy docs distinguish immediate deletion from the
+  24-hour abandoned-session backstop.
+
+Verification:
+
+- Focused tests prove Storage deletion happens before database row deletion.
+- Focused tests prove delete-now does not target unrelated sessions or curated
+  example corpora.
+- `bun test`
+- `bun run lint`
+- `bun run build`
+- `git diff --check`
+- Secret scan for provider and service-role env names.
+
+Commit:
+
+```bash
+git commit -m "feat(retention): purge deleted sessions immediately"
+```
+
+Status: implemented locally. Delete-now now marks only active anonymous sessions
+deleted, removes that session's known Storage objects, deletes the deleted
+session row so cascades clear derived rows, and returns retry-pending metadata
+when cleanup cannot be confirmed after the delete marker is set.
 
 ### Slice 10 - Experiment Mode
 

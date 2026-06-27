@@ -242,10 +242,46 @@ expiry (`expiresAt`) and physical purge deadline (`hardExpiresAt`).
 
 ### `DELETE /api/sessions/:sessionId`
 
-Deletes a session and queued/uploaded data.
+Marks an active anonymous session deleted and immediately attempts physical
+cleanup for that session's uploaded data.
 
-Status: implemented as a soft delete marker. Cleanup physically removes expired
-or deleted session data.
+Successful immediate cleanup response:
+
+```json
+{
+  "ok": true,
+  "sessionId": "uuid",
+  "purgeStatus": "completed",
+  "purgeRetryScheduled": false,
+  "storageObjects": 2,
+  "removedStorageObjects": 2,
+  "deletedRows": {
+    "deleted_sessions": 1
+  }
+}
+```
+
+If the session is marked deleted but Storage or database cleanup cannot be
+confirmed, the route returns `202 Accepted` and the scheduled cleanup job will
+retry. The browser should clear local upload/session state because the session
+has ended.
+
+```json
+{
+  "ok": true,
+  "sessionId": "uuid",
+  "purgeStatus": "retry-pending",
+  "purgeRetryScheduled": true,
+  "warning": "Session deleted. Immediate file cleanup could not be confirmed, so scheduled cleanup will retry within 24 hours."
+}
+```
+
+Unknown, non-anonymous, inactive, already purged, or expired sessions return
+`404`. Provider or database failures before the session is marked deleted return
+`500`.
+
+Response metadata is count-based and does not expose uploaded file contents or
+raw Storage paths.
 
 ### `POST /api/sessions/:sessionId/heartbeat`
 

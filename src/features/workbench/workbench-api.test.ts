@@ -317,6 +317,8 @@ describe("deleteAnonymousSession", () => {
         JSON.stringify({
           ok: true,
           sessionId: "11111111-1111-4111-8111-111111111111",
+          purgeStatus: "completed",
+          purgeRetryScheduled: false,
         }),
         {
           status: 200,
@@ -333,10 +335,44 @@ describe("deleteAnonymousSession", () => {
     ).resolves.toEqual({
       ok: true,
       sessionId: "11111111-1111-4111-8111-111111111111",
+      purgeStatus: "completed",
+      purgeRetryScheduled: false,
     });
     expect(fetchCalls[0]).toMatchObject({
       url: "/api/sessions/11111111-1111-4111-8111-111111111111",
       init: { method: "DELETE" },
+    });
+  });
+
+  test("returns retry-pending metadata when immediate purge cannot be confirmed", async () => {
+    const fetchFn = async () =>
+      new Response(
+        JSON.stringify({
+          ok: true,
+          sessionId: "11111111-1111-4111-8111-111111111111",
+          purgeStatus: "retry-pending",
+          purgeRetryScheduled: true,
+          warning:
+            "Session deleted. Immediate file cleanup could not be confirmed, so scheduled cleanup will retry within 24 hours.",
+        }),
+        {
+          status: 202,
+          headers: { "content-type": "application/json" },
+        },
+      );
+
+    await expect(
+      deleteAnonymousSession(
+        "11111111-1111-4111-8111-111111111111",
+        fetchFn,
+      ),
+    ).resolves.toEqual({
+      ok: true,
+      sessionId: "11111111-1111-4111-8111-111111111111",
+      purgeStatus: "retry-pending",
+      purgeRetryScheduled: true,
+      warning:
+        "Session deleted. Immediate file cleanup could not be confirmed, so scheduled cleanup will retry within 24 hours.",
     });
   });
 });

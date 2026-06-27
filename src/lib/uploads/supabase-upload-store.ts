@@ -127,6 +127,47 @@ export function createSupabaseUploadCleanupRepository(
   clientFactory: SupabaseUploadClientFactory = createSupabaseAdminClient,
 ): UploadCleanupRepository {
   return {
+    async markAnonymousSessionDeleted({ now, sessionId }) {
+      const { data, error } = await clientFactory()
+        .from("rag_sessions")
+        .update({
+          status: "deleted",
+          deleted_at: now,
+          last_seen_at: now,
+        })
+        .eq("id", sessionId)
+        .eq("mode", "anonymous")
+        .eq("status", "active")
+        .select("id")
+        .maybeSingle();
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      return Boolean(data);
+    },
+
+    async listSessionStoragePaths({ sessionId }) {
+      const { data, error } = await clientFactory()
+        .from("rag_documents")
+        .select("storage_path")
+        .eq("session_id", sessionId)
+        .eq("source_kind", "upload");
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      const rows = (data ?? []) as Array<{ storage_path?: string | null }>;
+
+      return rows
+        .map((row) => row.storage_path)
+        .filter((path: string | null | undefined): path is string =>
+          Boolean(path),
+        );
+    },
+
     async listPurgeableStoragePaths({ now, batchSize }) {
       const { data, error } = await clientFactory().rpc(
         "list_purgeable_rag_storage_paths",
@@ -163,6 +204,25 @@ export function createSupabaseUploadCleanupRepository(
       }
 
       return data;
+    },
+
+    async deleteDeletedSessionRows({ sessionId }) {
+      const { data, error } = await clientFactory()
+        .from("rag_sessions")
+        .delete()
+        .eq("id", sessionId)
+        .eq("mode", "anonymous")
+        .eq("status", "deleted")
+        .select("id")
+        .maybeSingle();
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      return {
+        deleted_sessions: data ? 1 : 0,
+      };
     },
   };
 }
