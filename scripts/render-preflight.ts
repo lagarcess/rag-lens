@@ -1,7 +1,14 @@
 import { execFile } from "node:child_process";
+import { readFile } from "node:fs/promises";
 import { promisify } from "node:util";
 
 const execFileAsync = promisify(execFile);
+
+declare const Bun: {
+  YAML: {
+    parse(input: string): unknown;
+  };
+};
 
 export interface RenderWorkspace {
   id: string;
@@ -21,6 +28,17 @@ export interface RenderPreflightResult {
   blueprint: RenderBlueprintSummary;
 }
 
+export interface RenderProjectFiles {
+  packageJson: string;
+  renderYaml: string;
+}
+
+export interface LocalRenderProjectSummary {
+  packageName: string;
+  webServiceName: string;
+  cronServiceName: string;
+}
+
 export interface CommandResult {
   stdout: string;
   stderr: string;
@@ -34,6 +52,8 @@ export type CommandRunner = (
 
 export interface RenderPreflightOptions {
   env?: Record<string, string | undefined>;
+  projectFiles?: RenderProjectFiles;
+  readProjectFiles?: () => Promise<RenderProjectFiles>;
   runCommand?: CommandRunner;
   writeOutput?: (line: string) => void;
 }
@@ -82,12 +102,67 @@ export function createMemoryCommandRunner(
   };
 }
 
+export function validateLocalRenderProject(
+  files: RenderProjectFiles,
+): LocalRenderProjectSummary {
+  const packageJson = parseJsonObject(files.packageJson, "package.json");
+  const packageName = getStringProperty(packageJson, "name");
+
+  if (packageName !== "rag-lens") {
+    throwLocalProjectError("package.json name must be rag-lens.");
+  }
+
+  const scripts = getRecordProperty(packageJson, "scripts");
+  const requiredScripts = [
+    "build",
+    "start",
+    "preflight:render",
+    "cleanup:sessions",
+    "cleanup:sessions:dry-run",
+  ];
+
+  for (const scriptName of requiredScripts) {
+    if (typeof scripts[scriptName] !== "string" || !scripts[scriptName]) {
+      throwLocalProjectError(`package.json scripts.${scriptName} is required.`);
+    }
+  }
+
+  const blueprint = parseYamlObject(files.renderYaml, "render.yaml");
+  const services = getArrayProperty(blueprint, "services");
+  const webService = findService(services, "rag-lens", "web");
+  const cronService = findService(
+    services,
+    "rag-lens-session-cleanup",
+    "cron",
+  );
+
+  validateWebService(webService);
+  validateCleanupCron(cronService);
+
+  if (services.some((service) => serviceHasEnvKey(service, "SUPABASE_PROJECT_REF"))) {
+    throwLocalProjectError(
+      "render.yaml must not include SUPABASE_PROJECT_REF in runtime env vars.",
+    );
+  }
+
+  return {
+    packageName,
+    webServiceName: "rag-lens",
+    cronServiceName: "rag-lens-session-cleanup",
+  };
+}
+
 export async function runRenderPreflight(options: RenderPreflightOptions = {}) {
   const env = options.env ?? process.env;
   const runCommand = options.runCommand ?? runShellCommand;
+  const projectFiles =
+    options.projectFiles ??
+    (await (options.readProjectFiles ?? readLocalRenderProjectFiles)());
   const expectedWorkspaceName =
     env.RENDER_EXPECTED_WORKSPACE_NAME?.trim() || "RAG Lens";
   const expectedWorkspaceId = env.RENDER_EXPECTED_WORKSPACE_ID?.trim();
+
+  validateLocalRenderProject(projectFiles);
 
   const workspaceCommand = await runCommand("render", [
     "workspace",
@@ -133,6 +208,15 @@ export async function runRenderPreflight(options: RenderPreflightOptions = {}) {
   (options.writeOutput ?? console.log)(formatPreflightLog(result));
 
   return result;
+}
+
+async function readLocalRenderProjectFiles(): Promise<RenderProjectFiles> {
+  const [packageJson, renderYaml] = await Promise.all([
+    readFile("package.json", "utf8"),
+    readFile("render.yaml", "utf8"),
+  ]);
+
+  return { packageJson, renderYaml };
 }
 
 async function runShellCommand(
@@ -223,8 +307,101 @@ function parseJsonObject(rawJson: string, label: string) {
   }
 }
 
+function parseYamlObject(rawYaml: string, label: string) {
+  try {
+    const parsed: unknown = Bun.YAML.parse(rawYaml);
+
+    if (!isRecord(parsed)) {
+      throw new Error("not an object");
+    }
+
+    return parsed;
+  } catch {
+    throwLocalProjectError(`${label} is not valid YAML.`);
+  }
+}
+
+function validateWebService(service: Record<string, unknown>) {
+  requireField(service, "repo", "https://github.com/lagarcess/rag-lens");
+  requireField(service, "runtime", "node");
+  requireField(service, "plan", "free");
+  requireField(service, "region", "ohio");
+  requireField(service, "branch", "main");
+  requireBooleanField(service, "autoDeploy", true);
+  requireField(service, "buildCommand", "bun install --frozen-lockfile && bun run build");
+  requireField(service, "startCommand", "bun run start");
+  requireField(service, "healthCheckPath", "/api/health");
+
+  const env = getEnvVarMap(service);
+  const retrievalBackend = env.get("RAG_RETRIEVAL_BACKEND");
+
+  if (retrievalBackend?.value !== "supabase") {
+    throwLocalProjectError(
+      "render.yaml web service RAG_RETRIEVAL_BACKEND must be supabase.",
+    );
+  }
+
+  for (const key of [
+    "SUPABASE_SERVICE_ROLE_KEY",
+    "PERPLEXITY_API_KEY",
+    "OPENROUTER_API_KEY",
+  ]) {
+    const entry = env.get(key);
+
+    if (!entry || entry.sync !== false || "value" in entry) {
+      throwLocalProjectError(
+        `render.yaml web service ${key} must use sync: false with no literal value.`,
+      );
+    }
+  }
+}
+
+function validateCleanupCron(service: Record<string, unknown>) {
+  requireField(service, "repo", "https://github.com/lagarcess/rag-lens");
+  requireField(service, "runtime", "node");
+  requireField(service, "plan", "starter");
+  requireField(service, "region", "ohio");
+  requireField(service, "schedule", "*/30 * * * *");
+  requireField(service, "buildCommand", "bun install --frozen-lockfile");
+  requireField(service, "startCommand", "bun run cleanup:sessions");
+
+  const envKeys = Array.from(getEnvVarMap(service).keys()).sort();
+  const allowed = [
+    "CLEANUP_BATCH_SIZE",
+    "SUPABASE_SERVICE_ROLE_KEY",
+    "SUPABASE_STORAGE_BUCKET",
+    "SUPABASE_URL",
+  ].sort();
+
+  if (envKeys.join(",") !== allowed.join(",")) {
+    throwLocalProjectError(
+      `render.yaml cleanup cron env must only contain ${allowed.join(", ")}.`,
+    );
+  }
+}
+
 function getStringProperty(input: Record<string, unknown>, key: string) {
   return typeof input[key] === "string" ? input[key] : null;
+}
+
+function getRecordProperty(input: Record<string, unknown>, key: string) {
+  const value = input[key];
+
+  if (!isRecord(value)) {
+    throwLocalProjectError(`${key} must be an object.`);
+  }
+
+  return value;
+}
+
+function getArrayProperty(input: Record<string, unknown>, key: string) {
+  const value = input[key];
+
+  if (!Array.isArray(value)) {
+    throwLocalProjectError(`${key} must be an array.`);
+  }
+
+  return value;
 }
 
 function getOptionalStringProperty(
@@ -236,6 +413,74 @@ function getOptionalStringProperty(
 
 function isRecord(input: unknown): input is Record<string, unknown> {
   return typeof input === "object" && input !== null && !Array.isArray(input);
+}
+
+function findService(services: unknown[], name: string, type: string) {
+  const service = services.find(
+    (candidate) =>
+      isRecord(candidate) &&
+      candidate.name === name &&
+      candidate.type === type,
+  );
+
+  if (!isRecord(service)) {
+    throwLocalProjectError(`render.yaml must define ${type} service ${name}.`);
+  }
+
+  return service;
+}
+
+function requireField(
+  service: Record<string, unknown>,
+  field: string,
+  expected: string,
+) {
+  if (service[field] !== expected) {
+    throwLocalProjectError(
+      `render.yaml service ${String(service.name)} ${field} must be ${expected}.`,
+    );
+  }
+}
+
+function requireBooleanField(
+  service: Record<string, unknown>,
+  field: string,
+  expected: boolean,
+) {
+  if (service[field] !== expected) {
+    throwLocalProjectError(
+      `render.yaml service ${String(service.name)} ${field} must be ${String(expected)}.`,
+    );
+  }
+}
+
+type EnvVarEntry = Record<string, unknown> & { key: string };
+
+function getEnvVarMap(service: Record<string, unknown>) {
+  const envVars = getArrayProperty(service, "envVars");
+  const entries = new Map<string, EnvVarEntry>();
+
+  for (const entry of envVars) {
+    if (!isRecord(entry) || typeof entry.key !== "string") {
+      throwLocalProjectError(
+        `render.yaml service ${String(service.name)} envVars entries must have keys.`,
+      );
+    }
+
+    entries.set(entry.key, entry as EnvVarEntry);
+  }
+
+  return entries;
+}
+
+function serviceHasEnvKey(service: unknown, key: string) {
+  if (!isRecord(service) || !Array.isArray(service.envVars)) {
+    return false;
+  }
+
+  return service.envVars.some(
+    (entry) => isRecord(entry) && entry.key === key,
+  );
 }
 
 function formatCommandKey(command: string, args: string[]) {
@@ -251,6 +496,7 @@ function getSafeErrorReason(error: unknown) {
 
   const safePrefixes = [
     "Active Render workspace is ",
+    "Local Render project check failed.",
     "Render workspace lookup failed.",
     "Render Blueprint validation failed.",
     "Render workspace current output is ",
@@ -262,6 +508,10 @@ function getSafeErrorReason(error: unknown) {
   }
 
   return fallback;
+}
+
+function throwLocalProjectError(message: string): never {
+  throw new Error(`Local Render project check failed. ${message}`);
 }
 
 if (process.argv[1]?.endsWith("render-preflight.ts")) {

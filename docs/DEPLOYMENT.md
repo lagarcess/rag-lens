@@ -78,11 +78,16 @@ run the local preflight:
 bun run preflight:render
 ```
 
-The preflight checks the active Render workspace before validating
-`render.yaml`. It intentionally fails while the CLI is pointed at `argus-prod`
-or any workspace other than `RAG Lens`. After the dedicated workspace exists,
-set `RENDER_EXPECTED_WORKSPACE_ID` in local `.env` so the guard checks the
-pinned workspace ID instead of relying on the display name alone.
+The preflight first validates local deployment files, then checks the active
+Render workspace before running Render Blueprint validation. Local checks cover
+the package name, required package scripts, web service shape, the web
+`free` plan, cleanup cron `starter` plan, hosted
+`RAG_RETRIEVAL_BACKEND=supabase`, secret placeholders, absence of
+`SUPABASE_PROJECT_REF`, and the narrow cleanup cron env surface. It
+intentionally fails while the CLI is pointed at `argus-prod` or any workspace
+other than `RAG Lens`. After the dedicated workspace exists, set
+`RENDER_EXPECTED_WORKSPACE_ID` in local `.env` so the guard checks the pinned
+workspace ID instead of relying on the display name alone.
 
 Provisional hosted web service in the wrong workspace:
 

@@ -555,8 +555,8 @@ share URL.
 
 Deliverables:
 
-- `bun run preflight:render` blocks deployment from unrelated Render
-  workspaces and validates the Blueprint.
+- `bun run preflight:render` blocks package, Blueprint, cleanup cron, secret
+  placeholder, and wrong-workspace deployment drift before service creation.
 - Render env vars configured.
 - `render.yaml` verified.
 - Health check verified.
@@ -581,8 +581,9 @@ git commit -m "chore(deploy): finalize Render backend deployment"
 Status: partially progressed. The dedicated RAG Lens Supabase project has all
 checked-in migrations applied, Supabase advisors return no warning-level issues,
 cleanup dry-run succeeds, `render.yaml` validates, and
-`bun run preflight:render` now blocks the active wrong-workspace Render context
-before any service creation. The local `main` branch currently contains
+`bun run preflight:render` now validates local package/Blueprint invariants
+before blocking the active wrong-workspace Render context. The local `main`
+branch currently contains
 deployment-readiness commits that are ahead of `origin/main`; do not push them
 unless the user explicitly asks. Render will not see those local commits until
 they are published to GitHub. The Blueprint is configured for hosted V1 with

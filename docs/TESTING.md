@@ -37,7 +37,8 @@ The Bun test suite covers:
   and failure-mode notes.
 - Workbench trace history API helpers.
 - Cleanup dry-run behavior and count-only logging helpers.
-- Render deployment preflight workspace and Blueprint validation helpers.
+- Render deployment preflight package, Blueprint, workspace, and sanitized
+  error validation helpers.
 
 ## Integration Tests To Add
 
@@ -65,9 +66,11 @@ bun run preflight:render
 ```
 
 This check must pass in the dedicated `RAG Lens` workspace before any Render
-dashboard, Blueprint, or CLI deployment step. It is expected to fail while the
-CLI is pointed at `argus-prod`, `payment-ledger`, or any other unrelated
-workspace.
+dashboard, Blueprint, or CLI deployment step. It validates local package,
+Blueprint, plan-tier, secret-placeholder, and cleanup-cron invariants before it
+asks the Render CLI for workspace or Blueprint state. It is expected to fail
+while the CLI is pointed at `argus-prod`, `payment-ledger`, or any other
+unrelated workspace.
 
 ## Portfolio QA Status
 

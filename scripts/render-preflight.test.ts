@@ -6,9 +6,91 @@ import {
   formatPreflightLog,
   parseRenderWorkspace,
   runRenderPreflight,
+  validateLocalRenderProject,
+  type RenderProjectFiles,
 } from "./render-preflight";
 
 describe("render-preflight helpers", () => {
+  test("validates the local package and Blueprint shape before Render commands", () => {
+    expect(validateLocalRenderProject(makeProjectFiles())).toEqual({
+      packageName: "rag-lens",
+      webServiceName: "rag-lens",
+      cronServiceName: "rag-lens-session-cleanup",
+    });
+  });
+
+  test("rejects package drift before deployment", () => {
+    expect(() =>
+      validateLocalRenderProject(
+        makeProjectFiles({
+          packageJson: JSON.stringify({
+            name: "rag-lens-copy",
+            scripts: {
+              build: "next build",
+              start: "next start",
+              "preflight:render": "bun scripts/render-preflight.ts",
+              "cleanup:sessions": "bun scripts/cleanup-expired-sessions.ts",
+              "cleanup:sessions:dry-run":
+                "bun scripts/cleanup-expired-sessions.ts --dry-run",
+            },
+          }),
+        }),
+      ),
+    ).toThrow("package.json name must be rag-lens");
+  });
+
+  test("rejects hosted Blueprint drift before deployment", () => {
+    expect(() =>
+      validateLocalRenderProject(
+        makeProjectFiles({
+          renderYaml: makeRenderYaml({ webRetrievalBackend: "local" }),
+        }),
+      ),
+    ).toThrow("RAG_RETRIEVAL_BACKEND must be supabase");
+  });
+
+  test("rejects cleanup cron env bloat before deployment", () => {
+    expect(() =>
+      validateLocalRenderProject(
+        makeProjectFiles({
+          renderYaml: makeRenderYaml({
+            extraCronEnv: ["PERPLEXITY_API_KEY"],
+          }),
+        }),
+      ),
+    ).toThrow("cleanup cron env must only contain");
+  });
+
+  test("rejects Render plan drift before deployment", () => {
+    expect(() =>
+      validateLocalRenderProject(
+        makeProjectFiles({
+          renderYaml: makeRenderYaml({
+            webPlan: "starter",
+            cronPlan: "free",
+          }),
+        }),
+      ),
+    ).toThrow("plan must be free");
+  });
+
+  test("runs local project validation before Render CLI commands", async () => {
+    const runner = createMemoryCommandRunner({});
+
+    await expect(
+      runRenderPreflight({
+        projectFiles: makeProjectFiles({
+          packageJson: JSON.stringify({
+            name: "rag-lens-copy",
+            scripts: {},
+          }),
+        }),
+        runCommand: runner,
+        writeOutput: () => undefined,
+      }),
+    ).rejects.toThrow("package.json name must be rag-lens");
+  });
+
   test("parses the active Render workspace JSON", () => {
     expect(
       parseRenderWorkspace(
@@ -192,3 +274,82 @@ describe("render-preflight helpers", () => {
     );
   });
 });
+
+function makeProjectFiles(
+  overrides: Partial<RenderProjectFiles> = {},
+): RenderProjectFiles {
+  return {
+    packageJson:
+      overrides.packageJson ??
+      JSON.stringify({
+        name: "rag-lens",
+        scripts: {
+          build: "next build",
+          start: "sh -c 'next start -p ${PORT:-3000}'",
+          "preflight:render": "bun scripts/render-preflight.ts",
+          "cleanup:sessions": "bun scripts/cleanup-expired-sessions.ts",
+          "cleanup:sessions:dry-run":
+            "bun scripts/cleanup-expired-sessions.ts --dry-run",
+        },
+      }),
+    renderYaml: overrides.renderYaml ?? makeRenderYaml(),
+  };
+}
+
+function makeRenderYaml(
+  input: {
+    webRetrievalBackend?: "local" | "supabase";
+    webPlan?: "free" | "starter";
+    cronPlan?: "free" | "starter";
+    extraCronEnv?: string[];
+  } = {},
+) {
+  const extraCronEnv = input.extraCronEnv ?? [];
+
+  return `services:
+  - type: web
+    name: rag-lens
+    repo: https://github.com/lagarcess/rag-lens
+    runtime: node
+    plan: ${input.webPlan ?? "free"}
+    region: ohio
+    branch: main
+    autoDeploy: true
+    buildCommand: bun install --frozen-lockfile && bun run build
+    startCommand: bun run start
+    healthCheckPath: /api/health
+    envVars:
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: PERPLEXITY_API_KEY
+        sync: false
+      - key: OPENROUTER_API_KEY
+        sync: false
+      - key: RAG_RETRIEVAL_BACKEND
+        value: ${input.webRetrievalBackend ?? "supabase"}
+  - type: cron
+    name: rag-lens-session-cleanup
+    repo: https://github.com/lagarcess/rag-lens
+    runtime: node
+    plan: ${input.cronPlan ?? "starter"}
+    region: ohio
+    schedule: "*/30 * * * *"
+    buildCommand: bun install --frozen-lockfile
+    startCommand: bun run cleanup:sessions
+    envVars:
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: SUPABASE_STORAGE_BUCKET
+        value: rag-uploads
+      - key: CLEANUP_BATCH_SIZE
+        value: "100"
+${extraCronEnv
+  .map(
+    (key) => `      - key: ${key}
+        sync: false`,
+  )
+  .join("\n")}
+`;
+}
