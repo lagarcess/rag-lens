@@ -1,6 +1,7 @@
 import { Buffer } from "node:buffer";
 
 import { RAG_LIMITS } from "@/lib/rag-config";
+import type { UploadedDocumentForIngestion } from "@/lib/rag/upload-ingestion";
 
 const ALLOWED_UPLOAD_MIME_TYPES = new Set([
   "application/pdf",
@@ -27,6 +28,7 @@ export interface UploadRepository {
     now: string;
   }): Promise<UploadSession | null>;
   createUploadDocument(row: UploadDocumentInsert): Promise<{ id: string }>;
+  deleteUploadDocument?(documentId: string): Promise<void>;
 }
 
 export interface UploadStorage {
@@ -152,6 +154,7 @@ export async function uploadDocumentFromFormData(input: {
   now?: Date;
   idGenerator?: () => string;
   pdfExtractor?: (bytes: Uint8Array) => Promise<string>;
+  ingestor?: (document: UploadedDocumentForIngestion) => Promise<void>;
 }): Promise<UploadedDocumentResponse> {
   const now = (input.now ?? new Date()).toISOString();
   const sessionId = readSessionId(input.formData);
@@ -188,6 +191,8 @@ export async function uploadDocumentFromFormData(input: {
     contentType: validated.mimeType,
   });
 
+  let documentRegistered = false;
+
   try {
     await input.repository.createUploadDocument({
       id: documentId,
@@ -204,11 +209,26 @@ export async function uploadDocumentFromFormData(input: {
       expires_at: session.expiresAt,
       hard_expires_at: session.hardExpiresAt,
     });
+    documentRegistered = true;
+
+    await input.ingestor?.({
+      documentId,
+      sessionId: session.id,
+      fileName: validated.fileName,
+      extractedText,
+      expiresAt: session.expiresAt,
+      hardExpiresAt: session.hardExpiresAt,
+    });
   } catch (error) {
     await input.storage.remove({
       bucket: input.bucket,
       paths: [storagePath],
     });
+
+    if (documentRegistered && input.repository.deleteUploadDocument) {
+      await input.repository.deleteUploadDocument(documentId);
+    }
+
     throw error;
   }
 

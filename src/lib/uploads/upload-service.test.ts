@@ -130,6 +130,7 @@ describe("uploadDocumentFromFormData", () => {
       existingUploads: [],
     });
     const storage = new FakeUploadStorage();
+    const ingestedDocuments: Array<Record<string, unknown>> = [];
     const formData = new FormData();
     formData.set("sessionId", activeSession.id);
     formData.set(
@@ -146,6 +147,9 @@ describe("uploadDocumentFromFormData", () => {
       bucket: "rag-uploads",
       now: new Date("2026-06-27T10:30:00.000Z"),
       idGenerator: () => "33333333-3333-4333-8333-333333333333",
+      ingestor: async (document) => {
+        ingestedDocuments.push(document);
+      },
     });
 
     expect(storage.uploads[0]).toMatchObject({
@@ -168,6 +172,16 @@ describe("uploadDocumentFromFormData", () => {
       expires_at: activeSession.expiresAt,
       hard_expires_at: activeSession.hardExpiresAt,
     });
+    expect(ingestedDocuments).toEqual([
+      {
+        documentId: "33333333-3333-4333-8333-333333333333",
+        sessionId: activeSession.id,
+        fileName: "notes.md",
+        extractedText: "RAG improves answer trust.",
+        expiresAt: activeSession.expiresAt,
+        hardExpiresAt: activeSession.hardExpiresAt,
+      },
+    ]);
     expect(result).toMatchObject({
       documentId: "33333333-3333-4333-8333-333333333333",
       sessionId: activeSession.id,
@@ -243,6 +257,39 @@ describe("uploadDocumentFromFormData", () => {
       },
     ]);
   });
+
+  test("rolls back storage and document rows when upload ingestion fails", async () => {
+    const repository = new FakeUploadRepository({
+      session: activeSession,
+    });
+    const storage = new FakeUploadStorage();
+
+    await expect(
+      uploadDocumentFromFormData({
+        formData: makeUploadFormData(activeSession.id),
+        repository,
+        storage,
+        bucket: "rag-uploads",
+        now: new Date("2026-06-27T10:30:00.000Z"),
+        idGenerator: () => "33333333-3333-4333-8333-333333333333",
+        ingestor: async () => {
+          throw new Error("Embedding provider unavailable");
+        },
+      }),
+    ).rejects.toThrow("Embedding provider unavailable");
+
+    expect(storage.removals).toEqual([
+      {
+        bucket: "rag-uploads",
+        paths: [
+          "sessions/11111111-1111-4111-8111-111111111111/33333333-3333-4333-8333-333333333333-notes.md",
+        ],
+      },
+    ]);
+    expect(repository.deletedDocumentIds).toEqual([
+      "33333333-3333-4333-8333-333333333333",
+    ]);
+  });
 });
 
 function makeUploadFormData(sessionId: string) {
@@ -259,6 +306,7 @@ function makeUploadFormData(sessionId: string) {
 
 class FakeUploadRepository {
   insertedRows: Array<Record<string, unknown>> = [];
+  deletedDocumentIds: string[] = [];
 
   constructor(
     private readonly data: {
@@ -278,6 +326,10 @@ class FakeUploadRepository {
 
     this.insertedRows.push(row);
     return { id: String(row.id) };
+  }
+
+  async deleteUploadDocument(documentId: string) {
+    this.deletedDocumentIds.push(documentId);
   }
 }
 

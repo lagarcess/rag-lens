@@ -1,4 +1,8 @@
 import { RAG_LIMITS } from "@/lib/rag-config";
+import { getPerplexityEmbeddingEnv } from "@/lib/env";
+import { embedTextsWithPerplexity } from "@/lib/rag/perplexity-embeddings";
+import { createSupabaseUploadIngestionRepository } from "@/lib/rag/supabase-upload-ingestion-store";
+import { ingestUploadedDocument } from "@/lib/rag/upload-ingestion";
 import {
   createSupabaseUploadRepository,
   createSupabaseUploadStorage,
@@ -27,6 +31,21 @@ export async function POST(request: Request) {
       repository: createSupabaseUploadRepository(),
       storage: createSupabaseUploadStorage(),
       bucket: getUploadBucket(),
+      ingestor: async (document) => {
+        const perplexityEnv = getPerplexityEmbeddingEnv();
+
+        await ingestUploadedDocument({
+          document,
+          repository: createSupabaseUploadIngestionRepository(),
+          embeddingModel: perplexityEnv.standardEmbeddingModel,
+          embedTexts: (texts) =>
+            embedTextsWithPerplexity({
+              apiKey: perplexityEnv.apiKey,
+              model: perplexityEnv.standardEmbeddingModel,
+              input: texts,
+            }),
+        });
+      },
     });
 
     return Response.json(result, { status: 201 });

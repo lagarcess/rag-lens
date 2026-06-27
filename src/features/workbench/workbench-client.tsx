@@ -35,6 +35,7 @@ export function WorkbenchClient() {
   const selectedSource = state.sources.find(
     (source) => source.slug === state.selectedCorpusSlug,
   );
+  const selectedUploadSource = selectedSource?.sourceKind === "upload";
   const result = state.query.result;
   const isLoading = state.query.status === "loading";
   const isUploading =
@@ -53,14 +54,22 @@ export function WorkbenchClient() {
     dispatch({ type: "queryStarted" });
 
     try {
+      if (selectedUploadSource && !selectedSource.sessionId) {
+        throw new Error("Upload a document before querying uploaded sources.");
+      }
+
       const trace = await runTraceQuery({
-        sessionId: null,
-        corpusSlug: state.selectedCorpusSlug,
+        sessionId: selectedUploadSource ? selectedSource.sessionId ?? null : null,
+        corpusSlug: selectedUploadSource
+          ? "session-uploads"
+          : state.selectedCorpusSlug,
         question: state.question,
         topK: state.settings.topK,
-        chunkSize: state.settings.chunkSize,
-        chunkOverlap: state.settings.chunkOverlap,
-        embeddingMode: state.settings.embeddingMode,
+        chunkSize: selectedUploadSource ? 800 : state.settings.chunkSize,
+        chunkOverlap: selectedUploadSource ? 120 : state.settings.chunkOverlap,
+        embeddingMode: selectedUploadSource
+          ? "standard"
+          : state.settings.embeddingMode,
       });
 
       dispatch({ type: "querySucceeded", result: trace });
@@ -138,7 +147,7 @@ export function WorkbenchClient() {
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-sm font-semibold">Knowledge sources</h2>
           <span className="rounded-full bg-[var(--badge-bg)] px-2 py-1 font-mono text-[11px] text-[var(--badge-fg)]">
-            examples
+            sources
           </span>
         </div>
         <div className="space-y-2">
@@ -174,9 +183,7 @@ export function WorkbenchClient() {
                     {source.title}
                   </span>
                   <span className="font-mono text-[11px] text-[var(--muted)]">
-                    {ready
-                      ? `${source.documentCount} doc indexed`
-                      : "coming soon"}
+                    {ready ? formatSourceCount(source) : "coming soon"}
                   </span>
                   <span className="mt-1 block text-xs leading-5 text-[var(--muted)]">
                     {source.description}
@@ -266,14 +273,12 @@ export function WorkbenchClient() {
                       {document.fileName}
                     </span>
                     <span className="rounded-full bg-[var(--badge-bg)] px-2 py-0.5 font-mono text-[10px] text-[var(--badge-fg)]">
-                      {document.status === "ready"
-                        ? "extracted"
-                        : document.status}
+                      {document.status === "ready" ? "indexed" : document.status}
                     </span>
                   </div>
                   <p className="mt-1 text-xs leading-5 text-[var(--muted)]">
                     {document.extractedCharacters
-                      ? `${formatNumber(document.extractedCharacters)} characters extracted. Indexing comes next.`
+                      ? `${formatNumber(document.extractedCharacters)} characters indexed.`
                       : "Preparing upload for extraction."}
                   </p>
                 </div>
@@ -347,7 +352,11 @@ export function WorkbenchClient() {
             ) : null}
           </form>
 
-          <RetrievalControls state={state} dispatch={dispatch} />
+          <RetrievalControls
+            selectedSource={selectedSource}
+            state={state}
+            dispatch={dispatch}
+          />
         </div>
 
         <AnswerPanel isLoading={isLoading} result={result} />
@@ -374,18 +383,29 @@ function formatNumber(value: number) {
   return new Intl.NumberFormat().format(value);
 }
 
+function formatSourceCount(source: { documentCount: number; sourceKind: string }) {
+  const label = source.documentCount === 1 ? "doc" : "docs";
+  const scope = source.sourceKind === "upload" ? "session" : "indexed";
+
+  return `${source.documentCount} ${label} ${scope}`;
+}
+
 type WorkbenchState = ReturnType<typeof createInitialWorkbenchState>;
 type WorkbenchDispatch = React.Dispatch<
   Parameters<typeof workbenchReducer>[1]
 >;
 
 function RetrievalControls({
+  selectedSource,
   state,
   dispatch,
 }: {
+  selectedSource: WorkbenchState["sources"][number] | undefined;
   state: WorkbenchState;
   dispatch: WorkbenchDispatch;
 }) {
+  const uploadProfileLocked = selectedSource?.sourceKind === "upload";
+
   return (
     <div className="rounded-lg border border-[var(--border)] bg-[var(--surface-elevated)] p-4">
       <div className="mb-3 flex items-center gap-2 text-sm font-medium">
@@ -397,30 +417,47 @@ function RetrievalControls({
           ["topK", "top_k", 1, 12],
           ["chunkSize", "chunk_size", 160, 2000],
           ["chunkOverlap", "overlap", 0, state.settings.chunkSize - 1],
-        ].map(([key, label, min, max]) => (
-          <label className="block" key={String(key)}>
-            <span className="mb-1 flex justify-between">
-              <span>{label}</span>
-              <span>{state.settings[key as keyof typeof state.settings]}</span>
-            </span>
-            <input
-              className="w-full accent-[var(--accent-strong)]"
-              max={Number(max)}
-              min={Number(min)}
-              onChange={(event) =>
-                dispatch({
-                  type: "settingChanged",
-                  key: key as keyof typeof state.settings,
-                  value: event.target.value,
-                })
-              }
-              step={key === "topK" ? 1 : 40}
-              type="range"
-              value={Number(state.settings[key as keyof typeof state.settings])}
-            />
-          </label>
-        ))}
+        ].map(([key, label, min, max]) => {
+          const locked = uploadProfileLocked && key !== "topK";
+          const value =
+            key === "chunkSize" && locked
+              ? 800
+              : key === "chunkOverlap" && locked
+                ? 120
+                : state.settings[key as keyof typeof state.settings];
+
+          return (
+            <label className="block" key={String(key)}>
+              <span className="mb-1 flex justify-between">
+                <span>{label}</span>
+                <span>{value}</span>
+              </span>
+              <input
+                className="w-full accent-[var(--accent-strong)] disabled:opacity-50"
+                disabled={locked}
+                max={Number(max)}
+                min={Number(min)}
+                onChange={(event) =>
+                  dispatch({
+                    type: "settingChanged",
+                    key: key as keyof typeof state.settings,
+                    value: event.target.value,
+                  })
+                }
+                step={key === "topK" ? 1 : 40}
+                type="range"
+                value={Number(value)}
+              />
+            </label>
+          );
+        })}
       </div>
+      {uploadProfileLocked ? (
+        <p className="mt-3 text-xs leading-5 text-[var(--muted)]">
+          Uploaded documents use the default indexed chunk profile for this
+          slice.
+        </p>
+      ) : null}
     </div>
   );
 }
@@ -557,7 +594,7 @@ function TraceRow({ row }: { row: RagRetrievalRow }) {
           </span>
         </div>
         <div className="font-mono text-xs text-[var(--trace-foreground)]">
-          {row.fileName} · chunk {row.chunkIndex}
+          {row.fileName} · chunk {row.chunkIndex} · {row.retrievalMode}
         </div>
         <p className="mt-2 line-clamp-3 text-sm leading-6 text-[var(--trace-muted)]">
           {row.content}

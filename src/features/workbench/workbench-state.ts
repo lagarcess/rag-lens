@@ -18,6 +18,8 @@ export interface WorkbenchSource {
   slug: string;
   title: string;
   description: string;
+  sourceKind: "example" | "upload";
+  sessionId?: string;
   status: "ready" | "coming-soon";
   documentCount: number;
 }
@@ -88,6 +90,7 @@ export function createInitialWorkbenchState(): WorkbenchState {
         slug: "rag-concepts-primer",
         title: "RAG Concepts Primer",
         description: "Small first-party explainer corpus",
+        sourceKind: "example",
         status: "ready",
         documentCount: 1,
       },
@@ -95,6 +98,7 @@ export function createInitialWorkbenchState(): WorkbenchState {
         slug: "scifact-mini",
         title: "SciFact Mini",
         description: "Evidence retrieval example",
+        sourceKind: "example",
         status: "coming-soon",
         documentCount: 0,
       },
@@ -102,6 +106,7 @@ export function createInitialWorkbenchState(): WorkbenchState {
         slug: "hotpotqa-mini",
         title: "HotpotQA Mini",
         description: "Multi-hop retrieval example",
+        sourceKind: "example",
         status: "coming-soon",
         documentCount: 0,
       },
@@ -198,6 +203,10 @@ export function workbenchReducer(
     case "sessionDeleted":
       return {
         ...state,
+        sources: state.sources.filter(
+          (source) => source.slug !== "session-uploads",
+        ),
+        selectedCorpusSlug: "rag-concepts-primer",
         session: {
           status: "idle",
           sessionId: null,
@@ -244,6 +253,15 @@ export function workbenchReducer(
     case "uploadSucceeded":
       return {
         ...state,
+        sources: upsertSessionUploadSource({
+          sources: state.sources,
+          sessionId: action.document.sessionId,
+          documentCount:
+            state.uploads.documents.filter(
+              (document) => document.status === "ready",
+            ).length + 1,
+        }),
+        selectedCorpusSlug: "session-uploads",
         uploads: {
           status: "ready",
           error: null,
@@ -318,4 +336,32 @@ function normalizeSettingValue(
   }
 
   return Number(value);
+}
+
+function upsertSessionUploadSource(input: {
+  sources: WorkbenchSource[];
+  sessionId: string;
+  documentCount: number;
+}) {
+  const uploadSource: WorkbenchSource = {
+    slug: "session-uploads",
+    title: "Uploaded documents",
+    description: "Temporary documents indexed for this session",
+    sourceKind: "upload",
+    sessionId: input.sessionId,
+    status: "ready",
+    documentCount: input.documentCount,
+  };
+
+  const existing = input.sources.find(
+    (source) => source.slug === uploadSource.slug,
+  );
+
+  if (!existing) {
+    return [uploadSource, ...input.sources];
+  }
+
+  return input.sources.map((source) =>
+    source.slug === uploadSource.slug ? uploadSource : source,
+  );
 }

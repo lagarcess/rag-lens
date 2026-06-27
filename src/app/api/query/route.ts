@@ -9,7 +9,8 @@ import {
 import { RAG_LIMITS } from "@/lib/rag-config";
 import { generateOpenRouterAnswer } from "@/lib/rag/openrouter";
 import { embedTextsWithPerplexity } from "@/lib/rag/perplexity-embeddings";
-import { runExampleTrace } from "@/lib/rag/query-runner";
+import { runExampleTrace, runVectorTrace } from "@/lib/rag/query-runner";
+import { createSupabaseSessionSourceRepository } from "@/lib/rag/supabase-session-source";
 import { retrieveSupabaseVector } from "@/lib/rag/supabase-vector";
 import { createSupabaseAdminClient } from "@/lib/supabase-admin";
 
@@ -41,6 +42,64 @@ export async function POST(request: Request) {
 
   try {
     const runtimeEnv = getRagRuntimeEnv();
+    const isSessionUploadQuery = Boolean(parsed.data.sessionId);
+
+    if (isSessionUploadQuery) {
+      if (!usesSeededExampleVectorProfile(parsed.data)) {
+        return Response.json(
+          {
+            error:
+              "Uploaded document retrieval currently uses the default indexed vector profile.",
+            details: {
+              chunkSize: RAG_LIMITS.defaultChunkSize,
+              chunkOverlap: RAG_LIMITS.defaultChunkOverlap,
+              embeddingMode: "standard",
+            },
+          },
+          { status: 400 },
+        );
+      }
+
+      const source = await createSupabaseSessionSourceRepository()
+        .loadActiveUploadSource({
+          sessionId: parsed.data.sessionId as string,
+          now: new Date().toISOString(),
+        });
+
+      if (!source || source.documentCount === 0 || source.totalChunks === 0) {
+        return Response.json(
+          { error: "No indexed uploads were found for this session." },
+          { status: 404 },
+        );
+      }
+
+      const perplexityEnv = getPerplexityEmbeddingEnv();
+      const result = await runVectorTrace(parsed.data, {
+        source,
+        retrievalProvider: (input) =>
+          retrieveSupabaseVector({
+            question: input.question,
+            sessionId: input.sessionId,
+            topK: input.topK,
+            supabase: createSupabaseAdminClient(),
+            queryEmbeddingModel: perplexityEnv.standardEmbeddingModel,
+            queryEmbedding: async (question) => {
+              const [embedding] = await embedTextsWithPerplexity({
+                apiKey: perplexityEnv.apiKey,
+                model: perplexityEnv.standardEmbeddingModel,
+                input: [question],
+              });
+
+              return embedding;
+            },
+          }),
+        answerProvider: shouldUseOpenRouter()
+          ? (input) => generateOpenRouterAnswer(input, getOpenRouterEnv())
+          : undefined,
+      });
+
+      return Response.json(result);
+    }
 
     if (
       runtimeEnv.retrievalBackend === "supabase" &&

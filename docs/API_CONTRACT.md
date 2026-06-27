@@ -20,11 +20,16 @@ Response:
 
 ### `POST /api/query`
 
-Runs the current example trace runner. This implementation is ephemeral and
-uses deterministic lexical retrieval over curated example documents. When
-`CHAT_PROVIDER=openrouter` and `OPENROUTER_API_KEY` are configured, answer
+Runs a RAG trace for either a curated example corpus or the active session's
+uploaded documents.
+
+Example corpora can run with deterministic local retrieval or Supabase
+`pgvector`, depending on `RAG_RETRIEVAL_BACKEND`. Session uploads always use the
+Supabase vector path because uploaded chunks live in the hosted database.
+
+When `CHAT_PROVIDER=openrouter` and `OPENROUTER_API_KEY` are configured, answer
 generation uses OpenRouter. Otherwise it falls back to a local extractive answer
-so the demo remains usable without provider calls.
+so the demo remains usable without chat provider calls.
 
 Request:
 
@@ -90,6 +95,27 @@ Response:
 }
 ```
 
+For uploaded documents, send the anonymous `sessionId` and use
+`corpusSlug: "session-uploads"`. The uploaded-document path currently requires
+the default indexed vector profile:
+
+```json
+{
+  "sessionId": "uuid",
+  "corpusSlug": "session-uploads",
+  "question": "What does my document say about retrieval?",
+  "topK": 5,
+  "chunkSize": 800,
+  "chunkOverlap": 120,
+  "embeddingMode": "standard"
+}
+```
+
+Uploaded-document responses use the same shape, with
+`trace.corpus.sourceKind: "upload"`, `trace.retrieval.method:
+"supabase-pgvector-cosine"`, and `trace.persistence.store:
+"supabase-session-vectors"`.
+
 ### `POST /api/sessions`
 
 Creates an anonymous session.
@@ -129,10 +155,6 @@ Response:
 }
 ```
 
-### `GET /api/corpora`
-
-Lists example corpora and active session documents.
-
 ### `POST /api/uploads`
 
 Accepts a file upload for an active anonymous session.
@@ -150,10 +172,11 @@ Limits:
 - Route rejects oversized multipart requests before parsing the body when the
   `Content-Length` header exceeds the configured request cap.
 
-This V1 slice performs synchronous text extraction. A successful upload writes
-the original file to Supabase Storage, inserts a `ready` `rag_documents` row,
-and returns document metadata. Failed extraction is rejected and does not create
-a document row.
+This V1 slice performs synchronous text extraction, default chunking, Perplexity
+embedding, and Supabase chunk insertion. A successful upload writes the original
+file to Supabase Storage, inserts a `ready` `rag_documents` row, stores
+session-scoped `rag_document_chunks`, and returns document metadata. Failed
+extraction or indexing is rejected; Storage and database rows are rolled back.
 
 Response:
 
@@ -172,51 +195,18 @@ Response:
 }
 ```
 
-Status: implemented for upload and extraction. Chunking and embedding uploaded
-documents remain in the next ingestion slice.
+Status: implemented for upload, extraction, default-profile chunking,
+embedding, and session-scoped vector indexing.
 
 ## Planned
 
-### `POST /api/ingest/:documentId`
+### `GET /api/corpora`
 
-Extracts text, chunks it, embeds chunks, and stores vectors.
+Lists example corpora and active session documents when the workbench stops
+using its current static source seed.
 
-### Supabase-backed `POST /api/query`
+### Trace persistence for `POST /api/query`
 
-Runs query embedding, vector retrieval, prompt assembly, answer generation, and trace persistence.
-
-Request:
-
-```json
-{
-  "sessionId": "uuid or null",
-  "corpusSlug": "rag-concepts-primer",
-  "question": "How does RAG improve trust?",
-  "topK": 5,
-  "chunkSize": 800,
-  "chunkOverlap": 120,
-  "embeddingMode": "contextualized"
-}
-```
-
-Response:
-
-```json
-{
-  "queryId": "uuid",
-  "answer": "string",
-  "citations": [
-    {
-      "rank": 1,
-      "chunkId": "uuid",
-      "fileName": "rag-primer.md",
-      "similarity": 0.84
-    }
-  ],
-  "trace": {
-    "retrieval": [],
-    "prompt": "string",
-    "models": {}
-  }
-}
-```
+Persists query, answer, prompt, trace JSON, and retrieval rows for active
+sessions. The request and response shape should remain compatible with the
+implemented `POST /api/query` contract.

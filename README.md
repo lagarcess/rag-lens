@@ -47,8 +47,11 @@ Open `http://localhost:3000`.
 ## Current Status
 
 Foundation, the recruiter-facing workbench, anonymous sessions, seeded example
-vectors, model-backed answers, and session-scoped upload/extraction are working
-locally against the hosted RAG Lens Supabase project.
+vectors, model-backed answers, and session-scoped upload/extraction/indexing are
+working locally against the hosted RAG Lens Supabase project. Uploaded markdown,
+text, and PDF documents are chunked with the default profile, embedded with
+Perplexity, stored in Supabase `pgvector`, and queryable from the workbench for
+the active anonymous session.
 
 - GitHub: https://github.com/lagarcess/rag-lens
 - Render: provisional app/backend service exists, but the Render URL is not the
@@ -72,4 +75,6 @@ Useful commands:
 bun test
 bun run seed:examples
 bun run cleanup:sessions
+bun run lint
+bun run build
 ```

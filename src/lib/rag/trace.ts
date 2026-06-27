@@ -51,7 +51,7 @@ export interface RagTrace {
   corpus: {
     slug: string;
     title: string;
-    sourceKind: "example";
+    sourceKind: "example" | "upload";
     documentCount: number;
   };
   extraction: {
@@ -98,7 +98,7 @@ export interface RagTrace {
   };
   persistence: {
     mode: "ephemeral";
-    store: "local-example-runner";
+    store: "local-example-runner" | "supabase-session-vectors";
   };
   warnings: string[];
 }

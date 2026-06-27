@@ -72,4 +72,37 @@ describe("retrieveSupabaseVector", () => {
       embeddingMode: "standard",
     });
   });
+
+  test("filters vector retrieval by active upload session when session scope is provided", async () => {
+    const rpcCalls: Array<{ name: string; args: Record<string, unknown> }> = [];
+    const supabase = {
+      rpc: (name: string, args: Record<string, unknown>) => {
+        rpcCalls.push({ name, args });
+
+        return Promise.resolve({
+          data: [],
+          error: null,
+        });
+      },
+    };
+
+    await retrieveSupabaseVector({
+      question: "What did I upload?",
+      sessionId: "11111111-1111-4111-8111-111111111111",
+      topK: 3,
+      queryEmbeddingModel: "pplx-embed-v1-0.6b",
+      queryEmbedding: async () => [0.6, 0.8],
+      supabase,
+    });
+
+    expect(rpcCalls[0]).toMatchObject({
+      name: "match_rag_chunks",
+      args: {
+        filter_session_id: "11111111-1111-4111-8111-111111111111",
+        filter_corpus_slug: null,
+        match_count: 3,
+        match_threshold: 0,
+      },
+    });
+  });
 });

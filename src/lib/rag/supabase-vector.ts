@@ -13,7 +13,8 @@ interface SupabaseRpcClient {
 
 interface RetrieveSupabaseVectorInput {
   question: string;
-  corpusSlug: string;
+  corpusSlug?: string;
+  sessionId?: string;
   topK: number;
   queryEmbeddingModel: string;
   queryEmbedding: (question: string) => Promise<number[]>;
@@ -30,13 +31,17 @@ interface SupabaseVectorRetrieval {
 export async function retrieveSupabaseVector(
   input: RetrieveSupabaseVectorInput,
 ): Promise<SupabaseVectorRetrieval> {
+  if (!input.sessionId && !input.corpusSlug) {
+    throw new Error("Vector retrieval requires a corpus or session scope");
+  }
+
   const embedding = await input.queryEmbedding(input.question);
   const { data, error } = await input.supabase.rpc("match_rag_chunks", {
     query_embedding: toPgVector(embedding),
     match_count: input.topK,
     match_threshold: 0,
-    filter_session_id: null,
-    filter_corpus_slug: input.corpusSlug,
+    filter_session_id: input.sessionId ?? null,
+    filter_corpus_slug: input.sessionId ? null : input.corpusSlug,
   });
 
   if (error) {

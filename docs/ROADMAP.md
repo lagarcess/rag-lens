@@ -94,8 +94,9 @@ Verification:
 - Uploaded file row carries `session_id` and expiry.
 - Delete session removes file metadata and storage objects.
 
-Status: implemented for synchronous upload and extraction. Uploaded-document
-chunking and embeddings are covered by Slice 5.
+Status: implemented for synchronous upload, extraction, default-profile
+chunking, Perplexity embedding, Supabase vector insertion, and rollback on
+indexing failure.
 
 ## Slice 5 - Chunking And Embeddings
 
@@ -119,6 +120,10 @@ Verification:
 - Query and document embeddings use compatible model family.
 - Retrieval uses cosine distance.
 
+Status: implemented for the default standard embedding profile for seeded
+examples and uploaded session documents. Contextualized embeddings and dynamic
+re-chunking remain deferred until separate vector profiles are tracked.
+
 ## Slice 6 - Retrieval And Trace
 
 Goal: Retrieve top chunks and store the complete reasoning trace.
@@ -135,6 +140,10 @@ Verification:
 - RPC returns ranked chunks.
 - Filtering by session or example corpus works.
 - Retrieval rows preserve rank order and scores.
+
+Status: implemented for query-time session-scoped vector retrieval and trace
+rendering. Persistence of `rag_queries` and `rag_retrievals` remains in the
+trace-history slice.
 
 ## Slice 7 - Answer Generation And Citations
 

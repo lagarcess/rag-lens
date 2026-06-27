@@ -327,6 +327,9 @@ Commit:
 git commit -m "feat(rag): add Supabase vector retrieval"
 ```
 
+Status: complete for seeded example vectors and default-profile query
+retrieval.
+
 ### Slice 7 - Upload And Extraction
 
 Goal: Let anonymous users upload small temporary PDF, text, and markdown files.
@@ -353,6 +356,10 @@ Commit:
 ```bash
 git commit -m "feat(upload): add session-scoped document ingestion"
 ```
+
+Status: complete for synchronous upload, extraction, default-profile chunking,
+embedding, session-scoped vector insertion, upload-source selection, and
+session vector querying.
 
 ### Slice 8 - Trace Persistence And History
 

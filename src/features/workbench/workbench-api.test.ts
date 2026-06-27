@@ -73,6 +73,46 @@ describe("runTraceQuery", () => {
       ),
     ).rejects.toThrow("Invalid query request");
   });
+
+  test("includes the anonymous session id when querying uploaded documents", async () => {
+    const fetchCalls: Array<{ url: string; init?: RequestInit }> = [];
+    const fetchFn = async (url: string | URL | Request, init?: RequestInit) => {
+      fetchCalls.push({ url: String(url), init });
+
+      return new Response(
+        JSON.stringify({
+          queryId: "query-1",
+          answer: "Answer",
+          citations: [],
+          trace: {
+            retrieval: { method: "supabase-pgvector-cosine", rows: [] },
+          },
+        }),
+        {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        },
+      );
+    };
+
+    await runTraceQuery(
+      {
+        sessionId: "11111111-1111-4111-8111-111111111111",
+        corpusSlug: "session-uploads",
+        question: "What did I upload?",
+        topK: 5,
+        chunkSize: 800,
+        chunkOverlap: 120,
+        embeddingMode: "standard",
+      },
+      fetchFn,
+    );
+
+    expect(JSON.parse(String(fetchCalls[0].init?.body))).toMatchObject({
+      sessionId: "11111111-1111-4111-8111-111111111111",
+      corpusSlug: "session-uploads",
+    });
+  });
 });
 
 describe("createAnonymousSession", () => {

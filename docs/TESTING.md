@@ -5,15 +5,14 @@
 Run:
 
 ```bash
+bun test
 bun run lint
 bun run build
 ```
 
-## Unit Tests To Add
+## Current Unit Coverage
 
-Add a test runner in Slice 2 or 3. Candidate: Vitest for pure TypeScript helpers.
-
-Priority unit coverage:
+The Bun test suite covers:
 
 - Base64 int8 embedding decode.
 - L2 normalization.
@@ -21,13 +20,16 @@ Priority unit coverage:
 - Prompt assembly.
 - Session expiry calculations.
 - Upload validation.
+- Upload extraction.
+- Upload chunk-row construction and ingestion orchestration.
+- Session-scoped vector retrieval RPC arguments.
+- Workbench session/upload/query state.
 
 ## Integration Tests To Add
 
-- Supabase migration applies cleanly.
-- `match_rag_chunks` returns ranked chunks.
-- Cleanup removes expired rows.
 - Query route persists trace records.
+- Browser-driven upload/query flow with provider fixtures or a disposable
+  hosted test project.
 
 ## Browser QA
 

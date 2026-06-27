@@ -13,6 +13,8 @@ Rules:
   lightweight content check before extraction.
 - Store every upload under a session-scoped path.
 - Attach `session_id`, `expires_at`, and `hard_expires_at` to all derived rows.
+- Roll back Storage and document rows if extraction, embedding, or chunk
+  insertion fails.
 - Delete anonymous uploads within 24 hours.
 - Let users delete the session immediately.
 - Run Render cleanup every 30 minutes.

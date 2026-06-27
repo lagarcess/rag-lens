@@ -69,6 +69,18 @@ export function createSupabaseUploadRepository(
       const created = data as { id: string };
       return { id: created.id };
     },
+
+    async deleteUploadDocument(documentId: string) {
+      const { error } = await clientFactory()
+        .from("rag_documents")
+        .delete()
+        .eq("id", documentId)
+        .eq("source_kind", "upload");
+
+      if (error) {
+        throw new Error(error.message);
+      }
+    },
   };
 }
 

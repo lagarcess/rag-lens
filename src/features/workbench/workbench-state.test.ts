@@ -125,6 +125,14 @@ describe("workbenchReducer", () => {
       status: "ready",
       extractedCharacters: 19,
     });
+    expect(uploaded.sources).toContainEqual(
+      expect.objectContaining({
+        slug: "session-uploads",
+        title: "Uploaded documents",
+        status: "ready",
+        documentCount: 1,
+      }),
+    );
 
     const failed = workbenchReducer(uploaded, {
       type: "uploadFailed",
@@ -145,5 +153,43 @@ describe("workbenchReducer", () => {
       hardExpiresAt: null,
     });
     expect(deleted.uploads.documents).toEqual([]);
+    expect(
+      deleted.sources.some((source) => source.slug === "session-uploads"),
+    ).toBe(false);
+    expect(deleted.selectedCorpusSlug).toBe("rag-concepts-primer");
+  });
+
+  test("selects the session upload source after upload success and sends session scope", () => {
+    const initial = createInitialWorkbenchState();
+    const active = workbenchReducer(initial, {
+      type: "sessionCreated",
+      session: {
+        sessionId: "11111111-1111-4111-8111-111111111111",
+        expiresAt: "2026-06-27T12:00:00.000Z",
+        hardExpiresAt: "2026-06-28T10:00:00.000Z",
+      },
+    });
+    const uploaded = workbenchReducer(active, {
+      type: "uploadSucceeded",
+      document: {
+        documentId: "22222222-2222-4222-8222-222222222222",
+        sessionId: "11111111-1111-4111-8111-111111111111",
+        fileName: "notes.md",
+        mimeType: "text/markdown",
+        byteSize: 19,
+        status: "ready",
+        extractedCharacters: 19,
+        expiresAt: "2026-06-27T12:00:00.000Z",
+        hardExpiresAt: "2026-06-28T10:00:00.000Z",
+      },
+    });
+
+    expect(uploaded.selectedCorpusSlug).toBe("session-uploads");
+    expect(uploaded.sources.find((source) => source.slug === "session-uploads"))
+      .toMatchObject({
+        sourceKind: "upload",
+        sessionId: "11111111-1111-4111-8111-111111111111",
+        documentCount: 1,
+      });
   });
 });
