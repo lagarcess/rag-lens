@@ -1,5 +1,9 @@
 # End-to-End Roadmap
 
+The controlling execution plan for V1 is `docs/EXECUTION_PLAN.md`. This file
+keeps the product roadmap readable; the execution plan owns commit boundaries,
+subagent discipline, verification gates, and cleanup rules.
+
 ## Slice 0 - Foundation
 
 Goal: Create the repo, docs, design system, env templates, deployment blueprint, and database schema.
