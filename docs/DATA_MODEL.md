@@ -110,5 +110,7 @@ Uploads:
 - `session_id` is required.
 - `expires_at` is required and marks active demo expiry.
 - `hard_expires_at` is required and marks the physical purge deadline.
-- Anonymous upload files and derived rows are deleted within 24 hours.
-- Cleanup removes Storage files before database rows.
+- Anonymous upload files and derived rows are scheduled for purge by 23.5 hours,
+  leaving the 30-minute cleanup cadence inside the 24-hour deletion promise.
+- Cleanup removes Storage files before database rows and scopes row deletion to
+  the Storage paths processed in that run.

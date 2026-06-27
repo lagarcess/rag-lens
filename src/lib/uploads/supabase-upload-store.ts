@@ -149,11 +149,12 @@ export function createSupabaseUploadCleanupRepository(
         );
     },
 
-    async deleteExpiredRows({ now }) {
+    async deleteExpiredRows({ now, storagePaths }) {
       const { data, error } = await clientFactory().rpc(
         "delete_expired_rag_rows",
         {
           p_now: now,
+          p_storage_paths: storagePaths,
         },
       );
 

@@ -27,11 +27,14 @@ The Bun test suite covers:
   and reload mapping.
 - Workbench session/upload/query/history state.
 - Workbench trace history API helpers.
+- Cleanup dry-run behavior and count-only logging helpers.
 
 ## Integration Tests To Add
 
 - Browser-driven upload/query flow with provider fixtures or a disposable
   hosted test project.
+- Disposable Supabase cleanup fixture proving expired rows are deleted while
+  examples and active sessions remain.
 
 ## Browser QA
 

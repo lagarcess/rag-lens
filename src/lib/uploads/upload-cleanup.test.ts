@@ -32,9 +32,46 @@ describe("cleanupExpiredUploads", () => {
       },
     ]);
     expect(repository.deletedAt).toBe("2026-06-28T10:00:00.000Z");
+    expect(repository.deletedStoragePaths).toEqual([
+      "sessions/session-1/doc-hard-expired.md",
+      "sessions/session-2/doc-deleted.md",
+    ]);
     expect(result).toEqual({
+      dryRun: false,
+      purgeableStorageObjects: 2,
       removedStorageObjects: 2,
       deletedRows: [{ deleted_sessions: 1, deleted_documents: 2 }],
+    });
+  });
+
+  test("dry-run reports purgeable counts without removing storage or deleting rows", async () => {
+    const repository = new FakeCleanupRepository([
+      "sessions/session-1/doc-hard-expired.md",
+      "sessions/session-2/doc-deleted.md",
+    ]);
+    const storage = new FakeCleanupStorage();
+
+    const result = await cleanupExpiredUploads({
+      repository,
+      storage,
+      bucket: "rag-uploads",
+      now: "2026-06-28T10:00:00.000Z",
+      batchSize: 100,
+      dryRun: true,
+    });
+
+    expect(repository.listCall).toEqual({
+      now: "2026-06-28T10:00:00.000Z",
+      batchSize: 100,
+    });
+    expect(storage.removed).toEqual([]);
+    expect(repository.deletedAt).toBeNull();
+    expect(repository.deletedStoragePaths).toBeNull();
+    expect(result).toEqual({
+      dryRun: true,
+      purgeableStorageObjects: 2,
+      removedStorageObjects: 0,
+      deletedRows: null,
     });
   });
 });
@@ -42,6 +79,7 @@ describe("cleanupExpiredUploads", () => {
 class FakeCleanupRepository {
   listCall: { now: string; batchSize: number } | null = null;
   deletedAt: string | null = null;
+  deletedStoragePaths: string[] | null = null;
 
   constructor(private readonly paths: string[]) {}
 
@@ -50,8 +88,9 @@ class FakeCleanupRepository {
     return this.paths;
   }
 
-  async deleteExpiredRows(input: { now: string }) {
+  async deleteExpiredRows(input: { now: string; storagePaths: string[] }) {
     this.deletedAt = input.now;
+    this.deletedStoragePaths = input.storagePaths;
     return [{ deleted_sessions: 1, deleted_documents: 2 }];
   }
 }

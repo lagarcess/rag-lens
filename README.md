@@ -76,6 +76,7 @@ Useful commands:
 ```bash
 bun test
 bun run seed:examples
+bun run cleanup:sessions:dry-run
 bun run cleanup:sessions
 bun run lint
 bun run build

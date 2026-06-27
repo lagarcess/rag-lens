@@ -9,7 +9,8 @@
     "lint": "eslint",
     "test": "bun test",
     "seed:examples": "bun scripts/seed-example-corpora.ts",
-    "cleanup:sessions": "bun scripts/cleanup-expired-sessions.ts"
+    "cleanup:sessions": "bun scripts/cleanup-expired-sessions.ts",
+    "cleanup:sessions:dry-run": "bun scripts/cleanup-expired-sessions.ts --dry-run"
   },
   "dependencies": {
     "@perplexity-ai/perplexity_ai": "^0.33.0",

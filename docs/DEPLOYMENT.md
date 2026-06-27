@@ -68,9 +68,23 @@ render blueprint launch
 
 or create from the Render dashboard using the checked-in `render.yaml`.
 
-Note: the cleanup cron is intentionally not created yet. Render rejected `free`
+Note: the cleanup cron is intentionally safe to defer. Render rejected `free`
 for cron services in CLI validation, so the Blueprint uses `starter`. Create it
-after `SUPABASE_SERVICE_ROLE_KEY` and `PERPLEXITY_API_KEY` are available.
+after the cleanup Supabase env vars are available; the cron does not need
+Perplexity or OpenRouter credentials.
+
+Before enabling the cron against hosted data, run:
+
+```bash
+bun run cleanup:sessions:dry-run
+```
+
+The dry-run lists only counts. It does not remove Storage objects or database
+rows. The real cron command is:
+
+```bash
+bun run cleanup:sessions
+```
 
 ## Deferred GitHub Pages Landing
 
@@ -115,7 +129,9 @@ Recommended V1 chat defaults:
 
 ## Required Render Env Vars
 
-Set these in Render:
+### Web service
+
+Set these on the `rag-lens` web service:
 
 - `NEXT_PUBLIC_SITE_URL`
 - `NEXT_PUBLIC_SUPABASE_URL`
@@ -136,3 +152,12 @@ Set these in Render:
 - `OPENROUTER_MAX_COMPLETION_TOKENS`
 - `OPENROUTER_REASONING_EFFORT`
 - `OPENROUTER_REASONING_EXCLUDE`
+
+### Cleanup cron
+
+Set only these on `rag-lens-session-cleanup`:
+
+- `SUPABASE_URL`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `SUPABASE_STORAGE_BUCKET`
+- `CLEANUP_BATCH_SIZE`

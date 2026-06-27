@@ -403,6 +403,7 @@ Deliverables:
 
 Verification:
 
+- `bun run cleanup:sessions:dry-run`
 - Expired fixture data is removed.
 - Non-expired session data remains.
 - Example corpora remain untouched.
@@ -415,6 +416,11 @@ Commit:
 ```bash
 git commit -m "feat(retention): add expired session cleanup"
 ```
+
+Status: implemented locally. Cleanup deletes Storage objects before database
+rows, scopes row deletion to processed Storage paths, and has a local dry-run
+mode for count-only verification. Hosted cron creation remains part of the
+Render deployment slice.
 
 ### Slice 10 - Experiment Mode
 

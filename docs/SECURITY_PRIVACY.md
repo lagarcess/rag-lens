@@ -15,7 +15,8 @@ Rules:
 - Attach `session_id`, `expires_at`, and `hard_expires_at` to all derived rows.
 - Roll back Storage and document rows if extraction, embedding, or chunk
   insertion fails.
-- Delete anonymous uploads within 24 hours.
+- Schedule anonymous uploads for purge at 23.5 hours so the 30-minute cleanup
+  cadence stays inside the 24-hour deletion promise.
 - Let users delete the session immediately.
 - Run Render cleanup every 30 minutes.
 
@@ -43,8 +44,12 @@ Cleanup order:
 
 1. Query hard-expired upload documents and documents from deleted sessions.
 2. Remove Supabase Storage objects by path.
-3. Call `delete_expired_rag_rows`.
+3. Call `delete_expired_rag_rows` with only the Storage paths processed in
+   that run.
 4. Log counts only, never file contents.
+
+Use `bun run cleanup:sessions:dry-run` before enabling or changing scheduled
+cleanup. Dry-run emits only counts and performs no Storage or database deletes.
 
 ## Dataset Safety
 
