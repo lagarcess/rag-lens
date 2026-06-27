@@ -45,7 +45,13 @@ Open `http://localhost:3000`.
 
 ## Current Status
 
-Foundation is initialized. Provider projects are not yet provisioned because:
+Foundation is initialized and deployed.
 
-- Supabase project creation requires organization selection and explicit cost confirmation.
-- Render service creation requires a pushed Git remote.
+- GitHub: https://github.com/lagarcess/rag-lens
+- Render: https://rag-lens.onrender.com
+- Supabase: `rag-lens` project `ycdvnvsosghbcgreosry`
+
+Secrets still needed for full RAG behavior:
+
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `PERPLEXITY_API_KEY`

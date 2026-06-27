@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: rag-lens-web
+    name: rag-lens
     repo: https://github.com/lagarcess/rag-lens
     runtime: node
     plan: free
