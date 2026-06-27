@@ -18,6 +18,37 @@ Response:
 }
 ```
 
+### `GET /api/corpora`
+
+Lists the public curated example corpora available in the workbench. This route
+is provider-free and does not read Supabase, Perplexity, OpenRouter, sessions,
+or uploads in V1. The workbench uses it to hydrate its source list while keeping
+the bundled manifest as an offline fallback.
+
+Response:
+
+```json
+{
+  "sources": [
+    {
+      "slug": "rag-concepts-primer",
+      "title": "RAG Concepts Primer",
+      "description": "Small first-party explainer corpus",
+      "sourceKind": "example",
+      "sourceName": "RAG Lens",
+      "sourceUrl": "https://github.com/lagarcess/rag-lens",
+      "license": "Original first-party demo text written for RAG Lens.",
+      "status": "ready",
+      "documentCount": 1
+    }
+  ]
+}
+```
+
+Session uploads are represented client-side after upload success. A later
+session-aware catalog slice can widen this route if the workbench needs a single
+server source of truth for both examples and active uploaded documents.
+
 ### `POST /api/query`
 
 Runs a RAG trace for either a curated example corpus or the active session's
@@ -245,7 +276,5 @@ Expired, deleted, unknown, or cross-session traces return `404`.
 
 ## Planned
 
-### `GET /api/corpora`
-
-Lists example corpora and active session documents when the workbench stops
-using its current static source seed.
+No planned routes are locked beyond the implemented V1 surface above. Future
+slices should add contracts here before implementation.

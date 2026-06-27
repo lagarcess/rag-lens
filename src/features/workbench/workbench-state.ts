@@ -80,6 +80,7 @@ export interface WorkbenchUploadedDocument {
 }
 
 export type WorkbenchAction =
+  | { type: "sourcesLoaded"; sources: WorkbenchSource[] }
   | { type: "sourceSelected"; corpusSlug: string }
   | { type: "questionChanged"; question: string }
   | { type: "settingChanged"; key: keyof WorkbenchSettings; value: number | string }
@@ -156,6 +157,8 @@ export function workbenchReducer(
   action: WorkbenchAction,
 ): WorkbenchState {
   switch (action.type) {
+    case "sourcesLoaded":
+      return mergeLoadedSources(state, action.sources);
     case "sourceSelected":
       return {
         ...state,
@@ -470,4 +473,27 @@ function upsertSessionUploadSource(input: {
   return input.sources.map((source) =>
     source.slug === uploadSource.slug ? uploadSource : source,
   );
+}
+
+function mergeLoadedSources(
+  state: WorkbenchState,
+  loadedSources: WorkbenchSource[],
+): WorkbenchState {
+  const uploadSources = state.sources.filter(
+    (source) => source.sourceKind === "upload",
+  );
+  const nextSources = [...loadedSources, ...uploadSources];
+  const selectedStillExists = nextSources.some(
+    (source) =>
+      source.slug === state.selectedCorpusSlug && source.status === "ready",
+  );
+  const fallbackSource = nextSources.find((source) => source.status === "ready");
+
+  return {
+    ...state,
+    sources: nextSources,
+    selectedCorpusSlug: selectedStillExists
+      ? state.selectedCorpusSlug
+      : fallbackSource?.slug ?? state.selectedCorpusSlug,
+  };
 }

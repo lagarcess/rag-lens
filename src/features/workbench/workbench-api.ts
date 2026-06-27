@@ -1,4 +1,5 @@
 import type { RagQueryRequest, RagTraceResponse } from "@/lib/rag/trace";
+import type { RagSourceCatalogResponse } from "@/lib/rag/source-catalog";
 import type { TraceSummary } from "@/lib/rag/trace-persistence";
 
 export interface WorkbenchSessionResponse {
@@ -52,6 +53,22 @@ export async function runTraceQuery(
   }
 
   return (await response.json()) as RagTraceResponse;
+}
+
+export async function listWorkbenchSources(
+  fetchFn: FetchFn = fetch,
+): Promise<RagSourceCatalogResponse["sources"]> {
+  const response = await fetchFn("/api/corpora", {
+    method: "GET",
+  });
+
+  if (!response.ok) {
+    const payload = await readJsonSafely(response);
+    throw new Error(payload?.error ?? "Unable to load source catalog");
+  }
+
+  const payload = (await response.json()) as RagSourceCatalogResponse;
+  return payload.sources;
 }
 
 export async function createAnonymousSession(

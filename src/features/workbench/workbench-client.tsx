@@ -14,11 +14,19 @@ import {
   SlidersHorizontal,
   UploadCloud,
 } from "lucide-react";
-import { ChangeEvent, FormEvent, useMemo, useReducer, useState } from "react";
+import {
+  ChangeEvent,
+  FormEvent,
+  useEffect,
+  useMemo,
+  useReducer,
+  useState,
+} from "react";
 
 import {
   createAnonymousSession,
   deleteAnonymousSession,
+  listWorkbenchSources,
   listSessionTraces,
   loadSessionTrace,
   runTraceQuery,
@@ -51,6 +59,28 @@ export function WorkbenchClient() {
     state.session.status === "creating";
   const isDeletingSession = state.session.status === "deleting";
   const runButtonLabel = state.experiment.baseline ? "Run variant" : "Run trace";
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadSources() {
+      try {
+        const sources = await listWorkbenchSources();
+
+        if (!cancelled) {
+          dispatch({ type: "sourcesLoaded", sources });
+        }
+      } catch {
+        // Keep the bundled manifest fallback if the catalog route is unavailable.
+      }
+    }
+
+    void loadSources();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();

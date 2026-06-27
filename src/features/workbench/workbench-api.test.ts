@@ -3,6 +3,7 @@ import { describe, expect, test } from "bun:test";
 import {
   createAnonymousSession,
   deleteAnonymousSession,
+  listWorkbenchSources,
   listSessionTraces,
   loadSessionTrace,
   runTraceQuery,
@@ -114,6 +115,64 @@ describe("runTraceQuery", () => {
       sessionId: "11111111-1111-4111-8111-111111111111",
       corpusSlug: "session-uploads",
     });
+  });
+});
+
+describe("listWorkbenchSources", () => {
+  test("loads the corpus catalog without requiring a session", async () => {
+    const fetchCalls: Array<{ url: string; init?: RequestInit }> = [];
+    const fetchFn = async (url: string | URL | Request, init?: RequestInit) => {
+      fetchCalls.push({ url: String(url), init });
+
+      return new Response(
+        JSON.stringify({
+          sources: [
+            {
+              slug: "rag-concepts-primer",
+              title: "RAG Concepts Primer",
+              description: "Small first-party explainer corpus",
+              sourceKind: "example",
+              sourceName: "RAG Lens",
+              sourceUrl: "https://github.com/lagarcess/rag-lens",
+              license: "Original first-party demo text written for RAG Lens.",
+              status: "ready",
+              documentCount: 1,
+            },
+          ],
+        }),
+        {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        },
+      );
+    };
+
+    const result = await listWorkbenchSources(fetchFn);
+
+    expect(fetchCalls[0]).toMatchObject({
+      url: "/api/corpora",
+      init: { method: "GET" },
+    });
+    expect(result).toEqual([
+      expect.objectContaining({
+        slug: "rag-concepts-primer",
+        title: "RAG Concepts Primer",
+        sourceKind: "example",
+        status: "ready",
+      }),
+    ]);
+  });
+
+  test("throws a sanitized error when the source catalog fails", async () => {
+    const fetchFn = async () =>
+      new Response(JSON.stringify({ error: "Catalog unavailable" }), {
+        status: 503,
+        headers: { "content-type": "application/json" },
+      });
+
+    await expect(listWorkbenchSources(fetchFn)).rejects.toThrow(
+      "Catalog unavailable",
+    );
   });
 });
 

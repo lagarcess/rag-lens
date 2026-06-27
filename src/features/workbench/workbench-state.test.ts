@@ -226,6 +226,75 @@ describe("workbenchReducer", () => {
       });
   });
 
+  test("refreshes example sources while preserving a session upload source", () => {
+    const initial = createInitialWorkbenchState();
+    const uploaded = workbenchReducer(initial, {
+      type: "uploadSucceeded",
+      document: {
+        documentId: "22222222-2222-4222-8222-222222222222",
+        sessionId: "11111111-1111-4111-8111-111111111111",
+        fileName: "notes.md",
+        mimeType: "text/markdown",
+        byteSize: 19,
+        status: "ready",
+        extractedCharacters: 19,
+        expiresAt: "2026-06-27T12:00:00.000Z",
+        hardExpiresAt: "2026-06-28T10:00:00.000Z",
+      },
+    });
+
+    const refreshed = workbenchReducer(uploaded, {
+      type: "sourcesLoaded",
+      sources: [
+        {
+          slug: "rag-concepts-primer",
+          title: "RAG Concepts Primer",
+          description: "Small first-party explainer corpus",
+          sourceKind: "example",
+          status: "ready",
+          documentCount: 1,
+        },
+      ],
+    });
+
+    expect(refreshed.selectedCorpusSlug).toBe("session-uploads");
+    expect(refreshed.sources).toEqual([
+      expect.objectContaining({
+        slug: "rag-concepts-primer",
+        sourceKind: "example",
+      }),
+      expect.objectContaining({
+        slug: "session-uploads",
+        sourceKind: "upload",
+        sessionId: "11111111-1111-4111-8111-111111111111",
+        documentCount: 1,
+      }),
+    ]);
+  });
+
+  test("falls back to the first ready source when the selected example disappears", () => {
+    const initial = workbenchReducer(createInitialWorkbenchState(), {
+      type: "sourceSelected",
+      corpusSlug: "claim-check-clinic",
+    });
+
+    const refreshed = workbenchReducer(initial, {
+      type: "sourcesLoaded",
+      sources: [
+        {
+          slug: "rag-concepts-primer",
+          title: "RAG Concepts Primer",
+          description: "Small first-party explainer corpus",
+          sourceKind: "example",
+          status: "ready",
+          documentCount: 1,
+        },
+      ],
+    });
+
+    expect(refreshed.selectedCorpusSlug).toBe("rag-concepts-primer");
+  });
+
   test("tracks recent trace history and reloads persisted traces", () => {
     const initial = createInitialWorkbenchState();
 
