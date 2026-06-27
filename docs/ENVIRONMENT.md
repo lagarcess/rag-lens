@@ -28,6 +28,7 @@ These must never use `NEXT_PUBLIC_`:
 - `OPENROUTER_MAX_COMPLETION_TOKENS`
 - `OPENROUTER_REASONING_EFFORT`
 - `OPENROUTER_REASONING_EXCLUDE`
+- `RAG_RETRIEVAL_BACKEND`
 - `CLEANUP_BATCH_SIZE`
 
 ## Defaults
@@ -38,4 +39,5 @@ V1 defaults:
 - Contextual document embedding: `pplx-embed-context-v1-0.6b`
 - Chat provider: `openrouter`
 - Chat model: `deepseek/deepseek-v4-flash`
+- Retrieval backend: `local` until Supabase examples are seeded, then `supabase`
 - Upload bucket: `rag-uploads`

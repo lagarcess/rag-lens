@@ -104,6 +104,9 @@ Deliverables:
 - Standard Perplexity embedding path for queries.
 - Base64 int8 decode and L2 normalization before pgvector storage.
 - Chunk viewer with source offsets.
+- V1 seeded examples use standard embeddings for both document and query
+  vectors. Contextualized embeddings require a separate vector profile before
+  comparison is enabled.
 
 Verification:
 

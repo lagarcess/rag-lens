@@ -43,7 +43,12 @@ the current primary docs for that surface:
   rate limits, and error shape
 - Render docs for web services, cron jobs, env vars, health checks, and logs
 
-Codex subagent execution was reviewed against the current OpenAI Codex manual.
+Codex subagent execution was reviewed against the current OpenAI Codex docs:
+
+- https://developers.openai.com/codex/subagents
+- https://developers.openai.com/codex/concepts/subagents
+- https://developers.openai.com/codex/learn/best-practices
+
 The operational takeaway is: use subagents for bounded parallel exploration,
 tests, review, and disjoint implementation; avoid broad parallel write-heavy
 work; close completed agent threads.
@@ -105,6 +110,20 @@ Use subagents only when the task can be split cleanly:
   risks.
 - The main agent reviews subagent output before integrating it.
 - Completed subagent threads must be closed after their results are captured.
+
+## Embedding Profile Rule
+
+Similarity search must compare vectors from the same embedding space. The V1
+seeded Supabase example path uses standard Perplexity embeddings for both
+document chunks and query vectors:
+
+- Document chunks: `PERPLEXITY_EMBEDDING_MODEL`
+- Query vectors: `PERPLEXITY_EMBEDDING_MODEL`
+- Seeded profile: default chunk size, default overlap, `embeddingMode=standard`
+
+Contextualized embeddings remain part of the roadmap, but they require a
+separate seeded or freshly ingested vector profile before the UI can compare
+them honestly.
 
 ## Worktree And Cleanup Discipline
 

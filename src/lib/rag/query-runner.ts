@@ -11,6 +11,8 @@ import type {
   RagCitation,
   RagChunk,
   RagQueryRequest,
+  RetrievalMethod,
+  RagRetrievalRow,
   RagTraceResponse,
 } from "./trace";
 
@@ -36,10 +38,23 @@ export type AnswerProvider = (
   input: AnswerProviderInput,
 ) => Promise<AnswerProviderResult>;
 
+export type RetrievalProvider = (input: {
+  question: string;
+  chunks: RagChunk[];
+  topK: number;
+  corpusSlug: string;
+}) => Promise<{
+  method: RetrievalMethod;
+  rows: RagRetrievalRow[];
+  queryEmbeddingModel?: string;
+  documentEmbeddingModel?: string;
+}>;
+
 export async function runExampleTrace(
   request: RagQueryRequest,
   options: {
     answerProvider?: AnswerProvider;
+    retrievalProvider?: RetrievalProvider;
   } = {},
 ): Promise<RagTraceResponse> {
   const totalStartedAt = performance.now();
@@ -54,11 +69,18 @@ export async function runExampleTrace(
   );
 
   const retrievalStartedAt = performance.now();
-  const retrieval = retrieveLexical({
-    question: request.question,
-    chunks,
-    topK: settings.topK,
-  });
+  const retrieval = options.retrievalProvider
+    ? await options.retrievalProvider({
+        question: request.question,
+        chunks,
+        topK: settings.topK,
+        corpusSlug: request.corpusSlug,
+      })
+    : retrieveLexical({
+        question: request.question,
+        chunks,
+        topK: settings.topK,
+      });
   const retrievalMs = elapsed(retrievalStartedAt);
 
   const generationStartedAt = performance.now();
@@ -114,8 +136,7 @@ export async function runExampleTrace(
       prompt,
       models: {
         embedding: {
-          provider: "none",
-          model: "local-lexical",
+          ...buildEmbeddingModelMetadata(retrieval),
         },
         answer: {
           provider: answerResult.provider,
@@ -138,6 +159,31 @@ export async function runExampleTrace(
           ? ["weak-retrieval"]
           : [],
     },
+  };
+}
+
+function buildEmbeddingModelMetadata(retrieval: {
+  method: RetrievalMethod;
+  rows: RagRetrievalRow[];
+  queryEmbeddingModel?: string;
+  documentEmbeddingModel?: string;
+}) {
+  if (retrieval.method !== "supabase-pgvector-cosine") {
+    return {
+      provider: "none" as const,
+      model: "local-lexical",
+    };
+  }
+
+  const documentModel =
+    retrieval.documentEmbeddingModel ?? retrieval.rows[0]?.embeddingModel;
+  const queryModel = retrieval.queryEmbeddingModel;
+
+  return {
+    provider: "perplexity" as const,
+    model: queryModel ?? documentModel ?? "perplexity-embedding",
+    queryModel,
+    documentModel,
   };
 }
 

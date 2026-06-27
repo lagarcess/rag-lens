@@ -30,6 +30,18 @@ const cleanupEnvSchema = supabaseAdminEnvSchema.extend({
   CLEANUP_BATCH_SIZE: z.coerce.number().int().positive().default(100),
 });
 
+const perplexityEmbeddingEnvSchema = z.object({
+  PERPLEXITY_API_KEY: z.string().min(1),
+  PERPLEXITY_EMBEDDING_MODEL: z.string().default("pplx-embed-v1-0.6b"),
+  PERPLEXITY_CONTEXT_EMBEDDING_MODEL: z
+    .string()
+    .default("pplx-embed-context-v1-0.6b"),
+});
+
+const ragRuntimeEnvSchema = z.object({
+  RAG_RETRIEVAL_BACKEND: z.enum(["local", "supabase"]).default("local"),
+});
+
 const openRouterEnvSchema = z.object({
   OPENROUTER_API_KEY: z.string().min(1),
   OPENROUTER_BASE_URL: z
@@ -65,6 +77,36 @@ export function getCleanupEnv() {
 
 export function getCleanupEnvFrom(source: Record<string, string | undefined>) {
   return cleanupEnvSchema.parse(source);
+}
+
+export function getPerplexityEmbeddingEnv() {
+  return getPerplexityEmbeddingEnvFrom(process.env);
+}
+
+export function getPerplexityEmbeddingEnvFrom(
+  source: Record<string, string | undefined>,
+) {
+  const env = perplexityEmbeddingEnvSchema.parse(source);
+
+  return {
+    apiKey: env.PERPLEXITY_API_KEY,
+    standardEmbeddingModel: env.PERPLEXITY_EMBEDDING_MODEL,
+    contextualEmbeddingModel: env.PERPLEXITY_CONTEXT_EMBEDDING_MODEL,
+  };
+}
+
+export function getRagRuntimeEnv() {
+  return getRagRuntimeEnvFrom(process.env);
+}
+
+export function getRagRuntimeEnvFrom(
+  source: Record<string, string | undefined>,
+) {
+  const env = ragRuntimeEnvSchema.parse(source);
+
+  return {
+    retrievalBackend: env.RAG_RETRIEVAL_BACKEND,
+  };
 }
 
 export function getOpenRouterEnv() {

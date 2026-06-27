@@ -1,6 +1,8 @@
 export type EmbeddingMode = "standard" | "contextualized";
 
-export type RetrievalMethod = "deterministic-lexical-overlap";
+export type RetrievalMethod =
+  | "deterministic-lexical-overlap"
+  | "supabase-pgvector-cosine";
 
 export interface RagQueryRequest {
   sessionId: string | null;
@@ -26,8 +28,10 @@ export interface RagRetrievalRow extends RagChunk {
   rank: number;
   similarity: number;
   selected: boolean;
-  retrievalMode: "lexical";
+  retrievalMode: "lexical" | "vector";
   matchedTerms: string[];
+  embeddingModel?: string;
+  embeddingMode?: EmbeddingMode;
 }
 
 export interface RagCitation {
@@ -71,8 +75,10 @@ export interface RagTrace {
   };
   models: {
     embedding: {
-      provider: "none";
-      model: "local-lexical";
+      provider: "none" | "perplexity";
+      model: string;
+      queryModel?: string;
+      documentModel?: string;
     };
     answer: {
       provider: "local" | "openrouter";

@@ -1,6 +1,11 @@
 import { describe, expect, test } from "bun:test";
 
-import { getCleanupEnvFrom, getOpenRouterEnvFrom } from "./env";
+import {
+  getCleanupEnvFrom,
+  getOpenRouterEnvFrom,
+  getPerplexityEmbeddingEnvFrom,
+  getRagRuntimeEnvFrom,
+} from "./env";
 
 describe("getOpenRouterEnvFrom", () => {
   test("parses OpenRouter env without requiring Supabase or Perplexity secrets", () => {
@@ -44,6 +49,35 @@ describe("getCleanupEnvFrom", () => {
       SUPABASE_SERVICE_ROLE_KEY: "service-role",
       SUPABASE_STORAGE_BUCKET: "rag-uploads",
       CLEANUP_BATCH_SIZE: 25,
+    });
+  });
+});
+
+describe("getPerplexityEmbeddingEnvFrom", () => {
+  test("parses embedding env without requiring Supabase keys", () => {
+    const env = getPerplexityEmbeddingEnvFrom({
+      PERPLEXITY_API_KEY: "pplx-test-key",
+      PERPLEXITY_EMBEDDING_MODEL: "pplx-embed-v1-0.6b",
+      PERPLEXITY_CONTEXT_EMBEDDING_MODEL: "pplx-embed-context-v1-0.6b",
+    });
+
+    expect(env).toEqual({
+      apiKey: "pplx-test-key",
+      standardEmbeddingModel: "pplx-embed-v1-0.6b",
+      contextualEmbeddingModel: "pplx-embed-context-v1-0.6b",
+    });
+  });
+});
+
+describe("getRagRuntimeEnvFrom", () => {
+  test("defaults to local retrieval and accepts Supabase vector retrieval", () => {
+    expect(getRagRuntimeEnvFrom({})).toEqual({
+      retrievalBackend: "local",
+    });
+    expect(
+      getRagRuntimeEnvFrom({ RAG_RETRIEVAL_BACKEND: "supabase" }),
+    ).toEqual({
+      retrievalBackend: "supabase",
     });
   });
 });

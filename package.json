@@ -8,6 +8,7 @@
     "start": "sh -c 'next start -p ${PORT:-3000}'",
     "lint": "eslint",
     "test": "bun test",
+    "seed:examples": "bun scripts/seed-example-corpora.ts",
     "cleanup:sessions": "bun scripts/cleanup-expired-sessions.ts"
   },
   "dependencies": {

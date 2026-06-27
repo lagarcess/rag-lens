@@ -74,4 +74,52 @@ describe("runExampleTrace", () => {
       },
     });
   });
+
+  test("uses an injected retrieval provider and records vector retrieval metadata", async () => {
+    const result = await runExampleTrace(
+      {
+        sessionId: null,
+        corpusSlug: "rag-concepts-primer",
+        question: "How does RAG improve answer trust?",
+        topK: 2,
+        chunkSize: 520,
+        chunkOverlap: 80,
+        embeddingMode: "standard",
+      },
+      {
+        retrievalProvider: async () => ({
+          method: "supabase-pgvector-cosine",
+          queryEmbeddingModel: "pplx-embed-v1-0.6b",
+          documentEmbeddingModel: "pplx-embed-v1-0.6b",
+          rows: [
+            {
+              chunkId: "chunk-1",
+              documentId: "doc-1",
+              fileName: "rag-primer.md",
+              chunkIndex: 0,
+              charStart: 0,
+              charEnd: 42,
+              content: "RAG grounds answers in retrieved context.",
+              rank: 1,
+              similarity: 0.91,
+              selected: true,
+              retrievalMode: "vector",
+              matchedTerms: [],
+              embeddingModel: "pplx-embed-v1-0.6b",
+              embeddingMode: "standard",
+            },
+          ],
+        }),
+      },
+    );
+
+    expect(result.trace.retrieval.method).toBe("supabase-pgvector-cosine");
+    expect(result.trace.retrieval.rows[0].retrievalMode).toBe("vector");
+    expect(result.trace.models.embedding).toMatchObject({
+      provider: "perplexity",
+      model: "pplx-embed-v1-0.6b",
+      queryModel: "pplx-embed-v1-0.6b",
+      documentModel: "pplx-embed-v1-0.6b",
+    });
+  });
 });

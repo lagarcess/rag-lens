@@ -1,9 +1,17 @@
 import { z } from "zod";
 
-import { getOpenRouterEnv, shouldUseOpenRouter } from "@/lib/env";
+import {
+  getOpenRouterEnv,
+  getPerplexityEmbeddingEnv,
+  getRagRuntimeEnv,
+  shouldUseOpenRouter,
+} from "@/lib/env";
 import { RAG_LIMITS } from "@/lib/rag-config";
 import { generateOpenRouterAnswer } from "@/lib/rag/openrouter";
+import { embedTextsWithPerplexity } from "@/lib/rag/perplexity-embeddings";
 import { runExampleTrace } from "@/lib/rag/query-runner";
+import { retrieveSupabaseVector } from "@/lib/rag/supabase-vector";
+import { createSupabaseAdminClient } from "@/lib/supabase-admin";
 
 const queryRequestSchema = z.object({
   sessionId: z.string().uuid().nullable().default(null),
@@ -32,7 +40,52 @@ export async function POST(request: Request) {
   }
 
   try {
+    const runtimeEnv = getRagRuntimeEnv();
+
+    if (
+      runtimeEnv.retrievalBackend === "supabase" &&
+      !usesSeededExampleVectorProfile(parsed.data)
+    ) {
+      return Response.json(
+        {
+          error:
+            "Supabase example retrieval currently uses the seeded standard vector profile.",
+          details: {
+            chunkSize: RAG_LIMITS.defaultChunkSize,
+            chunkOverlap: RAG_LIMITS.defaultChunkOverlap,
+            embeddingMode: "standard",
+          },
+        },
+        { status: 400 },
+      );
+    }
+
+    const perplexityEnv =
+      runtimeEnv.retrievalBackend === "supabase"
+        ? getPerplexityEmbeddingEnv()
+        : null;
+
     const result = await runExampleTrace(parsed.data, {
+      retrievalProvider:
+        runtimeEnv.retrievalBackend === "supabase" && perplexityEnv
+          ? (input) =>
+              retrieveSupabaseVector({
+                question: input.question,
+                corpusSlug: input.corpusSlug,
+                topK: input.topK,
+                supabase: createSupabaseAdminClient(),
+                queryEmbeddingModel: perplexityEnv.standardEmbeddingModel,
+                queryEmbedding: async (question) => {
+                  const [embedding] = await embedTextsWithPerplexity({
+                    apiKey: perplexityEnv.apiKey,
+                    model: perplexityEnv.standardEmbeddingModel,
+                    input: [question],
+                  });
+
+                  return embedding;
+                },
+              })
+          : undefined,
       answerProvider: shouldUseOpenRouter()
         ? (input) => generateOpenRouterAnswer(input, getOpenRouterEnv())
         : undefined,
@@ -50,4 +103,16 @@ export async function POST(request: Request) {
       { status: 404 },
     );
   }
+}
+
+function usesSeededExampleVectorProfile(request: {
+  chunkSize: number;
+  chunkOverlap: number;
+  embeddingMode: string;
+}) {
+  return (
+    request.chunkSize === RAG_LIMITS.defaultChunkSize &&
+    request.chunkOverlap === RAG_LIMITS.defaultChunkOverlap &&
+    request.embeddingMode === "standard"
+  );
 }
