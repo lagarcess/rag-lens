@@ -220,6 +220,10 @@ Uploaded-document responses use the same shape, with
 }
 ```
 
+For uploaded traces, `trace.chunking.chunks` contains the session's full indexed
+chunk inventory for ready uploaded documents. `trace.retrieval.rows` remains the
+ranked subset selected by vector search for the current question.
+
 Example-corpus responses remain ephemeral unless a later slice explicitly saves
 seeded example traces.
 
@@ -318,6 +322,7 @@ Limits:
 - 3 files per session.
 - 10 MB total per session.
 - PDF, text, and markdown only.
+- Browser-reported MIME type is required and must match the file extension.
 - Route rejects oversized multipart requests before parsing the body when the
   `Content-Length` header exceeds the configured request cap.
 

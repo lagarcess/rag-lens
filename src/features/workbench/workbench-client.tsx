@@ -37,8 +37,10 @@ import { buildExperimentComparison } from "@/features/workbench/experiment-compa
 import {
   buildAnswerCitations,
   buildSelectedContextRows,
+  buildTraceChunkRows,
   buildTraceEvidence,
 } from "@/features/workbench/trace-evidence";
+import { summarizeUploadTrust } from "@/features/workbench/upload-trust";
 import {
   createInitialWorkbenchState,
   selectHeartbeatSessionId,
@@ -70,6 +72,10 @@ export function WorkbenchClient() {
   const isDeletingSession = state.session.status === "deleting";
   const runButtonLabel = state.experiment.baseline ? "Run variant" : "Run trace";
   const heartbeatSessionId = selectHeartbeatSessionId(state);
+  const uploadTrust = useMemo(
+    () => summarizeUploadTrust(state.uploads.documents),
+    [state.uploads.documents],
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -352,10 +358,39 @@ export function WorkbenchClient() {
             Public upload policy
           </div>
           <p className="text-sm leading-6 text-[var(--muted)]">
-            Do not upload secrets, private files, or personal data. Anonymous
-            uploads are session-scoped, size-limited, removable on demand, and
-            deleted within 24 hours.
+            Do not upload secrets, private files, or personal data. Uploads stay
+            session-scoped, removable on demand, and deleted within 24 hours.
           </p>
+          <dl className="mt-3 grid grid-cols-2 gap-2 font-mono text-[11px] text-[var(--muted)]">
+            <div className="rounded-md border border-[var(--border)] bg-[var(--surface-elevated)] p-2">
+              <dt>files</dt>
+              <dd className="mt-1 text-[var(--foreground)]">
+                {uploadTrust.fileCountLabel}
+              </dd>
+            </div>
+            <div className="rounded-md border border-[var(--border)] bg-[var(--surface-elevated)] p-2">
+              <dt>total</dt>
+              <dd className="mt-1 text-[var(--foreground)]">
+                {uploadTrust.totalBytesLabel}
+              </dd>
+            </div>
+            <div className="rounded-md border border-[var(--border)] bg-[var(--surface-elevated)] p-2">
+              <dt>active until</dt>
+              <dd className="mt-1 text-[var(--foreground)]">
+                {state.session.expiresAt
+                  ? formatDateTime(state.session.expiresAt)
+                  : "after upload"}
+              </dd>
+            </div>
+            <div className="rounded-md border border-[var(--border)] bg-[var(--surface-elevated)] p-2">
+              <dt>deleted by</dt>
+              <dd className="mt-1 text-[var(--foreground)]">
+                {state.session.hardExpiresAt
+                  ? formatDateTime(state.session.hardExpiresAt)
+                  : "within 24h"}
+              </dd>
+            </div>
+          </dl>
           <label
             className="mt-4 block text-xs font-medium text-[var(--muted)]"
             htmlFor="document-upload"
@@ -388,9 +423,12 @@ export function WorkbenchClient() {
           </button>
           {state.session.expiresAt ? (
             <div className="mt-3 flex items-center justify-between gap-3">
-              <p className="font-mono text-[11px] text-[var(--muted)]">
-                session expires {formatDateTime(state.session.expiresAt)}
-              </p>
+              <div className="font-mono text-[11px] leading-5 text-[var(--muted)]">
+                <p>session active until {formatDateTime(state.session.expiresAt)}</p>
+                {state.session.hardExpiresAt ? (
+                  <p>uploads deleted by {formatDateTime(state.session.hardExpiresAt)}</p>
+                ) : null}
+              </div>
               <button
                 className="rounded-md border border-[var(--border)] px-2 py-1 text-xs font-medium text-[var(--muted)] transition hover:border-[var(--danger)] hover:text-[var(--danger)] disabled:cursor-not-allowed disabled:opacity-60"
                 disabled={isDeletingSession}
@@ -1178,6 +1216,10 @@ function TraceInspector({
     () => (result ? buildSelectedContextRows(result) : []),
     [result],
   );
+  const chunkRows = useMemo(
+    () => (result ? buildTraceChunkRows(result) : []),
+    [result],
+  );
 
   return (
     <aside className="min-w-0 rounded-xl border border-[var(--trace-border)] bg-[var(--trace-surface)] p-5 text-[var(--trace-foreground)]">
@@ -1202,7 +1244,12 @@ function TraceInspector({
         selectedContextRows={selectedContextRows}
       />
 
+      <TraceChunkList rows={chunkRows} />
+
       <div className="space-y-3">
+        <div className="font-mono text-[11px] text-[var(--accent-cyan)]">
+          retrieved chunks
+        </div>
         {rows.length === 0 ? (
           <div className="rounded-lg border border-[var(--trace-border)] bg-[var(--trace-card)] p-3 text-sm leading-6 text-[var(--trace-muted)]">
             Retrieved chunks will appear here.
@@ -1339,6 +1386,97 @@ function TraceEvidenceStack({
           </ul>
         </div>
       ) : null}
+    </section>
+  );
+}
+
+function TraceChunkList({
+  rows,
+}: {
+  rows: ReturnType<typeof buildTraceChunkRows>;
+}) {
+  return (
+    <section
+      aria-labelledby="trace-chunks-heading"
+      className="mb-4 rounded-lg border border-[var(--trace-border)] bg-[var(--trace-card)] p-3"
+    >
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <h3
+          className="font-mono text-[11px] text-[var(--accent-cyan)]"
+          id="trace-chunks-heading"
+        >
+          all chunks
+        </h3>
+        <span className="font-mono text-[10px] text-[var(--trace-muted)]">
+          {rows.length} total
+        </span>
+      </div>
+
+      {rows.length === 0 ? (
+        <p className="text-xs leading-5 text-[var(--trace-muted)]">
+          Generated chunk rows will appear after a trace runs.
+        </p>
+      ) : (
+        <div className="max-h-72 space-y-2 overflow-auto pr-1">
+          {rows.map((row) => (
+            <details
+              className="rounded-md border border-[var(--trace-border)] bg-[var(--trace-code-bg)] p-2"
+              key={row.chunkId}
+            >
+              <summary className="cursor-pointer">
+                <div className="flex items-center justify-between gap-3 font-mono text-[11px]">
+                  <span className="truncate text-[var(--trace-foreground)]">
+                    {row.fileName} · chunk {row.chunkIndex}
+                  </span>
+                  <span
+                    className={[
+                      "shrink-0 rounded-full border px-2 py-0.5 text-[10px]",
+                      row.selected
+                        ? "border-[var(--accent)] text-[var(--accent)]"
+                        : row.retrieved
+                          ? "border-[var(--accent-cyan)] text-[var(--accent-cyan)]"
+                          : "border-[var(--trace-border)] text-[var(--trace-muted)]",
+                    ].join(" ")}
+                  >
+                    {row.rank === null ? "not retrieved" : `rank ${row.rank}`}
+                  </span>
+                </div>
+                <div className="mt-1 flex items-center justify-between gap-3 font-mono text-[10px] text-[var(--trace-muted)]">
+                  <span className="truncate">{row.chunkId}</span>
+                  <span className="shrink-0">
+                    {row.charStart}-{row.charEnd}
+                  </span>
+                </div>
+                <p className="mt-2 line-clamp-2 text-xs leading-5 text-[var(--trace-muted)]">
+                  {row.preview}
+                </p>
+              </summary>
+              <dl className="mt-3 grid grid-cols-2 gap-2 border-t border-[var(--trace-border)] pt-3 font-mono text-[11px] text-[var(--trace-muted)]">
+                <div>
+                  <dt>retrieved</dt>
+                  <dd>{row.retrieved ? "yes" : "no"}</dd>
+                </div>
+                <div>
+                  <dt>selected</dt>
+                  <dd>{row.selected ? "yes" : "no"}</dd>
+                </div>
+                <div>
+                  <dt>similarity</dt>
+                  <dd>
+                    {row.similarity === null ? "n/a" : row.similarity.toFixed(3)}
+                  </dd>
+                </div>
+                <div>
+                  <dt>offset</dt>
+                  <dd>
+                    {row.charStart}-{row.charEnd}
+                  </dd>
+                </div>
+              </dl>
+            </details>
+          ))}
+        </div>
+      )}
     </section>
   );
 }

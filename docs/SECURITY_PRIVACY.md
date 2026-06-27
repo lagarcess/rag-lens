@@ -11,6 +11,8 @@ Rules:
 - Restrict file types to PDF, text, and markdown.
 - Require the browser-reported MIME type to match the file extension and run a
   lightweight content check before extraction.
+- Reject uploads when the browser omits the file MIME type. V1 does not infer a
+  trusted content type from the extension alone.
 - Apply an in-memory public API throttle before public session lifecycle writes,
   upload parsing, retrieval, embedding, or chat provider calls.
 - Store every upload under a session-scoped path.

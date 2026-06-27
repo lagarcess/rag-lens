@@ -3,6 +3,7 @@ import { describe, expect, test } from "bun:test";
 import {
   buildAnswerCitations,
   buildSelectedContextRows,
+  buildTraceChunkRows,
   buildTraceEvidence,
 } from "./trace-evidence";
 import type { RagTraceResponse } from "@/lib/rag/trace";
@@ -76,6 +77,64 @@ describe("buildSelectedContextRows", () => {
   });
 });
 
+describe("buildTraceChunkRows", () => {
+  test("returns every chunk with retrieval metadata when present", () => {
+    const rows = buildTraceChunkRows(createTrace());
+
+    expect(rows).toEqual([
+      {
+        chunkId: "chunk-a",
+        fileName: "guide.md",
+        chunkIndex: 0,
+        charStart: 0,
+        charEnd: 799,
+        preview: "A chunk",
+        rank: 1,
+        similarity: 0.81,
+        selected: false,
+        retrieved: true,
+      },
+      {
+        chunkId: "chunk-b",
+        fileName: "guide.md",
+        chunkIndex: 1,
+        charStart: 680,
+        charEnd: 1279,
+        preview: "B chunk",
+        rank: 2,
+        similarity: 0.42,
+        selected: true,
+        retrieved: true,
+      },
+      {
+        chunkId: "chunk-c",
+        fileName: "guide.md",
+        chunkIndex: 2,
+        charStart: 1160,
+        charEnd: 1919,
+        preview:
+          "An unretrieved chunk with extra whitespace and enough content to require a compact preview for...",
+        rank: null,
+        similarity: null,
+        selected: false,
+        retrieved: false,
+      },
+      {
+        chunkId: "chunk-d",
+        fileName: "appendix.md",
+        chunkIndex: 0,
+        charStart: 0,
+        charEnd: 420,
+        preview: "Appendix chunk",
+        rank: null,
+        similarity: null,
+        selected: false,
+        retrieved: false,
+      },
+    ]);
+  });
+});
+
 describe("buildAnswerCitations", () => {
   test("formats citations with rank, file name, chunk id, and similarity", () => {
     const citations = buildAnswerCitations(createTrace());
@@ -125,7 +184,45 @@ function createTrace(): RagTraceResponse {
       },
       chunking: {
         totalChunks: 4,
-        chunks: [],
+        chunks: [
+          {
+            chunkId: "chunk-a",
+            documentId: "doc-1",
+            fileName: "guide.md",
+            chunkIndex: 0,
+            charStart: 0,
+            charEnd: 799,
+            content: "A chunk",
+          },
+          {
+            chunkId: "chunk-b",
+            documentId: "doc-1",
+            fileName: "guide.md",
+            chunkIndex: 1,
+            charStart: 680,
+            charEnd: 1279,
+            content: "B chunk",
+          },
+          {
+            chunkId: "chunk-c",
+            documentId: "doc-1",
+            fileName: "guide.md",
+            chunkIndex: 2,
+            charStart: 1160,
+            charEnd: 1919,
+            content:
+              "An unretrieved chunk with\n\nextra whitespace and enough content to require a compact preview for trace row rendering in the inspector.",
+          },
+          {
+            chunkId: "chunk-d",
+            documentId: "doc-2",
+            fileName: "appendix.md",
+            chunkIndex: 0,
+            charStart: 0,
+            charEnd: 420,
+            content: "Appendix chunk",
+          },
+        ],
       },
       retrieval: {
         method: "supabase-pgvector-cosine",

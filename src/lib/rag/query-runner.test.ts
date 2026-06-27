@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
 import { getExampleCorpusSlugs } from "./example-corpus-manifest";
-import { runExampleTrace } from "./query-runner";
+import { runExampleTrace, runVectorTrace } from "./query-runner";
 
 describe("runExampleTrace", () => {
   test("returns an ephemeral trace for a curated corpus without provider calls", async () => {
@@ -144,5 +144,89 @@ describe("runExampleTrace", () => {
       queryModel: "pplx-embed-v1-0.6b",
       documentModel: "pplx-embed-v1-0.6b",
     });
+  });
+});
+
+describe("runVectorTrace", () => {
+  test("keeps the full source chunk inventory when retrieval returns a subset", async () => {
+    const result = await runVectorTrace(
+      {
+        sessionId: "11111111-1111-4111-8111-111111111111",
+        corpusSlug: "session-uploads",
+        question: "How does RAG improve answer trust?",
+        topK: 1,
+        chunkSize: 800,
+        chunkOverlap: 120,
+        embeddingMode: "standard",
+      },
+      {
+        source: {
+          slug: "session-uploads",
+          title: "Uploaded documents",
+          sourceKind: "upload",
+          documentCount: 1,
+          totalChunks: 2,
+          documents: [
+            {
+              documentId: "document-1",
+              fileName: "notes.md",
+              characterCount: 1200,
+            },
+          ],
+          chunks: [
+            {
+              chunkId: "chunk-1",
+              documentId: "document-1",
+              fileName: "notes.md",
+              chunkIndex: 0,
+              charStart: 0,
+              charEnd: 799,
+              content: "Retrieved chunk",
+            },
+            {
+              chunkId: "chunk-2",
+              documentId: "document-1",
+              fileName: "notes.md",
+              chunkIndex: 1,
+              charStart: 680,
+              charEnd: 1199,
+              content: "Not retrieved chunk",
+            },
+          ],
+        },
+        retrievalProvider: async () => ({
+          method: "supabase-pgvector-cosine",
+          queryEmbeddingModel: "pplx-embed-v1-0.6b",
+          documentEmbeddingModel: "pplx-embed-v1-0.6b",
+          rows: [
+            {
+              chunkId: "chunk-1",
+              documentId: "document-1",
+              fileName: "notes.md",
+              chunkIndex: 0,
+              charStart: 0,
+              charEnd: 799,
+              content: "Retrieved chunk",
+              rank: 1,
+              similarity: 0.91,
+              selected: true,
+              retrievalMode: "vector",
+              matchedTerms: [],
+              embeddingModel: "pplx-embed-v1-0.6b",
+              embeddingMode: "standard",
+            },
+          ],
+        }),
+      },
+    );
+
+    expect(result.trace.chunking.totalChunks).toBe(2);
+    expect(result.trace.chunking.chunks.map((chunk) => chunk.chunkId)).toEqual([
+      "chunk-1",
+      "chunk-2",
+    ]);
+    expect(result.trace.retrieval.rows.map((row) => row.chunkId)).toEqual([
+      "chunk-1",
+    ]);
   });
 });

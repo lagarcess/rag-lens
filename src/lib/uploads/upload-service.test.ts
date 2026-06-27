@@ -3,6 +3,7 @@ import { describe, expect, test } from "bun:test";
 import {
   buildUploadStoragePath,
   extractUploadText,
+  UploadError,
   uploadDocumentFromFormData,
   validateUploadFile,
 } from "./upload-service";
@@ -60,6 +61,31 @@ describe("validateUploadFile", () => {
         byteSize: 42,
       }),
     ).toThrow("File extension does not match");
+  });
+
+  test("rejects missing browser-reported MIME even when the extension is allowed", () => {
+    expect(() =>
+      validateUploadFile({
+        fileName: "notes.md",
+        mimeType: "",
+        byteSize: 42,
+      }),
+    ).toThrow(UploadError);
+
+    try {
+      validateUploadFile({
+        fileName: "notes.md",
+        mimeType: "   ",
+        byteSize: 42,
+      });
+      throw new Error("expected upload validation to reject blank MIME type");
+    } catch (error) {
+      expect(error).toBeInstanceOf(UploadError);
+      expect(error).toMatchObject({
+        status: 400,
+        message: "Upload requires a browser-reported content type.",
+      });
+    }
   });
 });
 

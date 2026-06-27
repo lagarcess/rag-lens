@@ -102,6 +102,19 @@ Current non-deferred V1 focus after Slice 9.1:
 
 This excludes the deferred GitHub Pages landing and warmup topology.
 
+Current public-demo trust pass:
+
+1. Make the anonymous upload constraints visible in the workbench before upload:
+   3 files per session, 10 MB total, active session expiry, and physical purge
+   deadline.
+2. Align upload validation with the documented safety model by rejecting files
+   whose browser-reported MIME type is missing instead of inferring trust from
+   the extension alone.
+3. Expand the trace inspector from retrieved passages only to an inspectable
+   full chunk list, including chunks that were not retrieved.
+4. Keep this pass local and committed only. Do not deploy or push until the
+   user explicitly asks.
+
 ## Execution Discipline
 
 - Use one cohesive commit per slice.

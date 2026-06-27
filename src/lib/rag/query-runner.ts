@@ -57,6 +57,7 @@ export interface VectorTraceSource {
   sourceKind: "example" | "upload";
   documentCount: number;
   totalChunks: number;
+  chunks: RagChunk[];
   documents: Array<{
     documentId: string;
     fileName: string;
@@ -240,7 +241,7 @@ export async function runVectorTrace(
       },
       chunking: {
         totalChunks: options.source.totalChunks,
-        chunks: retrieval.rows,
+        chunks: options.source.chunks,
       },
       retrieval,
       prompt,

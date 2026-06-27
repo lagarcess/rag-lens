@@ -18,6 +18,19 @@ export interface SelectedContextRow {
   similarity: number | null;
 }
 
+export interface TraceChunkRow {
+  chunkId: string;
+  fileName: string;
+  chunkIndex: number;
+  charStart: number;
+  charEnd: number;
+  preview: string;
+  rank: number | null;
+  similarity: number | null;
+  selected: boolean;
+  retrieved: boolean;
+}
+
 export interface AnswerCitationView {
   label: string;
   detail: string;
@@ -104,6 +117,29 @@ export function buildSelectedContextRows(
   });
 }
 
+export function buildTraceChunkRows(result: RagTraceResponse): TraceChunkRow[] {
+  const retrievalRowsById = new Map(
+    result.trace.retrieval.rows.map((row) => [row.chunkId, row]),
+  );
+
+  return result.trace.chunking.chunks.map((chunk) => {
+    const retrievalRow = retrievalRowsById.get(chunk.chunkId);
+
+    return {
+      chunkId: chunk.chunkId,
+      fileName: chunk.fileName,
+      chunkIndex: chunk.chunkIndex,
+      charStart: chunk.charStart,
+      charEnd: chunk.charEnd,
+      preview: formatPreview(chunk.content),
+      rank: retrievalRow?.rank ?? null,
+      similarity: retrievalRow?.similarity ?? null,
+      selected: retrievalRow?.selected ?? false,
+      retrieved: Boolean(retrievalRow),
+    };
+  });
+}
+
 export function buildAnswerCitations(
   result: RagTraceResponse,
 ): AnswerCitationView[] {
@@ -165,6 +201,17 @@ function formatCitation(citation: RagCitation): AnswerCitationView {
       3,
     )}`,
   };
+}
+
+function formatPreview(content: string) {
+  const compact = content.replace(/\s+/g, " ").trim();
+  const maxLength = 97;
+
+  if (compact.length <= maxLength) {
+    return compact;
+  }
+
+  return `${compact.slice(0, maxLength - 3).trimEnd()}...`;
 }
 
 function formatUnit(

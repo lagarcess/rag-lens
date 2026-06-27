@@ -26,6 +26,8 @@ The Bun test suite covers:
 - Session expiry calculations.
 - Anonymous session retention env parsing.
 - Upload validation.
+- Missing browser-reported upload MIME rejection.
+- Workbench upload trust summary labels for file and byte limits.
 - Upload extraction.
 - Upload chunk-row construction and ingestion orchestration.
 - Session-scoped vector retrieval RPC arguments.
@@ -35,6 +37,8 @@ The Bun test suite covers:
 - Workbench experiment baseline/candidate state.
 - Experiment comparison helpers for settings, retrieval overlap, prompt deltas,
   and failure-mode notes.
+- Trace evidence helpers for selected context and full chunk rows, including
+  unretrieved chunks.
 - Workbench trace history API helpers.
 - Cleanup dry-run behavior and count-only logging helpers.
 - Render deployment preflight package, Blueprint, workspace, and sanitized

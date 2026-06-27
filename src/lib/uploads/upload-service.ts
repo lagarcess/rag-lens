@@ -81,7 +81,7 @@ export function validateUploadFile(input: {
   mimeType: string;
   byteSize: number;
 }) {
-  const mimeType = normalizeUploadMimeType(input.mimeType, input.fileName);
+  const mimeType = normalizeUploadMimeType(input.mimeType);
 
   if (!ALLOWED_UPLOAD_MIME_TYPES.has(mimeType)) {
     throw new UploadError("Upload a PDF, text, and markdown file.", 400);
@@ -266,26 +266,14 @@ function readUploadFile(formData: FormData) {
   return file;
 }
 
-function normalizeUploadMimeType(mimeType: string, fileName: string) {
-  if (mimeType) {
-    return mimeType.toLowerCase();
+function normalizeUploadMimeType(mimeType: string) {
+  const normalized = mimeType.trim().toLowerCase();
+
+  if (!normalized) {
+    throw new UploadError("Upload requires a browser-reported content type.", 400);
   }
 
-  const lowerName = fileName.toLowerCase();
-
-  if (lowerName.endsWith(".pdf")) {
-    return "application/pdf";
-  }
-
-  if (lowerName.endsWith(".md") || lowerName.endsWith(".markdown")) {
-    return "text/markdown";
-  }
-
-  if (lowerName.endsWith(".txt")) {
-    return "text/plain";
-  }
-
-  return "application/octet-stream";
+  return normalized;
 }
 
 function inferMimeTypeFromExtension(fileName: string) {
