@@ -78,6 +78,8 @@ Findings incorporated into the execution rules:
 - Retention semantics must be clear before uploads ship: `expires_at` governs
   active demo expiry, and `hard_expires_at` is the physical purge deadline.
 - Render cron should run with the smallest env surface possible.
+- Bundled examples should stay first-party unless a future slice explicitly
+  records third-party dataset license review.
 
 ## Execution Discipline
 
@@ -329,6 +331,32 @@ git commit -m "feat(rag): add Supabase vector retrieval"
 
 Status: complete for seeded example vectors and default-profile query
 retrieval.
+
+### Slice 6.1 - First-Party Example Coverage
+
+Goal: Replace disabled benchmark-branded example placeholders with active,
+license-clean first-party corpora.
+
+Deliverables:
+
+- Shared example corpus manifest.
+- Claim Check Clinic corpus for claim/evidence retrieval.
+- Two-Hop Systems Brief corpus for multi-hop retrieval.
+- Workbench source cards ready for all bundled examples.
+- Seed script covers every active bundled corpus.
+- Supabase corpus metadata migration for the new first-party slugs.
+
+Verification:
+
+- Focused tests for manifest, corpus loading, query traces, workbench source
+  state, and seedable slugs.
+- Supabase migration applies to the linked RAG Lens project.
+- Hosted example seeding runs for all bundled corpora.
+- Browser QA confirms the workbench source list shows three ready corpora.
+
+Status: implemented and applied to the linked RAG Lens Supabase project. Hosted
+verification shows the three first-party corpora seeded with 1 document each and
+2/3/3 vector chunks.
 
 ### Slice 7 - Upload And Extraction
 

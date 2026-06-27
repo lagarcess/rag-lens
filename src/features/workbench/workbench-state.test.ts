@@ -6,6 +6,38 @@ import {
 } from "./workbench-state";
 
 describe("workbenchReducer", () => {
+  test("starts with all bundled first-party example corpora ready", () => {
+    const initial = createInitialWorkbenchState();
+
+    expect(
+      initial.sources.map((source) => ({
+        slug: source.slug,
+        title: source.title,
+        status: source.status,
+        documentCount: source.documentCount,
+      })),
+    ).toEqual([
+      {
+        slug: "rag-concepts-primer",
+        title: "RAG Concepts Primer",
+        status: "ready",
+        documentCount: 1,
+      },
+      {
+        slug: "claim-check-clinic",
+        title: "Claim Check Clinic",
+        status: "ready",
+        documentCount: 1,
+      },
+      {
+        slug: "two-hop-systems-brief",
+        title: "Two-Hop Systems Brief",
+        status: "ready",
+        documentCount: 1,
+      },
+    ]);
+  });
+
   test("tracks question edits, loading state, successful trace, and errors", () => {
     const initial = createInitialWorkbenchState();
     const edited = workbenchReducer(initial, {

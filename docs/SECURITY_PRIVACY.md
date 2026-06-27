@@ -58,4 +58,7 @@ cleanup. Dry-run emits only counts and performs no Storage or database deletes.
 
 ## Dataset Safety
 
-Curated examples must be small, attributed, and license-reviewed before text is bundled in the repo or seeded into Supabase.
+Curated examples must be small and clearly attributed. V1 bundled examples are
+first-party text written for RAG Lens. Third-party benchmark text requires
+explicit license review before it is bundled in the repo or seeded into
+Supabase.

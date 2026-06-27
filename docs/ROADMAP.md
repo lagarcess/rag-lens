@@ -63,7 +63,7 @@ Goal: Let visitors use the app without uploading private files.
 Deliverables:
 
 - First-party `RAG Concepts Primer` corpus.
-- Small attributed dataset subsets for SciFact and HotpotQA after license review.
+- First-party evidence retrieval and multi-hop corpora with clear source labels.
 - Seed script for examples.
 - Example source/citation UI.
 
@@ -72,6 +72,10 @@ Verification:
 - Seed script creates documents and chunks.
 - Example corpora never receive session expiry.
 - UI clearly marks examples as public demo data.
+
+Status: implemented with three first-party corpora: RAG Concepts Primer, Claim
+Check Clinic, and Two-Hop Systems Brief. The benchmark-branded placeholder rows
+are replaced by a forward migration when they have no seeded documents.
 
 ## Slice 4 - Upload And Extraction
 

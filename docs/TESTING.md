@@ -16,6 +16,7 @@ The Bun test suite covers:
 
 - Base64 int8 embedding decode.
 - L2 normalization.
+- First-party example corpus manifest, file loading, and seedable slug list.
 - Public API throttling before expensive session, upload, query, provider, and
   database paths.
 - Public-safe API error responses for query setup failures.
@@ -62,5 +63,10 @@ Last checked on June 27, 2026:
 - Landing page screenshot captured at `docs/assets/screenshots/landing.png`.
 - Workbench example query completed with an OpenRouter answer and visible trace
   inspector.
+- Workbench source list showed RAG Concepts Primer, Claim Check Clinic, and
+  Two-Hop Systems Brief as ready example corpora with no benchmark-branded
+  placeholders.
+- Two-Hop Systems Brief query completed with an OpenRouter answer, three
+  retrieved chunks, and no browser error-level console logs.
 - Workbench screenshot captured at `docs/assets/screenshots/workbench.png`.
 - Browser console had no error-level logs on the captured workbench view.

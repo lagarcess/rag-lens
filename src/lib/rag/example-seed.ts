@@ -5,6 +5,7 @@ import { toPgVector } from "@/lib/embeddings";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { chunkText } from "./chunk";
+import { getExampleCorpusSlugs } from "./example-corpus-manifest";
 import { loadExampleCorpus } from "./example-corpora";
 import { embedTextsWithPerplexity } from "./perplexity-embeddings";
 import type { EmbeddingMode, RagChunk } from "./trace";
@@ -131,6 +132,22 @@ export async function seedExampleCorpus(input: SeedExampleCorpusInput) {
     insertedDocuments,
     insertedChunks,
   };
+}
+
+export function getSeedableExampleCorpusSlugs() {
+  return getExampleCorpusSlugs();
+}
+
+export async function seedExampleCorpora(
+  input: Omit<SeedExampleCorpusInput, "corpusSlug">,
+) {
+  const results = [];
+
+  for (const corpusSlug of getSeedableExampleCorpusSlugs()) {
+    results.push(await seedExampleCorpus({ ...input, corpusSlug }));
+  }
+
+  return results;
 }
 
 type ExampleSeedSupabaseClient = SupabaseClient;

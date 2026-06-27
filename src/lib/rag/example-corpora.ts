@@ -1,6 +1,8 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 
+import { getExampleCorpusManifest } from "./example-corpus-manifest";
+
 export interface ExampleDocument {
   documentId: string;
   fileName: string;
@@ -13,21 +15,8 @@ export interface ExampleCorpus {
   documents: ExampleDocument[];
 }
 
-const EXAMPLE_CORPORA = {
-  "rag-concepts-primer": {
-    slug: "rag-concepts-primer",
-    title: "RAG Concepts Primer",
-    documents: [
-      {
-      documentId: "rag-concepts-primer:doc-0",
-      fileName: "rag-concepts-primer.md",
-      },
-    ],
-  },
-} as const;
-
 export async function loadExampleCorpus(slug: string): Promise<ExampleCorpus> {
-  const manifest = EXAMPLE_CORPORA[slug as keyof typeof EXAMPLE_CORPORA];
+  const manifest = getExampleCorpusManifest(slug);
 
   if (!manifest) {
     throw new Error(`Unknown example corpus: ${slug}`);

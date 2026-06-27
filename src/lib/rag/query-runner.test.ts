@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
+import { getExampleCorpusSlugs } from "./example-corpus-manifest";
 import { runExampleTrace } from "./query-runner";
 
 describe("runExampleTrace", () => {
@@ -36,6 +37,28 @@ describe("runExampleTrace", () => {
     });
     expect(result.trace.models.answer.provider).toBe("local");
     expect(result.trace.models.embedding.provider).toBe("none");
+  });
+
+  test("runs a local trace for every bundled example corpus", async () => {
+    for (const corpusSlug of getExampleCorpusSlugs()) {
+      const result = await runExampleTrace({
+        sessionId: null,
+        corpusSlug,
+        question: "What should this corpus teach about retrieval?",
+        topK: 2,
+        chunkSize: 520,
+        chunkOverlap: 80,
+        embeddingMode: "standard",
+      });
+
+      expect(result.trace.corpus.slug).toBe(corpusSlug);
+      expect(result.trace.corpus.sourceKind).toBe("example");
+      expect(result.trace.corpus.documentCount).toBeGreaterThan(0);
+      expect(result.trace.retrieval.method).toBe(
+        "deterministic-lexical-overlap",
+      );
+      expect(result.trace.retrieval.rows.length).toBeGreaterThan(0);
+    }
   });
 
   test("uses an injected answer provider and records provider metadata", async () => {

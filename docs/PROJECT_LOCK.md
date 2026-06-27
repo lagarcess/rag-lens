@@ -40,6 +40,8 @@ The V1 workflow is:
 - The browser must never receive `SUPABASE_SERVICE_ROLE_KEY`,
   `PERPLEXITY_API_KEY`, or `OPENROUTER_API_KEY`.
 - Cleanup must remove both database rows and storage objects.
+- V1 bundled examples are first-party unless a future slice explicitly records a
+  third-party license review.
 
 ## Deployment Lock
 

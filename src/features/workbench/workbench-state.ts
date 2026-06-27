@@ -1,4 +1,5 @@
 import { RAG_LIMITS } from "@/lib/rag-config";
+import { listExampleCorpusManifests } from "@/lib/rag/example-corpus-manifest";
 import type { EmbeddingMode, RagTraceResponse } from "@/lib/rag/trace";
 import type { TraceSummary } from "@/lib/rag/trace-persistence";
 import type {
@@ -104,32 +105,14 @@ export type WorkbenchAction =
 
 export function createInitialWorkbenchState(): WorkbenchState {
   return {
-    sources: [
-      {
-        slug: "rag-concepts-primer",
-        title: "RAG Concepts Primer",
-        description: "Small first-party explainer corpus",
-        sourceKind: "example",
-        status: "ready",
-        documentCount: 1,
-      },
-      {
-        slug: "scifact-mini",
-        title: "SciFact Mini",
-        description: "Evidence retrieval example",
-        sourceKind: "example",
-        status: "coming-soon",
-        documentCount: 0,
-      },
-      {
-        slug: "hotpotqa-mini",
-        title: "HotpotQA Mini",
-        description: "Multi-hop retrieval example",
-        sourceKind: "example",
-        status: "coming-soon",
-        documentCount: 0,
-      },
-    ],
+    sources: listExampleCorpusManifests().map((corpus) => ({
+      slug: corpus.slug,
+      title: corpus.title,
+      description: corpus.description,
+      sourceKind: corpus.sourceKind,
+      status: corpus.status,
+      documentCount: corpus.documentCount,
+    })),
     selectedCorpusSlug: "rag-concepts-primer",
     question: "How does RAG improve answer trust?",
     settings: {

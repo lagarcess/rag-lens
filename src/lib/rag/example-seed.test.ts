@@ -1,6 +1,9 @@
 import { describe, expect, test } from "bun:test";
 
-import { buildExampleChunkInsertRows } from "./example-seed";
+import {
+  buildExampleChunkInsertRows,
+  getSeedableExampleCorpusSlugs,
+} from "./example-seed";
 import type { RagChunk } from "./trace";
 
 describe("buildExampleChunkInsertRows", () => {
@@ -46,6 +49,14 @@ describe("buildExampleChunkInsertRows", () => {
         expires_at: null,
         hard_expires_at: null,
       },
+    ]);
+  });
+
+  test("seeds every active bundled example corpus", () => {
+    expect(getSeedableExampleCorpusSlugs()).toEqual([
+      "rag-concepts-primer",
+      "claim-check-clinic",
+      "two-hop-systems-brief",
     ]);
   });
 });

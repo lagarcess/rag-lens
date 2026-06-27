@@ -17,7 +17,7 @@ traces, and OpenRouter answer generation.
 ## What It Demonstrates
 
 - Temporary anonymous uploads with size limits and cleanup.
-- Curated example corpora for visitors who do not have files ready.
+- Curated first-party example corpora for visitors who do not have files ready.
 - RAG trace inspection: extraction, chunking, embeddings, retrieval scores,
   prompt assembly, response, and citations.
 - Retrieval experiments for chunk size, overlap, top-k, and supported embedding

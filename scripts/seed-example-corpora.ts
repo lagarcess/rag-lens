@@ -1,17 +1,16 @@
 import { getPerplexityEmbeddingEnv } from "../src/lib/env";
-import { seedExampleCorpus } from "../src/lib/rag/example-seed";
+import { seedExampleCorpora } from "../src/lib/rag/example-seed";
 import { createSupabaseAdminClient } from "../src/lib/supabase-admin";
 
 async function main() {
   const perplexity = getPerplexityEmbeddingEnv();
   const supabase = createSupabaseAdminClient();
-  const result = await seedExampleCorpus({
-    corpusSlug: "rag-concepts-primer",
+  const results = await seedExampleCorpora({
     supabase,
     perplexity,
   });
 
-  console.log(JSON.stringify({ ok: true, ...result }));
+  console.log(JSON.stringify({ ok: true, corpora: results }));
 }
 
 main().catch((error) => {
