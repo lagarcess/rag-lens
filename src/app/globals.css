@@ -1,12 +1,15 @@
 @import "tailwindcss";
 
 :root {
+  color-scheme: light;
   --background: #f8faf9;
   --foreground: #151917;
   --surface: #ffffff;
+  --surface-elevated: #ffffff;
   --surface-muted: #f1f5f3;
   --surface-dark: #101211;
   --surface-dark-2: #171a19;
+  --header-bg: rgba(255, 255, 255, 0.82);
   --border: #d9e1dd;
   --border-dark: #2a302d;
   --muted: #69746f;
@@ -14,8 +17,55 @@
   --accent: #2bd99f;
   --accent-strong: #13b981;
   --accent-cyan: #35c9e8;
+  --accent-button-fg: #07110d;
+  --badge-bg: #ecfdf5;
+  --badge-fg: #047857;
+  --control-bg: #f5f7f6;
+  --control-border: #d6ded9;
+  --control-muted: #66736d;
+  --control-selected: #ffffff;
+  --control-selected-fg: #151917;
+  --trace-surface: #ffffff;
+  --trace-card: #f8fbfa;
+  --trace-code-bg: #f1f5f3;
+  --trace-border: #d9e1dd;
+  --trace-foreground: #151917;
+  --trace-muted: #69746f;
   --danger: #d64545;
   --warning: #b7791f;
+}
+
+html[data-theme="dark"] {
+  color-scheme: dark;
+  --background: #0f1110;
+  --foreground: #f4f7f5;
+  --surface: #151817;
+  --surface-elevated: #1a1e1c;
+  --surface-muted: #111412;
+  --surface-dark: #090a0a;
+  --surface-dark-2: #151817;
+  --header-bg: rgba(15, 17, 16, 0.84);
+  --border: #28302c;
+  --border-dark: #303834;
+  --muted: #a4aea9;
+  --muted-dark: #a8b4af;
+  --accent: #34d399;
+  --accent-strong: #34d399;
+  --accent-cyan: #4dd0e1;
+  --accent-button-fg: #06110d;
+  --badge-bg: rgba(52, 211, 153, 0.12);
+  --badge-fg: #72e3b7;
+  --control-bg: #0b0d0c;
+  --control-border: #2a302d;
+  --control-muted: #8d9893;
+  --control-selected: #f4f7f5;
+  --control-selected-fg: #101211;
+  --trace-surface: #090a0a;
+  --trace-card: #151817;
+  --trace-code-bg: rgba(0, 0, 0, 0.2);
+  --trace-border: #303834;
+  --trace-foreground: #f4f7f5;
+  --trace-muted: #a8b4af;
 }
 
 @theme inline {
@@ -35,6 +85,22 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+}
+
+.theme-logo-dark {
+  display: none;
+}
+
+html[data-theme="dark"] .theme-logo-light {
+  display: none;
+}
+
+html[data-theme="dark"] .theme-logo-dark {
+  display: block;
+}
+
+input {
+  color: var(--foreground);
 }
 
 ::selection {

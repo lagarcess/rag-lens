@@ -2,11 +2,11 @@
 
 ## Promise
 
-`rag-lens` helps developers learn RAG by inspecting a working RAG system, not by reading a static tutorial.
+RAG Lens helps developers learn RAG by inspecting a working RAG system, not by reading a static tutorial.
 
 RAG Play: "Watch the RAG pipeline work."
 
-rag-lens: "Inspect, debug, and understand a real RAG app built on your own docs."
+RAG Lens: "Inspect, debug, and understand a real RAG app built on your own docs."
 
 ## Audience
 

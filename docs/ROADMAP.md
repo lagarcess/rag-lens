@@ -177,3 +177,24 @@ Verification:
 - Example corpus works without upload.
 - Upload session expires and cleans up.
 - No secrets in repository or browser bundle.
+
+## Deferred Slice - Static Landing And Warmup
+
+Goal: Make the recruiter-facing URL instant while keeping Render as the
+sandbox/app origin rather than the public URL to share.
+
+Deliverables:
+
+- GitHub Pages landing page for the repo.
+- Theme-aware RAG Lens loading interstitial.
+- Render health/warmup endpoint with narrow CORS for the GitHub Pages origin.
+- CTA flow that warms Render, waits when needed, then redirects to `/workbench`.
+- Browser-side warmup cooldown to avoid pinging Render on every visit.
+- README and portfolio links that point to GitHub Pages, not the Render origin.
+
+Verification:
+
+- Cold Render service is warmed by landing-page visit.
+- Warm Render service opens the sandbox quickly.
+- Loading interstitial appears only while the sandbox is not ready.
+- Warmup endpoint does not create sessions or call model providers.

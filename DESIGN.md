@@ -1,4 +1,4 @@
-# rag-lens Design System
+# RAG Lens Design System
 
 ## Source Direction
 
@@ -12,7 +12,7 @@ Do not copy any one brand. Use these references to shape a distinct RAG observab
 
 ## Product Atmosphere
 
-rag-lens should feel like a technical inspection tool that happens to be polished enough for a recruiter demo. The app should prioritize the real workflow over a marketing landing page:
+RAG Lens should feel like a technical inspection tool that happens to be polished enough for a recruiter demo. The app should prioritize the real workflow over a marketing landing page:
 
 1. Select an example corpus or upload documents.
 2. Ask a question.
@@ -107,6 +107,11 @@ Use compact inline explainers, not large tutorial blocks. A good pattern is a co
 - Keep examples and uploads visually distinct.
 - Show session expiry and deletion clearly.
 - Favor dense but organized tables, rows, and panels.
+- Use the theme-aware RAG Lens logo in the header brand lockup.
+- Render the brand as "RAG Lens" in user-facing UI.
+- Use the mono subheading "Retrieve, Inspect, Understand RAG." with "RAG." in the Supabase green accent.
+- Support `system`, `light`, and `dark` theme preferences with a compact segmented control.
+- Use plain workbench labels over launch-copy labels like "V1 preview."
 
 ## Do Not
 
@@ -116,3 +121,4 @@ Use compact inline explainers, not large tutorial blocks. A good pattern is a co
 - Do not create a marketing landing page before the app.
 - Do not hide retrieval scores or prompt assembly behind vague "AI magic" copy.
 - Do not expose secret env vars or provider keys in browser-visible UI.
+- Do not use decorative sparkle icons, wide tracking, or novelty labels for core product state.

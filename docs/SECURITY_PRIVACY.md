@@ -11,6 +11,7 @@ Rules:
 - Restrict file types to PDF, text, and markdown.
 - Store every upload under a session-scoped path.
 - Attach `session_id`, `expires_at`, and `hard_expires_at` to all derived rows.
+- Delete anonymous uploads within 24 hours.
 - Let users delete the session immediately.
 - Run Render cleanup every 30 minutes.
 

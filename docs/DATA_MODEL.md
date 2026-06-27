@@ -104,4 +104,5 @@ Uploads:
 
 - `session_id` is required.
 - `expires_at` is required.
-- Storage files are deleted by Render cleanup before database rows are removed.
+- Anonymous upload files and derived rows are deleted within 24 hours.
+- Cleanup removes Storage files before database rows.

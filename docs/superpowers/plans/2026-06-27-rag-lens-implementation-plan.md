@@ -108,7 +108,7 @@
 
 ## Task 10: Deploy And Polish
 
-- [ ] Create Supabase project after org and cost confirmation.
+- [x] Create Supabase project in `RAG Lens` org (`yyqmlfisijerlcrbcuvy`).
 - [ ] Apply migrations.
 - [ ] Seed examples.
 - [ ] Push GitHub remote.

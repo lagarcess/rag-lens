@@ -1,8 +1,8 @@
-# rag-lens
+# RAG Lens
 
-`rag-lens` is a practical RAG debugger: upload documents, ask a question, and inspect exactly how retrieval produced the answer.
+RAG Lens is a practical RAG debugger: upload documents, ask a question, and inspect exactly how retrieval produced the answer.
 
-The project is inspired by RAG Play's educational clarity, but it is not a clone. RAG Play shows the pipeline as a demo. rag-lens turns the pipeline into a deployed workbench with real documents, persistent session traces, Supabase vector search, and Perplexity-backed generation.
+The project is inspired by RAG Play's educational clarity, but it is not a clone. RAG Play shows the pipeline as a demo. RAG Lens turns the pipeline into a deployed workbench with real documents, persistent session traces, Supabase vector search, and Perplexity-backed generation.
 
 ## Locked V1
 
@@ -18,7 +18,8 @@ Build a polished recruiter-facing app optimized for learning:
 - Next.js App Router, React, TypeScript, Tailwind CSS.
 - Bun for package management.
 - Supabase Storage + Postgres + pgvector.
-- Perplexity embeddings and chat APIs.
+- Perplexity embeddings.
+- OpenRouter chat generation.
 - Render web service plus cleanup cron.
 
 ## Getting Started
@@ -45,13 +46,20 @@ Open `http://localhost:3000`.
 
 ## Current Status
 
-Foundation is initialized and deployed.
+Foundation is initialized locally with the first recruiter-facing workbench screen.
 
 - GitHub: https://github.com/lagarcess/rag-lens
-- Render: https://rag-lens.onrender.com
-- Supabase: `rag-lens` project `ycdvnvsosghbcgreosry`
+- Render: provisional app/backend service exists, but the Render URL is not the
+  public link to share. The deferred public entry point is a GitHub Pages
+  landing page that warms the Render sandbox when needed.
+- Supabase: hosted project exists inside the dedicated `RAG Lens` organization at `https://yyqmlfisijerlcrbcuvy.supabase.co`.
 
 Secrets still needed for full RAG behavior:
 
+- `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY`
+- `OPENROUTER_API_KEY`
+
+Already configured locally:
+
 - `PERPLEXITY_API_KEY`
