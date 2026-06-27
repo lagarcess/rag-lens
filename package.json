@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "sh -c 'next start -p ${PORT:-3000}'",
     "lint": "eslint",
+    "test": "bun test",
     "cleanup:sessions": "bun scripts/cleanup-expired-sessions.ts"
   },
   "dependencies": {

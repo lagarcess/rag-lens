@@ -18,6 +18,62 @@ Response:
 }
 ```
 
+### `POST /api/query`
+
+Runs the current local example trace runner. This V1 implementation is
+ephemeral and uses deterministic lexical retrieval over curated example
+documents. Supabase persistence, embeddings, and model-backed answers are added
+in later slices.
+
+Request:
+
+```json
+{
+  "sessionId": null,
+  "corpusSlug": "rag-concepts-primer",
+  "question": "How does RAG improve trust?",
+  "topK": 5,
+  "chunkSize": 800,
+  "chunkOverlap": 120,
+  "embeddingMode": "standard"
+}
+```
+
+Response:
+
+```json
+{
+  "queryId": "uuid",
+  "answer": "string",
+  "citations": [
+    {
+      "rank": 1,
+      "chunkId": "rag-concepts-primer:doc-0:0",
+      "fileName": "rag-concepts-primer.md",
+      "similarity": 0.75
+    }
+  ],
+  "trace": {
+    "settings": {},
+    "corpus": {},
+    "extraction": {},
+    "chunking": {},
+    "retrieval": {
+      "method": "deterministic-lexical-overlap",
+      "rows": []
+    },
+    "prompt": {},
+    "models": {},
+    "timingsMs": {},
+    "persistence": {
+      "mode": "ephemeral",
+      "store": "local-example-runner"
+    },
+    "warnings": []
+  }
+}
+```
+
 ## Planned
 
 ### `POST /api/sessions`
@@ -56,7 +112,7 @@ Limits:
 
 Extracts text, chunks it, embeds chunks, and stores vectors.
 
-### `POST /api/query`
+### Supabase-backed `POST /api/query`
 
 Runs query embedding, vector retrieval, prompt assembly, answer generation, and trace persistence.
 

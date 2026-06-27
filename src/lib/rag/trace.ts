@@ -1,0 +1,99 @@
+export type EmbeddingMode = "standard" | "contextualized";
+
+export type RetrievalMethod = "deterministic-lexical-overlap";
+
+export interface RagQueryRequest {
+  sessionId: string | null;
+  corpusSlug: string;
+  question: string;
+  topK: number;
+  chunkSize: number;
+  chunkOverlap: number;
+  embeddingMode: EmbeddingMode;
+}
+
+export interface RagChunk {
+  chunkId: string;
+  documentId: string;
+  fileName: string;
+  chunkIndex: number;
+  charStart: number;
+  charEnd: number;
+  content: string;
+}
+
+export interface RagRetrievalRow extends RagChunk {
+  rank: number;
+  similarity: number;
+  selected: boolean;
+  retrievalMode: "lexical";
+  matchedTerms: string[];
+}
+
+export interface RagCitation {
+  rank: number;
+  chunkId: string;
+  fileName: string;
+  similarity: number;
+}
+
+export interface RagTrace {
+  settings: {
+    topK: number;
+    chunkSize: number;
+    chunkOverlap: number;
+    embeddingMode: EmbeddingMode;
+  };
+  corpus: {
+    slug: string;
+    title: string;
+    sourceKind: "example";
+    documentCount: number;
+  };
+  extraction: {
+    documents: Array<{
+      documentId: string;
+      fileName: string;
+      characterCount: number;
+    }>;
+  };
+  chunking: {
+    totalChunks: number;
+    chunks: RagChunk[];
+  };
+  retrieval: {
+    method: RetrievalMethod;
+    rows: RagRetrievalRow[];
+  };
+  prompt: {
+    rendered: string;
+    contextChunkIds: string[];
+  };
+  models: {
+    embedding: {
+      provider: "none";
+      model: "local-lexical";
+    };
+    answer: {
+      provider: "local";
+      model: "extractive-summary";
+    };
+  };
+  timingsMs: {
+    total: number;
+    retrieval: number;
+    generation: number;
+  };
+  persistence: {
+    mode: "ephemeral";
+    store: "local-example-runner";
+  };
+  warnings: string[];
+}
+
+export interface RagTraceResponse {
+  queryId: string;
+  answer: string;
+  citations: RagCitation[];
+  trace: RagTrace;
+}
