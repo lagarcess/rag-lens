@@ -52,7 +52,7 @@ services:
       - key: OPENROUTER_REASONING_EXCLUDE
         value: "true"
       - key: RAG_RETRIEVAL_BACKEND
-        value: local
+        value: supabase
       - key: RAG_SESSION_SOFT_TTL_HOURS
         value: "2"
       - key: RAG_SESSION_HARD_TTL_HOURS

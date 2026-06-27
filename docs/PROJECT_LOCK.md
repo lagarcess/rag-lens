@@ -77,7 +77,8 @@ As of June 27, 2026:
 
 - Supabase is linked to the dedicated RAG Lens project.
 - Supabase migrations are applied and advisors report no warning-level issues.
-- Render blueprint validation passes locally.
+- Render blueprint validation passes locally and hosted V1 is configured to use
+  Supabase vector retrieval.
 - Render deployment is intentionally blocked by missing dedicated workspace
   access.
 - Public route hardening, upload cleanup, trace persistence, and experiment

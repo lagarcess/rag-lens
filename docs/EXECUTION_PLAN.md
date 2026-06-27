@@ -92,8 +92,9 @@ Current non-deferred V1 focus after Slice 9.1:
 
 1. Keep the scheduled cleanup job as a retry/backstop for expired sessions,
    failed immediate purges, and abandoned browser sessions.
-2. Re-run the deployment readiness checklist after the retention behavior is
-   verified.
+2. Keep `render.yaml` and deployment docs aligned with hosted V1 behavior:
+   Supabase vector retrieval, OpenRouter chat generation, and minimal cleanup
+   cron env.
 3. Deploy only after a dedicated RAG Lens Render workspace exists or the user
    explicitly authorizes the target workspace.
 
@@ -573,10 +574,12 @@ git commit -m "chore(deploy): finalize Render backend deployment"
 Status: partially progressed. GitHub `main` is pushed, the dedicated RAG Lens
 Supabase project has all checked-in migrations applied, Supabase advisors return
 no warning-level issues, cleanup dry-run succeeds, and `render.yaml` validates.
-Do not deploy the Render services yet: the active Render account currently only
-exposes `argus-prod` and `payment-ledger`, not a dedicated RAG Lens workspace.
-Create or grant access to that workspace before creating the backend web service
-or cleanup cron.
+The Blueprint is configured for hosted V1 with
+`RAG_RETRIEVAL_BACKEND=supabase`; local lexical retrieval remains a development
+fallback. Do not deploy the Render services yet: the active Render account
+currently only exposes `argus-prod` and `payment-ledger`, not a dedicated RAG
+Lens workspace. Create or grant access to that workspace before creating the
+backend web service or cleanup cron.
 
 ### Slice 12 - Portfolio Polish
 

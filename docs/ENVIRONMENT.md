@@ -37,15 +37,26 @@ These must never use `NEXT_PUBLIC_`:
 - `RAG_RATE_LIMIT_SESSION_MAX`
 - `CLEANUP_BATCH_SIZE`
 
+## Local CLI / Operations Only
+
+These are useful for local Supabase CLI workflows but are not required by the
+Next.js runtime or Render services:
+
+- `SUPABASE_PROJECT_REF`
+
 ## Defaults
 
 V1 defaults:
 
 - Standard query embedding: `pplx-embed-v1-0.6b`
 - Contextual document embedding: `pplx-embed-context-v1-0.6b`
-- Chat provider: `openrouter`
+- Answer provider: OpenRouter is enabled when `CHAT_PROVIDER=openrouter` and
+  `OPENROUTER_API_KEY` are configured.
 - Chat model: `deepseek/deepseek-v4-flash`
-- Retrieval backend: `local` until Supabase examples are seeded, then `supabase`
+- Local retrieval backend: `local` for zero-dependency example traces.
+- Hosted V1 retrieval backend: `supabase` because the dedicated RAG Lens
+  Supabase project is seeded with example vectors and upload vectors are always
+  stored in Supabase.
 - Upload bucket: `rag-uploads`
 - Anonymous session soft TTL: `2` hours.
 - Anonymous session hard purge target: `23.5` hours.

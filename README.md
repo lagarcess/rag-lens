@@ -74,6 +74,10 @@ The app can run a local lexical example trace with `RAG_RETRIEVAL_BACKEND=local`
 Full uploads, Supabase vector retrieval, model-backed embeddings, trace
 persistence, and cleanup need the hosted-service env vars below.
 
+For Render-hosted V1, use `RAG_RETRIEVAL_BACKEND=supabase`; the dedicated RAG
+Lens Supabase project has seeded example vectors, and uploaded documents are
+always indexed into Supabase.
+
 ## Environment
 
 Browser-safe values:
@@ -100,6 +104,9 @@ Operational controls:
 - `RAG_RATE_LIMIT_*`
 - `CLEANUP_BATCH_SIZE`
 
+`SUPABASE_PROJECT_REF` is intentionally omitted from runtime env lists. Use it
+only for local Supabase CLI linking.
+
 See [docs/ENVIRONMENT.md](docs/ENVIRONMENT.md) and
 [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for the full list.
 
@@ -118,9 +125,9 @@ bun run build
 
 - GitHub: [lagarcess/rag-lens](https://github.com/lagarcess/rag-lens)
 - Supabase: hosted project in the dedicated `RAG Lens` organization.
-- Render: blueprint validates, but deployment is blocked until a dedicated RAG
-  Lens Render workspace is available. Do not attach services to existing
-  unrelated Render workspaces.
+- Render: blueprint validates and is configured for Supabase vector retrieval,
+  but deployment is blocked until a dedicated RAG Lens Render workspace is
+  available. Do not attach services to existing unrelated Render workspaces.
 
 Working locally against the hosted Supabase project:
 

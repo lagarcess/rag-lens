@@ -42,6 +42,8 @@ Avoid copying RAG Play's four-card stage layout. The product surface is the prot
 
 - Never expose `SUPABASE_SERVICE_ROLE_KEY`, `PERPLEXITY_API_KEY`, or
   `OPENROUTER_API_KEY` to browser code.
+- Treat `SUPABASE_PROJECT_REF` as local Supabase CLI metadata only; do not add
+  it to Next.js runtime env or Render service env vars.
 - Browser env vars must use only publishable values.
 - Public uploads are anonymous demo uploads only and must expire.
 - Uploaded files, extracted text, chunks, embeddings, and traces must carry `session_id` plus `expires_at`.

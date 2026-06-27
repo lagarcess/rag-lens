@@ -42,7 +42,7 @@ be used as the public link in the README, portfolio, or social posts.
 
 - Renders workbench UI.
 - Holds anonymous `session_id`.
-- Never sees service-role keys or Perplexity keys.
+- Never sees service-role, Perplexity, or OpenRouter keys.
 - Uploads only through app routes.
 
 ### Next.js Server
@@ -75,9 +75,13 @@ V1 does not need a Python worker. Keeping ingestion, retrieval, and trace logic 
 ## Key Decisions
 
 - Default embedding dimension is 1024 using Perplexity 0.6b embedding models.
-- Default chat generation uses OpenRouter with `deepseek/deepseek-v4-flash`.
+- OpenRouter answer generation is enabled when `CHAT_PROVIDER=openrouter` and
+  `OPENROUTER_API_KEY` are configured; the V1 hosted model is
+  `deepseek/deepseek-v4-flash`.
 - Keep model reasoning disabled by default for low-cost, predictable RAG answers; expose it later as an experiment control.
 - Store normalized float vectors in `extensions.vector(1024)`.
 - Use cosine distance (`<=>`) in Supabase.
+- Use `RAG_RETRIEVAL_BACKEND=local` for zero-dependency local example traces
+  and `RAG_RETRIEVAL_BACKEND=supabase` for hosted V1.
 - Use examples by default; uploads are optional and expiring.
 - Keep long-lived personal knowledge bases out of V1.

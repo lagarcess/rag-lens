@@ -48,6 +48,11 @@ Use the Supabase dashboard for API keys:
 - `rag-lens`: Next.js web service.
 - `rag-lens-session-cleanup`: cron job every 30 minutes.
 
+The web service Blueprint sets `RAG_RETRIEVAL_BACKEND=supabase`. This is the
+intended hosted V1 behavior because the dedicated Supabase project has seeded
+example vectors and uploaded documents are indexed into Supabase. Keep
+`RAG_RETRIEVAL_BACKEND=local` only for zero-dependency local example traces.
+
 Current blocker on June 27, 2026: do not deploy from the currently selected
 Render workspace. The Render CLI account only exposes these workspaces:
 
@@ -93,6 +98,10 @@ The CLI available in this workspace can validate Blueprints but does not expose
 a Blueprint launch command. Create the services from the Render dashboard using
 the checked-in `render.yaml`, or use `render services create` only after the
 dedicated workspace is selected.
+
+Do not add `SUPABASE_PROJECT_REF` to Render runtime env vars. It is local
+CLI/operations metadata for `supabase link`, not a value consumed by the
+Next.js service or cleanup cron.
 
 Note: the cleanup cron is intentionally safe to defer. Render rejected `free`
 for cron services in CLI validation, so the Blueprint uses `starter`. Create it
@@ -178,7 +187,7 @@ Set these on the `rag-lens` web service:
 - `OPENROUTER_MAX_COMPLETION_TOKENS`
 - `OPENROUTER_REASONING_EFFORT`
 - `OPENROUTER_REASONING_EXCLUDE`
-- `RAG_RETRIEVAL_BACKEND`
+- `RAG_RETRIEVAL_BACKEND=supabase`
 - `RAG_SESSION_SOFT_TTL_HOURS`
 - `RAG_SESSION_HARD_TTL_HOURS`
 - `RAG_RATE_LIMIT_WINDOW_MS`
