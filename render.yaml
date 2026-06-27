@@ -7,7 +7,7 @@ services:
     region: ohio
     branch: main
     autoDeploy: true
-    buildCommand: npm install -g bun@1.3.14 && bun install --frozen-lockfile && bun run build
+    buildCommand: bun install --frozen-lockfile && bun run build
     startCommand: bun run start
     healthCheckPath: /api/health
     envVars:
@@ -41,7 +41,7 @@ services:
     plan: starter
     region: ohio
     schedule: "*/30 * * * *"
-    buildCommand: npm install -g bun@1.3.14 && bun install --frozen-lockfile
+    buildCommand: bun install --frozen-lockfile
     startCommand: bun run cleanup:sessions
     envVars:
       - key: SUPABASE_URL
