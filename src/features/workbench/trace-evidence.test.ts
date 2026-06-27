@@ -1,0 +1,203 @@
+import { describe, expect, test } from "bun:test";
+
+import {
+  buildAnswerCitations,
+  buildSelectedContextRows,
+  buildTraceEvidence,
+} from "./trace-evidence";
+import type { RagTraceResponse } from "@/lib/rag/trace";
+
+describe("buildTraceEvidence", () => {
+  test("summarizes the trace stages that explain a RAG answer", () => {
+    const evidence = buildTraceEvidence(createTrace());
+
+    expect(evidence.stages).toEqual([
+      {
+        label: "extraction",
+        value: "1 doc",
+        detail: "guide.md · 1,280 chars",
+      },
+      {
+        label: "chunking",
+        value: "4 chunks",
+        detail: "800 size · 120 overlap",
+      },
+      {
+        label: "embedding",
+        value: "perplexity",
+        detail: "query: pplx-query · docs: pplx-doc",
+      },
+      {
+        label: "retrieval",
+        value: "supabase-pgvector-cosine",
+        detail: "2 rows · 1 selected",
+      },
+      {
+        label: "prompt",
+        value: "53 chars",
+        detail: "1 context chunk",
+      },
+      {
+        label: "answer",
+        value: "openrouter",
+        detail: "deepseek/deepseek-v4-flash · stop",
+      },
+    ]);
+    expect(evidence.timingRows).toEqual([
+      ["total", "42 ms"],
+      ["retrieval", "17 ms"],
+      ["generation", "25 ms"],
+    ]);
+    expect(evidence.modelRows).toEqual([
+      ["embedding", "perplexity / pplx-base"],
+      ["query model", "pplx-query"],
+      ["document model", "pplx-doc"],
+      ["answer", "openrouter / deepseek/deepseek-v4-flash"],
+      ["finish", "stop"],
+      ["tokens", "118 in · 24 out · 142 total"],
+      ["persistence", "session / supabase-trace-history"],
+    ]);
+    expect(evidence.warnings).toEqual(["Low similarity"]);
+  });
+});
+
+describe("buildSelectedContextRows", () => {
+  test("maps prompt context ids to retrieved rows in prompt order", () => {
+    const rows = buildSelectedContextRows(createTrace());
+
+    expect(rows).toEqual([
+      {
+        chunkId: "chunk-b",
+        rank: 2,
+        fileName: "guide.md",
+        similarity: 0.42,
+      },
+    ]);
+  });
+});
+
+describe("buildAnswerCitations", () => {
+  test("formats citations with rank, file name, chunk id, and similarity", () => {
+    const citations = buildAnswerCitations(createTrace());
+
+    expect(citations).toEqual([
+      {
+        label: "[1]",
+        detail: "guide.md · chunk-a · similarity 0.810",
+      },
+    ]);
+  });
+});
+
+function createTrace(): RagTraceResponse {
+  return {
+    queryId: "query-1",
+    answer: "Answer",
+    citations: [
+      {
+        rank: 1,
+        chunkId: "chunk-a",
+        fileName: "guide.md",
+        similarity: 0.81,
+      },
+    ],
+    trace: {
+      settings: {
+        topK: 2,
+        chunkSize: 800,
+        chunkOverlap: 120,
+        embeddingMode: "standard",
+      },
+      corpus: {
+        slug: "session-uploads",
+        title: "Uploaded documents",
+        sourceKind: "upload",
+        documentCount: 1,
+      },
+      extraction: {
+        documents: [
+          {
+            documentId: "doc-1",
+            fileName: "guide.md",
+            characterCount: 1280,
+          },
+        ],
+      },
+      chunking: {
+        totalChunks: 4,
+        chunks: [],
+      },
+      retrieval: {
+        method: "supabase-pgvector-cosine",
+        rows: [
+          {
+            chunkId: "chunk-a",
+            documentId: "doc-1",
+            fileName: "guide.md",
+            chunkIndex: 0,
+            charStart: 0,
+            charEnd: 799,
+            content: "A chunk",
+            rank: 1,
+            similarity: 0.81,
+            distance: 0.19,
+            selected: false,
+            retrievalMode: "vector",
+            matchedTerms: [],
+            embeddingModel: "pplx-doc",
+            embeddingMode: "standard",
+          },
+          {
+            chunkId: "chunk-b",
+            documentId: "doc-1",
+            fileName: "guide.md",
+            chunkIndex: 1,
+            charStart: 680,
+            charEnd: 1279,
+            content: "B chunk",
+            rank: 2,
+            similarity: 0.42,
+            distance: 0.58,
+            selected: true,
+            retrievalMode: "vector",
+            matchedTerms: [],
+            embeddingModel: "pplx-doc",
+            embeddingMode: "standard",
+          },
+        ],
+      },
+      prompt: {
+        rendered: "Use context chunk-b to answer this user question now.",
+        contextChunkIds: ["chunk-b"],
+      },
+      models: {
+        embedding: {
+          provider: "perplexity",
+          model: "pplx-base",
+          queryModel: "pplx-query",
+          documentModel: "pplx-doc",
+        },
+        answer: {
+          provider: "openrouter",
+          model: "deepseek/deepseek-v4-flash",
+          finishReason: "stop",
+          usage: {
+            promptTokens: 118,
+            completionTokens: 24,
+            totalTokens: 142,
+          },
+        },
+      },
+      timingsMs: {
+        total: 42,
+        retrieval: 17,
+        generation: 25,
+      },
+      persistence: {
+        mode: "session",
+        store: "supabase-trace-history",
+      },
+      warnings: ["Low similarity"],
+    },
+  };
+}

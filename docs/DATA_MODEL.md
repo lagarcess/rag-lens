@@ -69,6 +69,7 @@ Important columns:
 - `question`
 - `answer`
 - `answer_model`
+- `embedding_model`
 - `top_k`
 - `chunk_size`
 - `chunk_overlap`

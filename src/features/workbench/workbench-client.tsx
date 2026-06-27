@@ -34,6 +34,11 @@ import {
 } from "@/features/workbench/workbench-api";
 import { buildExperimentComparison } from "@/features/workbench/experiment-compare";
 import {
+  buildAnswerCitations,
+  buildSelectedContextRows,
+  buildTraceEvidence,
+} from "@/features/workbench/trace-evidence";
+import {
   createInitialWorkbenchState,
   workbenchReducer,
 } from "@/features/workbench/workbench-state";
@@ -998,13 +1003,14 @@ function AnswerPanel({
         <p className="text-sm leading-7 text-[var(--foreground)]">
           {result.answer}
         </p>
+        <AnswerCitations result={result} />
       </div>
 
       <div className="grid gap-3 sm:grid-cols-3">
         {[
-          ["chunks", result.trace.chunking.totalChunks],
-          ["retrieved", result.trace.retrieval.rows.length],
-          ["latency_ms", result.trace.timingsMs.total],
+          ["chunks", formatNumber(result.trace.chunking.totalChunks)],
+          ["retrieved", formatNumber(result.trace.retrieval.rows.length)],
+          ["latency_ms", formatNumber(result.trace.timingsMs.total)],
         ].map(([label, value]) => (
           <div
             className="rounded-lg border border-[var(--border)] bg-[var(--surface-muted)] p-3"
@@ -1015,6 +1021,64 @@ function AnswerPanel({
             </div>
             <div className="mt-1 text-lg font-semibold">{value}</div>
           </div>
+        ))}
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-3">
+        {[
+          ["retrieval_ms", result.trace.timingsMs.retrieval],
+          ["generation_ms", result.trace.timingsMs.generation],
+          [
+            "context_chunks",
+            result.trace.prompt.contextChunkIds.length,
+          ],
+        ].map(([label, value]) => (
+          <div
+            className="rounded-lg border border-[var(--border)] bg-[var(--surface-elevated)] p-3"
+            key={label}
+          >
+            <div className="font-mono text-[11px] text-[var(--muted)]">
+              {label}
+            </div>
+            <div className="mt-1 text-lg font-semibold">
+              {formatNumber(Number(value))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function AnswerCitations({
+  result,
+}: {
+  result: NonNullable<
+    ReturnType<typeof createInitialWorkbenchState>["query"]["result"]
+  >;
+}) {
+  const citations = buildAnswerCitations(result);
+
+  if (citations.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="mt-4 border-t border-[var(--border)] pt-4">
+      <h3 className="mb-2 font-mono text-[11px] uppercase text-[var(--muted)]">
+        Citations
+      </h3>
+      <div className="flex flex-wrap gap-2">
+        {citations.map((citation) => (
+          <span
+            className="rounded-full border border-[var(--border)] bg-[var(--surface-muted)] px-2.5 py-1 font-mono text-[11px] text-[var(--muted)]"
+            key={`${citation.label}-${citation.detail}`}
+          >
+            <span className="font-semibold text-[var(--foreground)]">
+              {citation.label}
+            </span>{" "}
+            {citation.detail}
+          </span>
         ))}
       </div>
     </div>
@@ -1045,6 +1109,14 @@ function TraceInspector({
 
     return `${result.trace.models.answer.provider} / ${result.trace.models.answer.model}`;
   }, [result]);
+  const evidence = useMemo(
+    () => (result ? buildTraceEvidence(result) : null),
+    [result],
+  );
+  const selectedContextRows = useMemo(
+    () => (result ? buildSelectedContextRows(result) : []),
+    [result],
+  );
 
   return (
     <aside className="min-w-0 rounded-xl border border-[var(--trace-border)] bg-[var(--trace-surface)] p-5 text-[var(--trace-foreground)]">
@@ -1062,6 +1134,11 @@ function TraceInspector({
         activeQueryId={activeQueryId}
         history={history}
         onTraceSelected={onTraceSelected}
+      />
+
+      <TraceEvidenceStack
+        evidence={evidence}
+        selectedContextRows={selectedContextRows}
       />
 
       <div className="space-y-3">
@@ -1084,6 +1161,153 @@ function TraceInspector({
         </pre>
       </div>
     </aside>
+  );
+}
+
+function TraceEvidenceStack({
+  evidence,
+  selectedContextRows,
+}: {
+  evidence: ReturnType<typeof buildTraceEvidence> | null;
+  selectedContextRows: ReturnType<typeof buildSelectedContextRows>;
+}) {
+  if (!evidence) {
+    return (
+      <section className="mb-4 rounded-lg border border-[var(--trace-border)] bg-[var(--trace-card)] p-3">
+        <h3 className="font-mono text-[11px] text-[var(--accent-cyan)]">
+          evidence stack
+        </h3>
+        <p className="mt-2 text-xs leading-5 text-[var(--trace-muted)]">
+          Run a trace to inspect extraction, chunks, embeddings, retrieval,
+          prompt assembly, and model metadata.
+        </p>
+      </section>
+    );
+  }
+
+  return (
+    <section
+      aria-labelledby="trace-evidence-heading"
+      className="mb-4 space-y-3 rounded-lg border border-[var(--trace-border)] bg-[var(--trace-card)] p-3"
+    >
+      <div className="flex items-center justify-between gap-3">
+        <h3
+          className="font-mono text-[11px] text-[var(--accent-cyan)]"
+          id="trace-evidence-heading"
+        >
+          evidence stack
+        </h3>
+        <span className="font-mono text-[10px] text-[var(--trace-muted)]">
+          {evidence.stages.length} stages
+        </span>
+      </div>
+
+      <div className="space-y-2">
+        {evidence.stages.map((stage) => (
+          <div
+            className="rounded-md border border-[var(--trace-border)] bg-[var(--trace-code-bg)] p-2"
+            key={stage.label}
+          >
+            <div className="flex items-center justify-between gap-3 font-mono text-[11px]">
+              <span className="text-[var(--trace-muted)]">{stage.label}</span>
+              <span className="text-[var(--trace-foreground)]">
+                {stage.value}
+              </span>
+            </div>
+            <p className="mt-1 break-words font-mono text-[10px] leading-4 text-[var(--trace-muted)]">
+              {stage.detail}
+            </p>
+          </div>
+        ))}
+      </div>
+
+      <TraceKeyValueList title="timings" rows={evidence.timingRows} />
+      <TraceKeyValueList title="models" rows={evidence.modelRows} />
+
+      <div>
+        <div className="mb-2 font-mono text-[11px] text-[var(--accent-cyan)]">
+          selected context
+        </div>
+        {selectedContextRows.length === 0 ? (
+          <p className="rounded-md border border-[var(--trace-border)] bg-[var(--trace-code-bg)] p-2 text-xs leading-5 text-[var(--trace-muted)]">
+            No retrieved chunks reached the prompt context.
+          </p>
+        ) : (
+          <ol className="space-y-2">
+            {selectedContextRows.map((row) => (
+              <li
+                className="rounded-md border border-[var(--trace-border)] bg-[var(--trace-code-bg)] p-2 font-mono text-[11px]"
+                key={row.chunkId}
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <span className="truncate text-[var(--trace-foreground)]">
+                    {row.fileName}
+                  </span>
+                  <span className="shrink-0 text-[var(--accent)]">
+                    {row.rank === null ? "not retrieved" : `rank ${row.rank}`}
+                  </span>
+                </div>
+                <div className="mt-1 flex items-center justify-between gap-3 text-[var(--trace-muted)]">
+                  <span className="truncate">{row.chunkId}</span>
+                  <span className="shrink-0">
+                    {row.similarity === null
+                      ? "no score"
+                      : row.similarity.toFixed(3)}
+                  </span>
+                </div>
+              </li>
+            ))}
+          </ol>
+        )}
+      </div>
+
+      {evidence.warnings.length > 0 ? (
+        <div>
+          <div className="mb-2 font-mono text-[11px] text-[var(--accent-cyan)]">
+            warnings
+          </div>
+          <ul className="space-y-1">
+            {evidence.warnings.map((warning) => (
+              <li
+                className="rounded-md border border-[var(--warning)]/40 bg-[var(--trace-code-bg)] p-2 text-xs leading-5 text-[var(--trace-muted)]"
+                key={warning}
+              >
+                {warning}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
+function TraceKeyValueList({
+  rows,
+  title,
+}: {
+  rows: Array<[string, string]>;
+  title: string;
+}) {
+  return (
+    <div>
+      <div className="mb-2 font-mono text-[11px] text-[var(--accent-cyan)]">
+        {title}
+      </div>
+      <dl className="space-y-1">
+        {rows.map(([label, value]) => (
+          <div
+            className="flex items-start justify-between gap-3 rounded-md border border-[var(--trace-border)] bg-[var(--trace-code-bg)] p-2 font-mono text-[11px]"
+            key={`${title}-${label}`}
+          >
+            <dt className="shrink-0 text-[var(--trace-muted)]">{label}</dt>
+            <dd className="min-w-0 break-words text-right text-[var(--trace-foreground)]">
+              {value}
+            </dd>
+          </div>
+        ))}
+      </dl>
+    </div>
   );
 }
 
@@ -1176,9 +1400,21 @@ function TraceRow({ row }: { row: RagRetrievalRow }) {
       <summary className="cursor-pointer">
         <div className="mb-2 flex items-center justify-between font-mono text-[11px]">
           <span className="text-[var(--accent)]">rank {row.rank}</span>
-          <span className="text-[var(--trace-muted)]">
-            similarity {row.similarity.toFixed(3)}
-          </span>
+          <div className="flex items-center gap-2">
+            <span
+              className={[
+                "rounded-full border px-2 py-0.5 text-[10px]",
+                row.selected
+                  ? "border-[var(--accent)] text-[var(--accent)]"
+                  : "border-[var(--trace-border)] text-[var(--trace-muted)]",
+              ].join(" ")}
+            >
+              {row.selected ? "selected" : "ignored"}
+            </span>
+            <span className="text-[var(--trace-muted)]">
+              similarity {row.similarity.toFixed(3)}
+            </span>
+          </div>
         </div>
         <div className="font-mono text-xs text-[var(--trace-foreground)]">
           {row.fileName} · chunk {row.chunkIndex} · {row.retrievalMode}
@@ -1198,6 +1434,14 @@ function TraceRow({ row }: { row: RagRetrievalRow }) {
           <div>
             <dt>terms</dt>
             <dd>{row.matchedTerms.join(", ") || "none"}</dd>
+          </div>
+          <div>
+            <dt>distance</dt>
+            <dd>{row.distance === undefined ? "n/a" : row.distance.toFixed(3)}</dd>
+          </div>
+          <div>
+            <dt>embedding</dt>
+            <dd>{row.embeddingModel ?? row.embeddingMode ?? "n/a"}</dd>
           </div>
         </dl>
         <p className="whitespace-pre-wrap font-mono text-xs leading-5 text-[var(--trace-foreground)]">

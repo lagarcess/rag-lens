@@ -91,19 +91,73 @@ Response:
     }
   ],
   "trace": {
-    "settings": {},
-    "corpus": {},
-    "extraction": {},
-    "chunking": {},
+    "settings": {
+      "topK": 5,
+      "chunkSize": 800,
+      "chunkOverlap": 120,
+      "embeddingMode": "standard"
+    },
+    "corpus": {
+      "slug": "rag-concepts-primer",
+      "title": "RAG Concepts Primer",
+      "sourceKind": "example",
+      "documentCount": 1
+    },
+    "extraction": {
+      "documents": [
+        {
+          "documentId": "rag-concepts-primer:doc-0",
+          "fileName": "rag-concepts-primer.md",
+          "characterCount": 2400
+        }
+      ]
+    },
+    "chunking": {
+      "totalChunks": 4,
+      "chunks": [
+        {
+          "chunkId": "rag-concepts-primer:doc-0:0",
+          "documentId": "rag-concepts-primer:doc-0",
+          "fileName": "rag-concepts-primer.md",
+          "chunkIndex": 0,
+          "charStart": 0,
+          "charEnd": 799,
+          "content": "string"
+        }
+      ]
+    },
     "retrieval": {
       "method": "deterministic-lexical-overlap",
-      "rows": []
+      "rows": [
+        {
+          "rank": 1,
+          "chunkId": "rag-concepts-primer:doc-0:0",
+          "documentId": "rag-concepts-primer:doc-0",
+          "fileName": "rag-concepts-primer.md",
+          "chunkIndex": 0,
+          "charStart": 0,
+          "charEnd": 799,
+          "content": "string",
+          "similarity": 0.75,
+          "selected": true,
+          "retrievalMode": "lexical",
+          "matchedTerms": ["trust"],
+          "distance": 0.25,
+          "embeddingModel": "pplx-embed-v1-0.6b",
+          "embeddingMode": "standard"
+        }
+      ]
     },
-    "prompt": {},
+    "prompt": {
+      "rendered": "string",
+      "contextChunkIds": ["rag-concepts-primer:doc-0:0"]
+    },
     "models": {
       "embedding": {
         "provider": "none",
-        "model": "local-lexical"
+        "model": "local-lexical",
+        "queryModel": "local-lexical",
+        "documentModel": "local-lexical"
       },
       "answer": {
         "provider": "openrouter",
@@ -116,7 +170,11 @@ Response:
         }
       }
     },
-    "timingsMs": {},
+    "timingsMs": {
+      "total": 1200,
+      "retrieval": 220,
+      "generation": 980
+    },
     "persistence": {
       "mode": "ephemeral",
       "store": "local-example-runner"
@@ -125,6 +183,11 @@ Response:
   }
 }
 ```
+
+For vector-backed uploaded traces, `retrieval.rows[].distance`,
+`retrieval.rows[].embeddingModel`, and `retrieval.rows[].embeddingMode` are
+populated when available. For local example retrieval, vector-specific row
+fields can be omitted.
 
 For uploaded documents, send the anonymous `sessionId` and use
 `corpusSlug: "session-uploads"`. The uploaded-document path currently requires
