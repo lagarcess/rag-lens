@@ -4,6 +4,33 @@ The controlling execution plan for V1 is `docs/EXECUTION_PLAN.md`. This file
 keeps the product roadmap readable; the execution plan owns commit boundaries,
 subagent discipline, verification gates, and cleanup rules.
 
+## Current V1 State
+
+Core standard RAG is already implemented end to end. Slices 0-9 are complete for
+the current V1 baseline: foundation, app shell, Supabase sessions, first-party
+examples, uploads, chunking, Perplexity embeddings, Supabase `pgvector`
+retrieval, trace persistence/history, OpenRouter answers, experiment mode,
+retention cleanup, Render deployment, and portfolio documentation.
+
+Only three V1 completion slices remain:
+
+1. **Slice 10 - Beginner Trace Clarity**: make the workbench teach standard RAG
+   without assuming prior terminology.
+2. **Slice 11 - Public Landing And Repo Polish**: make the public entry,
+   README, screenshots/GIFs, and repository presentation launch-ready.
+3. **Slice 12 - Final Launch QA**: run the full local, hosted, browser, docs,
+   and cleanup verification pass and declare V1 complete only if it passes.
+
+Recommended PR sequence:
+
+1. `codex/beginner-trace-clarity`
+2. `codex/public-landing-polish`
+3. `codex/final-launch-qa`
+
+Use normal short-lived branches for this sequence. Do not create worktrees by
+default; use a worktree only when it materially reduces risk or isolates a
+parallel investigation.
+
 ## Slice 0 - Foundation
 
 Goal: Create the repo, docs, design system, env templates, deployment blueprint, and database schema.
@@ -38,6 +65,8 @@ Verification:
 - `bun run build`
 - Browser screenshot at desktop and mobile widths.
 
+Status: complete in the deployed V1 baseline.
+
 ## Slice 2 - Supabase Connection And Session Lifecycle
 
 Goal: Create anonymous sessions and enforce public-demo retention.
@@ -57,6 +86,8 @@ Verification:
 - Create session locally against Supabase.
 - Confirm rows have `expires_at` and `hard_expires_at`.
 - Run cleanup script against an expired fixture.
+
+Status: complete in the deployed V1 baseline.
 
 ## Slice 3 - Example Corpora
 
@@ -190,6 +221,10 @@ Verification:
 - Prompt contains only selected chunks.
 - Answer stores model and prompt.
 - Citations map to retrieved chunks.
+
+Status: implemented for the current V1 baseline. `/api/query` uses OpenRouter
+when configured and falls back to a local extractive answer for local/demo
+resilience.
 
 ## Slice 8 - Experiment Mode
 

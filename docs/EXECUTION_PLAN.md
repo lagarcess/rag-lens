@@ -101,6 +101,15 @@ Current non-deferred V1 focus:
 3. Final launch QA: full local, hosted Supabase, Render, browser, docs, cleanup,
    and secret-boundary verification.
 
+Work these as three normal short-lived branch PRs, not one giant PR:
+
+1. `codex/beginner-trace-clarity`
+2. `codex/public-landing-polish`
+3. `codex/final-launch-qa`
+
+Do not create worktrees by default. Use a worktree only when it materially
+reduces risk or isolates a parallel investigation.
+
 This scope intentionally stays with standard RAG. Re-indexed embedding profiles,
 dynamic upload re-chunking, contextualized embedding comparisons, GraphRAG,
 agentic RAG, multimodal RAG, account systems, long-term knowledge bases,
