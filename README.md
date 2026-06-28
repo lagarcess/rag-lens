@@ -1,76 +1,105 @@
 # RAG Lens
 
-RAG Lens is a practical RAG debugger: choose example documents or upload your
-own, ask a question, and inspect the trace that produced the answer.
+**Retrieve, inspect, understand RAG.**
 
-It is inspired by RAG Play's educational clarity, but it takes a different
-angle. RAG Play shows the pipeline as a demo. RAG Lens turns the pipeline into a
-workbench with session-scoped documents, Supabase vector retrieval, persisted
-traces, and OpenRouter answer generation.
+RAG Lens is a practical RAG debugger for developers and reviewers. Choose a
+first-party example corpus or upload a small temporary document, ask a question,
+then inspect the retrieval trace that produced the answer.
 
-## What It Demonstrates
+[Public entry target](https://lagarcess.github.io/rag-lens/) |
+[View source](https://github.com/lagarcess/rag-lens)
 
-- Temporary anonymous uploads with size limits and cleanup.
-- Curated first-party example corpora for visitors who do not have files ready.
-- RAG trace inspection: extraction, chunking, embeddings, retrieval scores,
-  prompt assembly, response, and citations.
-- Retrieval experiments for chunk size, overlap, top-k, and supported embedding
-  profiles.
-- Server-side provider boundaries so Supabase service keys, Perplexity keys,
-  and OpenRouter keys never reach the browser.
+The Slice 11 public share URL is GitHub Pages. This branch adds the static
+public-entry page under `docs/`; after merge, enable GitHub Pages from `/docs`
+on `main`. Render is the app/backend sandbox origin that the public entry warms
+before opening the workbench.
 
-## Portfolio Highlights
+![RAG Lens public entry screenshot](docs/assets/screenshots/landing.png)
 
-RAG Lens is built as a full-stack AI systems project rather than a static
-notebook or toy chat UI:
+![RAG Lens workbench trace inspector screenshot](docs/assets/screenshots/workbench.png)
 
-- It shows the full RAG loop from document ingestion to answer generation.
-- It makes failure modes inspectable through retrieved chunks, scores, prompts,
-  timings, and model metadata.
-- It uses real hosted infrastructure: Render for the app, Supabase for storage,
-  `pgvector`, and monthly cleanup, Perplexity for embeddings, and OpenRouter
-  for low-cost answer generation.
-- It treats public uploads as temporary demo data with explicit limits,
-  immediate delete, and scheduled cleanup.
-- It keeps examples first-party so visitors can try the app without uploading
-  private files.
+## Why It Exists
+
+RAG Play is educational because it shows a pipeline. RAG Lens takes the next
+step: it lets you inspect, debug, and understand a real RAG app built on your
+own docs.
+
+The first screen is a workbench, not a marketing page. A visitor can use seeded
+examples with no setup, or create a short-lived anonymous upload session for a
+small PDF, text, or markdown file.
+
+## What You Will Learn
+
+- How extraction, chunking, embeddings, retrieval, prompt assembly, and answer
+  generation connect in a standard RAG loop.
+- Why retrieved chunks are selected or ignored, using rank, similarity score,
+  source document, chunk index, and citation metadata.
+- How `top_k`, chunk size, overlap, and embedding profile choices affect
+  retrieved evidence and prompt length.
+- Where RAG failure modes appear: weak similarity, missing context, oversized
+  chunks, unsupported uploads, and locked indexing settings.
+- How to keep provider keys server-side while still offering a public demo with
+  anonymous uploads.
 
 ## Demo Flow
 
-1. Open the landing page and choose **Open workbench**.
-2. Select an example corpus or upload a small `.pdf`, `.txt`, or `.md` file.
-3. Ask a question.
-4. Read the grounded answer and citations.
-5. Open the trace inspector to review ranked chunks, similarity scores, prompt
-   assembly, and model metadata.
-6. Adjust retrieval settings and compare the trace when the selected source
-   supports that profile.
+1. After GitHub Pages is enabled from `/docs` on `main`, open the public entry:
+   [https://lagarcess.github.io/rag-lens/](https://lagarcess.github.io/rag-lens/).
+2. Choose **Open workbench**. The landing page warms the Render sandbox when
+   the public-entry implementation is deployed.
+3. Select a first-party example corpus, or upload a small `.pdf`, `.txt`, `.md`,
+   or `.markdown` file for a temporary anonymous session.
+4. Ask a question.
+5. Read the answer and citations.
+6. Inspect the trace: extraction, chunking, retrieval scores, selected context,
+   prompt assembly, provider metadata, and timing.
+7. Adjust supported retrieval settings, compare the variant trace, and delete
+   the anonymous session when done.
 
-## Architecture
+## Architecture Highlights
 
 ```mermaid
 flowchart LR
-  Browser["Browser workbench"] --> Next["Next.js App Router"]
+  Pages["GitHub Pages public entry"] --> Warmup["Render health/warmup"]
+  Pages --> Workbench["Render workbench"]
+  Workbench --> Next["Next.js App Router"]
   Next --> Supabase["Supabase Postgres + Storage + pgvector"]
   Next --> Perplexity["Perplexity embeddings"]
-  Next --> OpenRouter["OpenRouter chat generation"]
-  SupabaseCron["Supabase monthly cleanup"] --> Supabase
+  Next --> OpenRouter["OpenRouter answer generation"]
+  SupabaseCron["Supabase Cron cleanup"] --> Supabase
 ```
 
-The long-term public entry point is a static GitHub Pages landing page that
-warms a Render-hosted sandbox. That topology is documented but deferred; the
-current app runs as a Next.js full-stack service.
+- **Public entry:** GitHub Pages is the portfolio URL to share.
+- **Sandbox origin:** Render hosts the Next.js workbench and server routes.
+- **Vector store:** Supabase Postgres with `pgvector` stores example vectors,
+  upload chunks, queries, retrieval rows, and trace history.
+- **Embeddings:** Perplexity embeddings are decoded, normalized, and stored
+  server-side before vector search.
+- **Answers:** OpenRouter generates grounded answers from selected chunks when
+  configured; local fallback behavior keeps development flows usable.
+- **Retention:** Supabase Cron and the cleanup Edge Function purge abandoned
+  upload data; delete-now attempts immediate session-scoped cleanup.
 
-## Stack
+## Privacy And Rate Limits
 
-- Next.js App Router, React, TypeScript, Tailwind CSS.
-- Bun for package management and scripts.
-- Supabase Storage, Postgres, and `pgvector`.
-- Perplexity embeddings.
-- OpenRouter chat generation.
-- Render web service.
+RAG Lens is a public demo, not a long-term knowledge base.
 
-## Getting Started
+- Do not upload secrets, private files, personal data, or regulated data.
+- Anonymous uploads are limited to 3 files and 10 MB total per session.
+- Supported upload types are PDF, plain text, markdown, and `.markdown`.
+- Uploaded files, extracted text, chunks, embeddings, queries, retrieval rows,
+  and traces carry `session_id`, `expires_at`, and `hard_expires_at`.
+- Session access expires quickly. Delete-now ends the session and attempts
+  immediate Storage-before-database cleanup.
+- Abandoned uploaded data becomes purge-eligible after about 24 hours and is
+  physically removed by monthly Supabase cleanup.
+- Public session, upload, query, provider, and database paths use in-memory
+  per-instance throttles as a V1 abuse brake. This is not a distributed
+  production rate-limit system.
+- `SUPABASE_SERVICE_ROLE_KEY`, `PERPLEXITY_API_KEY`, and
+  `OPENROUTER_API_KEY` never belong in browser code.
+
+## Quickstart
 
 ```bash
 bun install
@@ -80,13 +109,22 @@ bun run dev
 
 Open `http://localhost:3000`.
 
-The app can run a local lexical example trace with `RAG_RETRIEVAL_BACKEND=local`.
-Full uploads, Supabase vector retrieval, model-backed embeddings, trace
-persistence, and cleanup need the hosted-service env vars below.
+For zero-dependency local example traces, set:
 
-For Render-hosted V1, use `RAG_RETRIEVAL_BACKEND=supabase`; the dedicated RAG
-Lens Supabase project has seeded example vectors, and uploaded documents are
-always indexed into Supabase.
+```bash
+RAG_RETRIEVAL_BACKEND=local
+```
+
+For hosted-style retrieval and uploads, configure Supabase, Perplexity, and
+OpenRouter env vars, then use:
+
+```bash
+RAG_RETRIEVAL_BACKEND=supabase
+CHAT_PROVIDER=openrouter
+```
+
+See [docs/ENVIRONMENT.md](docs/ENVIRONMENT.md) and
+[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for the full environment checklist.
 
 ## Environment
 
@@ -117,32 +155,57 @@ Operational controls:
 `SUPABASE_PROJECT_REF` is intentionally omitted from runtime env lists. Use it
 only for local Supabase CLI linking.
 
-See [docs/ENVIRONMENT.md](docs/ENVIRONMENT.md) and
-[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for the full list.
-
 ## Useful Commands
 
 ```bash
 bun test
-bun run seed:examples
-bun run preflight:render
-bun run cleanup:sessions:dry-run
-bun run cleanup:sessions
 bun run lint
 bun run build
+bun run seed:examples
+bun run preflight:render
+bun run smoke:supabase -- --json
+bun run smoke:supabase:integration -- --json
+bun run cleanup:sessions:dry-run
+bun run cleanup:sessions
 ```
+
+## Portfolio Narrative
+
+RAG Lens is built to demonstrate production-adjacent AI engineering, not just a
+chat UI:
+
+- It ships the full standard RAG loop from ingestion to answer generation.
+- It exposes the trace: chunks, scores, prompts, citations, timings, and model
+  metadata.
+- It uses real hosted infrastructure: GitHub Pages for the public entry, Render
+  for the sandbox, Supabase Storage/Postgres/`pgvector` for data and retrieval,
+  Perplexity for embeddings, and OpenRouter for answer generation.
+- It keeps examples first-party so visitors can try the debugger without
+  uploading private files.
+- It treats anonymous public uploads as temporary demo data with explicit
+  limits, immediate delete, expiry, and scheduled cleanup.
+
+## Repository Presentation
+
+Recommended GitHub repo metadata after the public-entry branch lands:
+
+- **Homepage:** `https://lagarcess.github.io/rag-lens/`
+- **Description:** `Inspect, debug, and understand a real RAG app built on your own docs.`
+- **Topics:** `rag`, `rag-debugger`, `retrieval-augmented-generation`,
+  `vector-search`, `pgvector`, `supabase`, `nextjs`, `openrouter`,
+  `perplexity`, `ai-engineering`
+- **Social preview:** use a trace-inspector-focused image derived from the
+  actual workbench, not stock art. The current source screenshot is
+  `docs/assets/screenshots/workbench.png`.
 
 ## Current Status
 
-- GitHub: [lagarcess/rag-lens](https://github.com/lagarcess/rag-lens)
+- Public entry target:
+  [https://lagarcess.github.io/rag-lens/](https://lagarcess.github.io/rag-lens/)
+- Repository: [lagarcess/rag-lens](https://github.com/lagarcess/rag-lens)
+- Render sandbox/backend origin:
+  `https://rag-lens-mx20.onrender.com`
 - Supabase: hosted project in the dedicated `RAG Lens` organization.
-- Render: web service is live in the dedicated `rag-lens` workspace. The
-  assigned app origin is
-  `https://rag-lens-mx20.onrender.com`; this is treated as the sandbox/backend
-  origin, not the long-term public share URL.
-- Deployment guard: run `bun run preflight:render` before any Render dashboard,
-  Blueprint, or CLI creation step. Do not attach services to existing unrelated
-  Render workspaces.
 
 Working locally against the hosted Supabase project:
 
@@ -159,13 +222,16 @@ Working locally against the hosted Supabase project:
 
 ## Known Limitations
 
+- GitHub Pages must be enabled from `/docs` on `main` after this branch merges;
+  until then, the Pages URL may still show GitHub's default 404.
 - Contextualized embedding comparison is implemented at the client/API contract
   level, but seeded/uploaded vectors currently use the default standard vector
   profile. Re-indexed profile comparison is deferred.
-- Public GitHub Pages landing and Render warmup flow are documented but not yet
-  built.
-- The in-memory API throttles are a V1 abuse brake per app instance, not a
-  distributed rate-limit system.
+- Uploaded-document comparisons are query-time only for V1. Changing chunk
+  size, overlap, or embedding mode after upload requires future re-indexing
+  support.
+- In-memory API throttles are a V1 public-demo brake per app instance, not a
+  distributed production rate-limit system.
 - There is no account system or long-term personal knowledge base in V1.
 
 ## Project Docs
@@ -182,5 +248,6 @@ Working locally against the hosted Supabase project:
 - [docs/API_CONTRACT.md](docs/API_CONTRACT.md) - app route/API surface.
 - [docs/SECURITY_PRIVACY.md](docs/SECURITY_PRIVACY.md) - public upload and
   secret-handling rules.
-- [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) - Supabase and Render setup.
+- [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) - Supabase, Render, and public entry
+  setup.
 - [docs/TESTING.md](docs/TESTING.md) - verification strategy.

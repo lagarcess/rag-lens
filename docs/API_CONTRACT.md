@@ -18,6 +18,29 @@ Response:
 }
 ```
 
+### `GET /api/warmup`
+
+Returns provider-free warmup metadata for the public GitHub Pages entry. This
+route is intentionally cheap: it does not create sessions, touch uploads, query
+Supabase, call Perplexity, or call OpenRouter. It is used only to wake the
+Render web service before redirecting a visitor to `/workbench`.
+
+`Access-Control-Allow-Origin` is returned only when the request origin matches
+`NEXT_PUBLIC_LANDING_ORIGIN`, `NEXT_PUBLIC_SITE_URL`, or
+`NEXT_PUBLIC_WARMUP_ALLOWED_ORIGINS`.
+
+Response:
+
+```json
+{
+  "ok": true,
+  "service": "rag-lens",
+  "purpose": "render-warmup",
+  "timestamp": "2026-06-28T00:00:00.000Z",
+  "workbenchPath": "/workbench"
+}
+```
+
 ### `GET /api/corpora`
 
 Lists the public curated example corpora available in the workbench. This route

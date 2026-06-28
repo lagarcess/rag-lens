@@ -163,7 +163,8 @@ in `argus-prod` or any unrelated workspace.
 
 Do not use the Render URL as the public share link for the project. Render is
 the app/backend origin for the sandbox and warmup path. The recruiter-facing
-entry point should eventually be a static GitHub Pages landing page.
+entry target is the GitHub Pages public entry:
+`https://lagarcess.github.io/rag-lens/`.
 
 Render services require a pushed Git remote for the normal Blueprint flow.
 Before creating or updating Render services, confirm whether local commits are
@@ -231,11 +232,12 @@ zero remaining fixture rows or Storage objects. Output must remain count-only;
 do not paste raw session IDs, Storage paths, prompts, or provider responses into
 deployment notes.
 
-## Deferred GitHub Pages Landing
+## GitHub Pages Public Entry
 
-Future public topology:
+Slice 11 public topology:
 
-- GitHub Pages hosts the shareable landing page for the repo.
+- GitHub Pages hosts the shareable landing page for the repo:
+  `https://lagarcess.github.io/rag-lens/`.
 - The landing page triggers a low-cost warmup request to the Render app/backend
   origin after first paint, with a short browser-side cooldown.
 - The primary CTA stays on GitHub Pages. If Render is already warm, it opens the
@@ -256,6 +258,36 @@ Operational notes:
 - If the Render origin must be truly private later, add an authenticated proxy or
   a different hosting topology; a browser-opened sandbox origin is still
   reachable by design.
+
+Status: Slice 11 implementation is complete on `codex/public-landing-polish`.
+After the branch merges, enable GitHub Pages from `/docs` on `main`, then verify
+the live Pages URL and warmup redirect path.
+
+After Slice 11 is merged and Pages is enabled in GitHub repository settings,
+set repository metadata to match the public topology:
+
+```bash
+gh repo edit lagarcess/rag-lens \
+  --homepage "https://lagarcess.github.io/rag-lens/" \
+  --description "Inspect, debug, and understand a real RAG app built on your own docs."
+
+gh repo edit lagarcess/rag-lens \
+  --add-topic rag \
+  --add-topic rag-debugger \
+  --add-topic retrieval-augmented-generation \
+  --add-topic vector-search \
+  --add-topic pgvector \
+  --add-topic supabase \
+  --add-topic nextjs \
+  --add-topic openrouter \
+  --add-topic perplexity \
+  --add-topic ai-engineering
+```
+
+GitHub social preview images are managed through repository settings, not this
+CLI command. Use a trace-inspector-focused image derived from the actual
+workbench after final browser QA; `docs/assets/screenshots/workbench.png` is
+the current source screenshot.
 
 ## Model Providers
 

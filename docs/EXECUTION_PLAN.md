@@ -2,9 +2,9 @@
 
 Status: locked for V1 execution on 2026-06-27.
 
-This plan excludes the deferred GitHub Pages landing and warmup topology. Render
-is treated as the unlisted app/backend origin for the sandbox until that
-deferred slice is explicitly reopened.
+The GitHub Pages landing and Render warmup topology has been reopened as
+Slice 11. Render remains the app/backend origin for the sandbox; the public
+share URL belongs to GitHub Pages.
 
 ## V1 Definition Of Done
 
@@ -125,8 +125,9 @@ until after V1.
 - Use browser QA for visible UI changes.
 - Keep `.env` ignored and never stage secrets.
 - Run a secret-oriented scan before commits that touch provider or env code.
-- Keep Render backend-only/unlisted in docs and UI until the deferred public
-  entry topology is reopened.
+- Keep Render described as the backend/sandbox origin in docs and UI. Public
+  README, portfolio, repo homepage, and social links should point to the
+  GitHub Pages public entry.
 
 ## Subagent Discipline
 
@@ -562,7 +563,7 @@ time. Uploaded-session documents can compare top-k immediately; changing chunk
 size, overlap, or embedding profile for uploads requires a future re-indexing
 profile slice so the UI labels those controls as locked for uploads.
 
-### Slice 11 - Render Backend Deployment
+### Completed Deployment Slice - Render Backend Deployment
 
 Goal: Deploy the backend/app origin correctly without treating it as the public
 share URL.
@@ -608,7 +609,7 @@ owned by Supabase Cron plus the `cleanup-expired-sessions` Edge Function, and
 live smoke checks passed for health, source catalog, cleanup dry-run, and one
 Supabase pgvector plus OpenRouter query.
 
-### Slice 12 - Portfolio Polish
+### Completed Portfolio Slice - Portfolio Polish
 
 Goal: Make the project understandable and credible for recruiters and GitHub
 visitors.
@@ -642,6 +643,86 @@ limitations, and text-first portfolio positioning without embedded screenshots.
 Browser QA captured the landing page and a completed workbench trace on June
 27, 2026 as QA artifacts. Render app/backend deployment is live in the
 dedicated `rag-lens` workspace at `https://rag-lens-mx20.onrender.com`.
+
+### Slice 11 - Public Landing And Repo Polish
+
+Goal: Make the recruiter-facing URL instant and credible while keeping Render
+as the sandbox/app origin rather than the public URL to share.
+
+Deliverables:
+
+- GitHub Pages landing page for `https://lagarcess.github.io/rag-lens/`.
+- Theme-aware RAG Lens loading interstitial.
+- Render health/warmup endpoint with narrow CORS for the GitHub Pages origin.
+- CTA flow that warms Render, waits when needed, then redirects to
+  `/workbench`.
+- Browser-side warmup cooldown to avoid pinging Render on every visit.
+- README and portfolio links that point to GitHub Pages, not Render.
+- README hero with tagline, screenshots or GIFs, quickstart, "what you will
+  learn," architecture highlights, live demo link, and portfolio narrative.
+- Repository description, topics, and social-preview guidance aligned to the
+  standard RAG debugger positioning.
+- Clear privacy and rate-limit messaging for temporary anonymous uploads.
+
+Verification:
+
+- Cold Render service is warmed by landing-page visit.
+- Warm Render service opens the sandbox quickly.
+- Loading interstitial appears only while the sandbox is not ready.
+- Warmup endpoint does not create sessions or call model providers.
+- README links, screenshots, and setup steps are current.
+- Browser QA covers the landing page, warmup/loading path, desktop workbench,
+  mobile workbench, example query, upload rejection states, and delete-now flow.
+- `bun test`
+- `bun run lint`
+- `bun run build`
+- `bun run preflight:render`
+- `git diff --check`
+
+Commit:
+
+```bash
+git commit -m "docs: polish public RAG Lens entry"
+```
+
+Status: implemented on `codex/public-landing-polish`, pending PR review, merge,
+and GitHub Pages enablement from `/docs` on `main`. The branch adds the static
+Pages entry, Next landing polish, provider-free `/api/warmup`, narrow CORS for
+the Pages origin, browser-side cooldown, repository presentation guidance,
+privacy/rate-limit messaging, and browser QA evidence for desktop/mobile
+landing and workbench surfaces.
+
+### Slice 12 - Final Launch QA
+
+Goal: Confirm RAG Lens V1 is portfolio-ready end to end and stop adding V1
+scope.
+
+Deliverables:
+
+- Full verification pass for local repo, hosted Supabase, Render, docs, cleanup,
+  and browser flows.
+- Manual smoke tests for example corpora, text/markdown upload success, PDF
+  upload success, oversized upload rejection, wrong MIME rejection, session
+  expiry messaging, and delete-now cleanup.
+- Hosted Supabase smoke and integration smoke remain count-only and leave no
+  fixture data behind.
+- Final docs alignment across README, product, architecture, API contract,
+  security, deployment, testing, roadmap, and project lock.
+- Known limitations stay explicit and do not read like accidental omissions.
+
+Verification:
+
+- `bun test`
+- `bun run lint`
+- `bun run build`
+- `bun run preflight:render`
+- `bun run smoke:supabase -- --json`
+- `bun run smoke:supabase:integration -- --json`
+- `git diff --check`
+- Browser QA evidence for landing, workbench, completed trace, comparison, and
+  upload/delete flow.
+
+Status: next after Slice 11 is merged and the live public entry is enabled.
 
 ## Review Checklist
 
