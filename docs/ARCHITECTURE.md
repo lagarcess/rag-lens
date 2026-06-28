@@ -32,8 +32,9 @@ flowchart LR
 
 The landing page quietly warms the Render service after first paint, keeps the
 CTA on the static page, and shows a theme-aware RAG Lens loading state if the
-sandbox is still starting. The Render URL should remain unlisted and should not
-be used as the public link in the README, portfolio, or social posts.
+sandbox is still starting. The Render URL may appear in deployment/status docs,
+but it must not be used as the public share link in the README, portfolio, or
+social posts.
 
 ## Runtime Boundaries
 

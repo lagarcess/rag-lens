@@ -87,21 +87,19 @@ Findings incorporated into the execution rules:
 
 Active goal: finish RAG Lens V1 as a polished standard RAG debugger with a
 clear public portfolio entry point. The core RAG system is implemented and
-deployed, and the beginner trace clarity slice is complete; the remaining V1
-work is public polish and final launch verification.
+deployed, beginner trace clarity is complete, and the GitHub Pages public entry
+is merged and live. The only remaining V1 slice is final launch verification.
 
 Current non-deferred V1 focus:
 
-1. Public landing and repo polish: GitHub Pages entry point, Render warmup,
-   README screenshots/GIFs, repository metadata, privacy/rate-limit messaging,
-   and portfolio narrative.
-2. Final launch QA: full local, hosted Supabase, Render, browser, docs, cleanup,
+1. Final launch QA: full local, hosted Supabase, Render, browser, docs, cleanup,
    and secret-boundary verification.
 
-Work these as two normal short-lived branch PRs, not one giant PR:
+Slice 11 used a normal short-lived branch PR and is merged. Slice 12 is the
+active short-lived branch PR:
 
-1. `codex/public-landing-polish`
-2. `codex/final-launch-qa`
+1. `codex/public-landing-polish` - merged.
+2. `codex/final-launch-qa` - active.
 
 Do not create worktrees by default. Use a worktree only when it materially
 reduces risk or isolates a parallel investigation.
