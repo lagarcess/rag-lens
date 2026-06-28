@@ -84,9 +84,7 @@ Use standard RAG debugger positioning for public repository metadata:
   `nextjs`, `openrouter`, `perplexity`, `ai-engineering`.
 - Social preview/banner image: use an actual RAG Lens workbench or trace
   inspector image. Do not use stock AI art or a generic marketing graphic.
-  `docs/assets/screenshots/workbench.png` is the current source asset; create
-  a final social-preview crop only after Slice 11 browser QA confirms the
-  public entry and workbench visuals.
+  `docs/assets/screenshots/workbench.png` is the current source asset.
 
 ## Execution Discipline
 
@@ -126,6 +124,9 @@ As of June 28, 2026:
 - The current Render web URL is `https://rag-lens-mx20.onrender.com`.
 - Public route hardening, upload cleanup, trace persistence, experiment
   comparison, and beginner trace clarity slices are implemented and committed.
-- Slice 11 public landing and repo polish are implemented on
-  `codex/public-landing-polish`, pending PR review, merge, and GitHub Pages
-  enablement from `/docs` on `main`.
+- Slice 11 public landing and repo polish are merged. GitHub Pages is enabled
+  from `/docs` on `main`, repository metadata points to the Pages URL, and the
+  Render warmup route allows the Pages origin.
+- Slice 12 final launch QA is active on `codex/final-launch-qa`; local
+  production API smoke has passed example query, markdown/PDF uploads, rejection
+  states, expired-session messaging, and delete-now cleanup.

@@ -6,24 +6,22 @@ subagent discipline, verification gates, and cleanup rules.
 
 ## Current V1 State
 
-Core standard RAG is already implemented end to end. Slices 0-10 are complete for
+Core standard RAG is already implemented end to end. Slices 0-11 are complete for
 the current V1 baseline: foundation, app shell, Supabase sessions, first-party
 examples, uploads, chunking, Perplexity embeddings, Supabase `pgvector`
 retrieval, trace persistence/history, OpenRouter answers, experiment mode,
 retention cleanup, Render deployment, portfolio documentation, and beginner
-trace clarity.
+trace clarity, plus the public GitHub Pages entry and repository polish.
 
-Only two V1 completion slices remain:
+Only one V1 completion slice remains:
 
-1. **Slice 11 - Public Landing And Repo Polish**: make the public entry,
-   README, screenshots/GIFs, and repository presentation launch-ready.
-2. **Slice 12 - Final Launch QA**: run the full local, hosted, browser, docs,
+1. **Slice 12 - Final Launch QA**: run the full local, hosted, browser, docs,
    and cleanup verification pass and declare V1 complete only if it passes.
 
 Recommended PR sequence:
 
-1. `codex/public-landing-polish`
-2. `codex/final-launch-qa`
+1. `codex/public-landing-polish` - merged.
+2. `codex/final-launch-qa` - active final QA branch.
 
 Use normal short-lived branches for this sequence. Do not create worktrees by
 default; use a worktree only when it materially reduces risk or isolates a
@@ -327,8 +325,8 @@ desktop/mobile browser QA, and a pre-merge code-review pass.
 
 ## Slice 11 - Public Landing And Repo Polish
 
-Priority: active. Slice 10 is complete, so public entry points can send visitors
-to the strongest product surface.
+Priority: complete. Slice 10 is complete, so public entry points can send
+visitors to the strongest product surface.
 
 Goal: Make the recruiter-facing URL instant while keeping Render as the
 sandbox/app origin rather than the public URL to share.
@@ -360,14 +358,14 @@ Verification:
 - `bun test`, `bun run lint`, `bun run build`, `bun run preflight:render`, and
   `git diff --check` pass before launch.
 
-Status: implemented on `codex/public-landing-polish`, pending PR review, merge,
-and GitHub Pages enablement from `/docs` on `main`. The branch includes the
-static GitHub Pages entry, Next landing polish, cheap `/api/warmup` route with
-narrow CORS, browser-side cooldown, docs/repo polish, and privacy/rate-limit
-messaging. Local verification passed with focused warmup/static-entry tests,
-`bun test`, `bun run lint`, `bun run build`, `bun run preflight:render`,
-`git diff --check`, and browser QA across desktop/mobile static entry, Next
-landing, and workbench.
+Status: complete and merged. The Slice 11 PR added the static GitHub Pages
+entry, Next landing polish, cheap `/api/warmup` route with narrow CORS,
+browser-side cooldown, docs/repo polish, and privacy/rate-limit messaging.
+Verification passed with focused warmup/static-entry tests, `bun test`,
+`bun run lint`, `bun run build`, `bun run preflight:render`,
+`git diff --check`, and browser QA across desktop/mobile public entry, Next
+landing, and workbench. GitHub Pages is enabled from `/docs` on `main`, the
+repo homepage/topics are updated, and Render has the Pages warmup origin env.
 
 ## Slice 12 - Final Launch QA
 
@@ -399,6 +397,17 @@ Verification:
 - `git diff --check`
 - Browser QA evidence for landing, workbench, completed trace, comparison, and
   upload/delete flow.
+
+Status: active on `codex/final-launch-qa`. The branch fixes a production-only
+PDF upload failure by keeping `pdf-parse` external to the Next.js server bundle,
+adds a regression test for that config contract, and records final QA evidence.
+`bun test`, `bun run lint`, `bun run build`, `bun run preflight:render`,
+hosted Supabase smoke, hosted Supabase integration smoke, and
+`git diff --check` pass on the branch. Local production API smoke has passed
+example corpus query, markdown upload, PDF upload, wrong MIME rejection,
+oversized upload rejection, expired-session messaging, and delete-now cleanup.
+Hosted Supabase read-only and mutating integration smokes have passed with
+count-only output and no remaining fixture data.
 
 ## Done Criteria
 

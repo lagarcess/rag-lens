@@ -13,11 +13,11 @@ flowchart LR
   SupabaseCron["Supabase Cron + Edge Function"] --> Supabase
 ```
 
-## Deferred Public Entry Topology
+## Public Entry Topology
 
-The long-term shareable portfolio URL should be a static GitHub Pages landing
-page, not the Render app URL. Render should be treated as the application/API
-origin that powers the sandbox after the visitor chooses to open it.
+The shareable portfolio URL is a static GitHub Pages landing page, not the
+Render app URL. Render is the application/API origin that powers the sandbox
+after the visitor chooses to open it.
 
 ```mermaid
 flowchart LR
@@ -30,9 +30,8 @@ flowchart LR
   Render --> Providers["Model providers"]
 ```
 
-This is deferred until the workbench is useful enough to share. When added, the
-landing page should quietly warm the Render service after first paint, keep the
-CTA on the static page, and show a theme-aware RAG Lens loading state if the
+The landing page quietly warms the Render service after first paint, keeps the
+CTA on the static page, and shows a theme-aware RAG Lens loading state if the
 sandbox is still starting. The Render URL should remain unlisted and should not
 be used as the public link in the README, portfolio, or social posts.
 
@@ -65,8 +64,8 @@ be used as the public link in the README, portfolio, or social posts.
 ### Render
 
 - Web service runs the Next.js app.
-- Deferred: app origin is warmed by the GitHub Pages landing and is not the
-  public share URL.
+- App origin is warmed by the GitHub Pages landing and is not the public share
+  URL.
 
 ## Why TypeScript First
 
@@ -85,3 +84,5 @@ V1 does not need a Python worker. Keeping ingestion, retrieval, and trace logic 
   and `RAG_RETRIEVAL_BACKEND=supabase` for hosted V1.
 - Use examples by default; uploads are optional and expiring.
 - Keep long-lived personal knowledge bases out of V1.
+- Keep `pdf-parse` external to the Next.js production server bundle so PDF
+  extraction uses native Node resolution in route handlers.

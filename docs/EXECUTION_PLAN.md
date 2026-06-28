@@ -685,12 +685,13 @@ Commit:
 git commit -m "docs: polish public RAG Lens entry"
 ```
 
-Status: implemented on `codex/public-landing-polish`, pending PR review, merge,
-and GitHub Pages enablement from `/docs` on `main`. The branch adds the static
-Pages entry, Next landing polish, provider-free `/api/warmup`, narrow CORS for
-the Pages origin, browser-side cooldown, repository presentation guidance,
+Status: complete and merged. The Slice 11 branch added the static Pages entry,
+Next landing polish, provider-free `/api/warmup`, narrow CORS for the Pages
+origin, browser-side cooldown, repository presentation guidance,
 privacy/rate-limit messaging, and browser QA evidence for desktop/mobile
-landing and workbench surfaces.
+landing and workbench surfaces. GitHub Pages is enabled from `/docs` on `main`,
+repository metadata points to the Pages URL, and Render has the Pages warmup
+origin configured.
 
 ### Slice 12 - Final Launch QA
 
@@ -722,7 +723,14 @@ Verification:
 - Browser QA evidence for landing, workbench, completed trace, comparison, and
   upload/delete flow.
 
-Status: next after Slice 11 is merged and the live public entry is enabled.
+Status: active on `codex/final-launch-qa`. Local production API smoke has
+passed example corpus query, markdown upload, PDF upload, wrong MIME rejection,
+oversized upload rejection, expired-session messaging, and delete-now cleanup.
+The branch keeps `pdf-parse` external to the Next production server bundle and
+adds a regression test for that deployment contract. `bun test`,
+`bun run lint`, `bun run build`, `bun run preflight:render`, hosted Supabase
+smoke, hosted Supabase integration smoke, and `git diff --check` pass on the
+branch.
 
 ## Review Checklist
 

@@ -47,6 +47,8 @@ The Bun test suite covers:
   orchestration, cleanup-on-failure, and sanitized count-only output.
 - Render deployment preflight package, Blueprint, workspace, and sanitized
   error validation helpers.
+- Next.js production server configuration keeps PDF extraction dependencies
+  external to the server bundle.
 
 ## Integration Tests To Add
 
@@ -97,7 +99,7 @@ Before public deploy:
 
 ## Public Entry QA
 
-Before marking Slice 11 complete:
+Slice 11 public-entry QA covers:
 
 - GitHub Pages public entry loads at
   `https://lagarcess.github.io/rag-lens/`.
@@ -144,8 +146,21 @@ Last checked on June 27, 2026:
 - Workbench screenshot captured at `docs/assets/screenshots/workbench.png`.
 - Browser console had no error-level logs on the captured workbench view.
 
-Slice 11 status on June 28, 2026: public-entry implementation and local QA are
-complete on `codex/public-landing-polish`. Browser QA covered the static Pages
-entry, Next landing, CTA redirect to `/workbench`, desktop workbench, and mobile
-workbench with no error-level console logs or horizontal overflow. After merge,
-enable GitHub Pages from `/docs` on `main` and verify the live Pages URL.
+Slice 11 status on June 28, 2026: merged to `main`, GitHub Pages enabled from
+`/docs`, repository homepage/topics updated, and Render redeployed with the
+Pages warmup origin. Live checks confirmed the Pages URL, warmup CORS for
+`https://lagarcess.github.io`, blocked broad CORS for other origins, and a
+theme-aware loading path.
+
+Slice 12 local production QA on June 28, 2026:
+
+- `next.config.ts` externalizes `pdf-parse`; a regression test covers that
+  production bundle contract.
+- `bun test`, `bun run lint`, `bun run build`, `bun run preflight:render`,
+  hosted Supabase smoke, hosted Supabase integration smoke, and
+  `git diff --check` passed on `codex/final-launch-qa`.
+- Local `next start` API smoke passed example corpus query, markdown upload,
+  PDF upload, wrong MIME rejection, oversized upload rejection, expired-session
+  messaging, and delete-now cleanup.
+- Hosted Supabase read-only smoke and mutating integration smoke passed with
+  count-only output and zero remaining fixture rows or Storage objects.

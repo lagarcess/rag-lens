@@ -259,12 +259,11 @@ Operational notes:
   a different hosting topology; a browser-opened sandbox origin is still
   reachable by design.
 
-Status: Slice 11 implementation is complete on `codex/public-landing-polish`.
-After the branch merges, enable GitHub Pages from `/docs` on `main`, then verify
-the live Pages URL and warmup redirect path.
+Status: Slice 11 is merged. GitHub Pages is enabled from `/docs` on `main`,
+the live Pages URL responds at `https://lagarcess.github.io/rag-lens/`, and the
+warmup endpoint allows the Pages origin without opening CORS broadly.
 
-After Slice 11 is merged and Pages is enabled in GitHub repository settings,
-set repository metadata to match the public topology:
+Repository metadata has been set to match the public topology:
 
 ```bash
 gh repo edit lagarcess/rag-lens \
