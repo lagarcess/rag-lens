@@ -149,7 +149,7 @@ describe("buildExperimentComparison", () => {
       status: "mixed",
       title: "Evidence changed",
       reason:
-        "The top score stayed the same, but the variant swapped 1 chunk in and 1 chunk out and expanded the prompt by 40 characters.",
+        "The top score stayed about the same, but the variant swapped 1 chunk in and 1 chunk out.",
     });
   });
 
@@ -183,7 +183,107 @@ describe("buildExperimentComparison", () => {
       status: "unchanged",
       title: "No practical effect",
       reason:
-        "The variant kept the same top score, retrieved chunks, evidence set, and prompt length.",
+        "The variant kept the same practical top score, retrieved chunks, evidence set, and prompt length.",
+    });
+  });
+
+  test("treats tiny score movement as unchanged when the evidence is the same", () => {
+    const comparison = buildExperimentComparison({
+      baseline: createTrace({
+        queryId: "baseline-query",
+        chunkSize: 800,
+        chunkOverlap: 120,
+        topK: 2,
+        promptLength: 100,
+        rows: [
+          ["chunk-a", 0.7],
+          ["chunk-b", 0.62],
+        ],
+      }),
+      candidate: createTrace({
+        queryId: "candidate-query",
+        chunkSize: 800,
+        chunkOverlap: 120,
+        topK: 2,
+        promptLength: 118,
+        rows: [
+          ["chunk-a", 0.711],
+          ["chunk-b", 0.62],
+        ],
+      }),
+    });
+
+    expect(comparison.verdict).toEqual({
+      status: "unchanged",
+      title: "No practical effect",
+      reason:
+        "The variant kept the same practical top score, retrieved chunks, evidence set, and prompt length.",
+    });
+  });
+
+  test("returns a mixed verdict when a stronger top score drops useful evidence", () => {
+    const comparison = buildExperimentComparison({
+      baseline: createTrace({
+        queryId: "baseline-query",
+        chunkSize: 800,
+        chunkOverlap: 120,
+        topK: 2,
+        promptLength: 180,
+        rows: [
+          ["chunk-a", 0.7],
+          ["chunk-b", 0.62],
+        ],
+      }),
+      candidate: createTrace({
+        queryId: "candidate-query",
+        chunkSize: 800,
+        chunkOverlap: 120,
+        topK: 1,
+        promptLength: 90,
+        rows: [["chunk-a", 0.77]],
+      }),
+    });
+
+    expect(comparison.verdict).toEqual({
+      status: "mixed",
+      title: "Tradeoff to review",
+      reason:
+        "The top match improved (+0.07 similarity), but the variant dropped 1 chunk, retrieved 1 fewer chunk, contracted the prompt by 90 characters, and sent 1 fewer chunk to the prompt.",
+    });
+  });
+
+  test("returns a worse verdict when a stronger top score loses prompt context", () => {
+    const comparison = buildExperimentComparison({
+      baseline: createTrace({
+        queryId: "baseline-query",
+        chunkSize: 800,
+        chunkOverlap: 120,
+        topK: 2,
+        promptLength: 100,
+        rows: [
+          ["chunk-a", 0.7],
+          ["chunk-b", 0.62],
+        ],
+      }),
+      candidate: createTrace({
+        queryId: "candidate-query",
+        chunkSize: 800,
+        chunkOverlap: 120,
+        topK: 2,
+        promptLength: 100,
+        rows: [
+          ["chunk-a", 0.78],
+          ["chunk-b", 0.62],
+        ],
+        contextChunkIds: [],
+      }),
+    });
+
+    expect(comparison.verdict).toEqual({
+      status: "worse",
+      title: "Prompt lost evidence",
+      reason:
+        "The variant retrieved chunks, but none were sent to the prompt, so the answer writer lost grounded context.",
     });
   });
 

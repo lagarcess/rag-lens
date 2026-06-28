@@ -3,6 +3,10 @@ import type { RagTraceResponse } from "@/lib/rag/trace";
 type SettingKey = "topK" | "chunkSize" | "chunkOverlap" | "embeddingMode";
 type ExperimentVerdictStatus = "better" | "worse" | "mixed" | "unchanged";
 
+const PRACTICAL_SCORE_DELTA = 0.03;
+const PRACTICAL_PROMPT_CHAR_DELTA = 50;
+const USABLE_TOP_SCORE = 0.45;
+
 export interface ExperimentComparison {
   verdict: {
     status: ExperimentVerdictStatus;
@@ -150,14 +154,19 @@ function buildVerdict(
   const contextDelta =
     input.candidate.trace.prompt.contextChunkIds.length -
     input.baseline.trace.prompt.contextChunkIds.length;
+  const baselineContextCount = input.baseline.trace.prompt.contextChunkIds.length;
+  const candidateContextCount =
+    input.candidate.trace.prompt.contextChunkIds.length;
   const evidenceChanged =
     retrieval.baselineOnlyChunkIds.length > 0 ||
     retrieval.candidateOnlyChunkIds.length > 0;
+  const topScoreImproved = retrieval.topScoreDelta >= PRACTICAL_SCORE_DELTA;
+  const topScoreWeakened = retrieval.topScoreDelta <= -PRACTICAL_SCORE_DELTA;
 
   if (
-    retrieval.topScoreDelta === 0 &&
+    !hasPracticalScoreDelta(retrieval.topScoreDelta) &&
     retrieval.retrievedDelta === 0 &&
-    retrieval.promptCharsDelta === 0 &&
+    !hasPracticalPromptDelta(retrieval.promptCharsDelta) &&
     contextDelta === 0 &&
     !evidenceChanged
   ) {
@@ -165,7 +174,7 @@ function buildVerdict(
       status: "unchanged",
       title: "No practical effect",
       reason:
-        "The variant kept the same top score, retrieved chunks, evidence set, and prompt length.",
+        "The variant kept the same practical top score, retrieved chunks, evidence set, and prompt length.",
     };
   }
 
@@ -178,10 +187,42 @@ function buildVerdict(
       title: "Retrieval weakened",
       reason:
         "The variant retrieved no chunks, so the answer has no grounded context.",
+      };
+  }
+
+  if (candidateContextCount === 0 && baselineContextCount > 0) {
+    return {
+      status: "worse",
+      title: "Prompt lost evidence",
+      reason:
+        "The variant retrieved chunks, but none were sent to the prompt, so the answer writer lost grounded context.",
     };
   }
 
-  if (retrieval.topScoreDelta > 0) {
+  if (topScoreImproved) {
+    const tradeoffs = buildTradeoffClauses(retrieval, contextDelta);
+
+    if (
+      tradeoffs.length > 0 ||
+      retrieval.candidateTopScore < USABLE_TOP_SCORE
+    ) {
+      const groundingClause =
+        retrieval.candidateTopScore < USABLE_TOP_SCORE
+          ? "still has weak top-match grounding"
+          : null;
+
+      return {
+        status: "mixed",
+        title: "Tradeoff to review",
+        reason: `The top match improved (${formatSignedDelta(
+          retrieval.topScoreDelta,
+        )} similarity), but the variant ${joinClauses([
+          groundingClause,
+          ...tradeoffs,
+        ])}.`,
+      };
+    }
+
     const evidenceClause = evidenceChanged
       ? `and ${describeEvidenceChange(retrieval)}.`
       : "without changing the evidence set.";
@@ -195,7 +236,7 @@ function buildVerdict(
     };
   }
 
-  if (retrieval.topScoreDelta < 0) {
+  if (topScoreWeakened) {
     return {
       status: "worse",
       title: "Retrieval weakened",
@@ -209,17 +250,13 @@ function buildVerdict(
     return {
       status: "mixed",
       title: "Evidence changed",
-      reason: `The top score stayed the same, but the variant ${joinClauses(
-        [
-          describeEvidenceChange(retrieval),
-          describePromptDelta(retrieval.promptCharsDelta),
-          describeContextDelta(contextDelta),
-        ],
+      reason: `The top score stayed about the same, but the variant ${joinClauses(
+        buildEvidenceChangeClauses(retrieval, contextDelta),
       )}.`,
     };
   }
 
-  if (retrieval.promptCharsDelta !== 0 || contextDelta !== 0) {
+  if (hasPracticalPromptDelta(retrieval.promptCharsDelta) || contextDelta !== 0) {
     return {
       status: "mixed",
       title: "Prompt changed",
@@ -241,6 +278,53 @@ function buildVerdict(
 
 function roundDelta(value: number) {
   return Number(value.toFixed(4));
+}
+
+function hasPracticalScoreDelta(delta: number) {
+  return Math.abs(delta) >= PRACTICAL_SCORE_DELTA;
+}
+
+function hasPracticalPromptDelta(delta: number) {
+  return Math.abs(delta) >= PRACTICAL_PROMPT_CHAR_DELTA;
+}
+
+function buildTradeoffClauses(
+  retrieval: ExperimentComparison["retrieval"],
+  contextDelta: number,
+) {
+  return filterClauses([
+    retrieval.baselineOnlyChunkIds.length > 0 ||
+    retrieval.candidateOnlyChunkIds.length > 0
+      ? describeEvidenceChange(retrieval)
+      : null,
+    retrieval.retrievedDelta < 0
+      ? describeRetrievedDelta(retrieval.retrievedDelta)
+      : null,
+    hasPracticalPromptDelta(retrieval.promptCharsDelta)
+      ? describePromptDelta(retrieval.promptCharsDelta)
+      : null,
+    contextDelta !== 0 ? describeContextDelta(contextDelta) : null,
+  ]);
+}
+
+function buildEvidenceChangeClauses(
+  retrieval: ExperimentComparison["retrieval"],
+  contextDelta: number,
+) {
+  return filterClauses([
+    retrieval.baselineOnlyChunkIds.length > 0 ||
+    retrieval.candidateOnlyChunkIds.length > 0
+      ? describeEvidenceChange(retrieval)
+      : null,
+    hasPracticalPromptDelta(retrieval.promptCharsDelta)
+      ? describePromptDelta(retrieval.promptCharsDelta)
+      : null,
+    contextDelta !== 0 ? describeContextDelta(contextDelta) : null,
+  ]);
+}
+
+function filterClauses(clauses: Array<string | null>) {
+  return clauses.filter((clause) => clause !== null);
 }
 
 function formatSignedDelta(value: number) {

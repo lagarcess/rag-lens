@@ -875,6 +875,7 @@ function RetrievalControls({
                 : state.settings[key as keyof typeof state.settings];
           const inputId = `setting-input-${key}`;
           const rangeId = `setting-range-${key}`;
+          const labelId = `setting-label-${key}`;
           const numericMin = Number(min);
           const numericMax = Number(max);
           const numericValue = Number(value);
@@ -893,20 +894,20 @@ function RetrievalControls({
           return (
             <div className="block" key={String(key)}>
               <div className="mb-1 flex items-center justify-between gap-3">
-                <label
-                  className="flex min-w-0 items-center gap-1.5"
-                  htmlFor={rangeId}
-                  id={`setting-${key}`}
-                >
-                  <span className="text-sm font-medium text-[var(--foreground)]">
+                <div className="flex min-w-0 items-center gap-1.5">
+                  <label
+                    className="text-sm font-medium text-[var(--foreground)]"
+                    htmlFor={rangeId}
+                    id={labelId}
+                  >
                     {label}
-                  </span>
+                  </label>
                   <ParameterHelp
                     label={label}
                     text={PARAMETER_HELP[key]}
                     tooltipId={`setting-help-${key}`}
                   />
-                </label>
+                </div>
                 <input
                   aria-label={`${label} value`}
                   className="h-7 w-16 rounded-md border border-[var(--border)] bg-[var(--surface-muted)] px-2 text-right font-mono text-xs text-[var(--foreground)] outline-none ring-[var(--accent)] transition focus:ring-2 disabled:opacity-50"
@@ -931,7 +932,7 @@ function RetrievalControls({
                 />
               </div>
               <input
-                aria-labelledby={`setting-${key}`}
+                aria-labelledby={labelId}
                 className="rag-range w-full disabled:opacity-50"
                 disabled={locked}
                 max={numericMax}
@@ -1021,14 +1022,14 @@ function ParameterHelp({
 }) {
   return (
     <span className="group/help relative inline-flex">
-      <span
+      <button
         aria-describedby={tooltipId}
         aria-label={`About ${label}`}
-        className="inline-flex size-4 items-center justify-center rounded-full text-[var(--muted)] outline-none ring-[var(--accent)] transition hover:text-[var(--foreground)] focus:text-[var(--foreground)] focus:ring-2"
-        tabIndex={0}
+        className="inline-flex size-4 items-center justify-center rounded-full border-0 bg-transparent p-0 text-[var(--muted)] outline-none ring-[var(--accent)] transition hover:text-[var(--foreground)] focus:text-[var(--foreground)] focus:ring-2"
+        type="button"
       >
         <Info aria-hidden="true" className="size-3.5" strokeWidth={2} />
-      </span>
+      </button>
       <span
         className="pointer-events-none absolute left-0 top-6 z-30 w-64 rounded-md border border-[var(--border)] bg-[var(--surface)] p-3 font-sans text-xs leading-5 text-[var(--foreground)] opacity-0 shadow-lg transition group-hover/help:opacity-100 group-focus-within/help:opacity-100"
         id={tooltipId}
@@ -1051,14 +1052,14 @@ function TraceHelp({
 }) {
   return (
     <span className="group/help relative inline-flex">
-      <span
+      <button
         aria-describedby={tooltipId}
         aria-label={`About ${label}`}
-        className="inline-flex size-4 items-center justify-center rounded-full text-[var(--trace-muted)] outline-none ring-[var(--trace-accent)] transition hover:text-[var(--trace-foreground)] focus:text-[var(--trace-foreground)] focus:ring-2"
-        tabIndex={0}
+        className="inline-flex size-4 items-center justify-center rounded-full border-0 bg-transparent p-0 text-[var(--trace-muted)] outline-none ring-[var(--trace-accent)] transition hover:text-[var(--trace-foreground)] focus:text-[var(--trace-foreground)] focus:ring-2"
+        type="button"
       >
         <Info aria-hidden="true" className="size-3.5" strokeWidth={2} />
-      </span>
+      </button>
       <span
         className="pointer-events-none absolute right-0 top-6 z-30 w-64 rounded-md border border-[var(--trace-border)] bg-[var(--trace-card)] p-3 font-sans text-xs leading-5 text-[var(--trace-foreground)] opacity-0 shadow-lg transition group-hover/help:opacity-100 group-focus-within/help:opacity-100"
         id={tooltipId}
@@ -1976,6 +1977,8 @@ function SimilarityScoreBar({
   label: string;
   value: number;
 }) {
+  const clampedValue = Math.min(100, Math.max(0, value));
+
   return (
     <div className="mt-2">
       <div className="mb-1 flex items-center justify-between gap-3 font-mono text-[10px] text-[var(--trace-muted)]">
@@ -1983,16 +1986,16 @@ function SimilarityScoreBar({
         <span>{label}</span>
       </div>
       <div
-        aria-label={`Similarity score ${value} percent`}
+        aria-label={`Similarity score ${clampedValue} percent`}
         aria-valuemax={100}
         aria-valuemin={0}
-        aria-valuenow={value}
+        aria-valuenow={clampedValue}
         className="h-1.5 rounded-full bg-[var(--trace-border)]"
         role="meter"
       >
         <div
           className="h-full rounded-full bg-[var(--trace-accent)]"
-          style={{ width: `${value}%` } as CSSProperties}
+          style={{ width: `${clampedValue}%` } as CSSProperties}
         />
       </div>
     </div>
