@@ -36,6 +36,10 @@ import {
   runTraceQuery,
   uploadDocument,
 } from "@/features/workbench/workbench-api";
+import {
+  RAG_CONCEPT_HELP,
+  getGuidedPromptOptions,
+} from "@/features/workbench/workbench-education";
 import { buildExperimentComparison } from "@/features/workbench/experiment-compare";
 import {
   buildAnswerCitations,
@@ -86,6 +90,10 @@ export function WorkbenchClient() {
   const uploadTrust = useMemo(
     () => summarizeUploadTrust(state.uploads.documents),
     [state.uploads.documents],
+  );
+  const guidedPrompts = useMemo(
+    () => getGuidedPromptOptions(selectedSource),
+    [selectedSource],
   );
   const hasReadyUpload = state.uploads.documents.some(
     (document) => document.status === "ready",
@@ -553,6 +561,13 @@ export function WorkbenchClient() {
                 )}
               </button>
             </div>
+            <GuidedPromptChips
+              disabled={isLoading}
+              onSelect={(prompt) =>
+                dispatch({ type: "questionChanged", question: prompt })
+              }
+              prompts={guidedPrompts}
+            />
             {state.query.error ? (
               <p
                 className="mt-3 text-sm text-[var(--danger)]"
@@ -778,6 +793,41 @@ function SourcePickerRow({
   );
 }
 
+function GuidedPromptChips({
+  disabled,
+  onSelect,
+  prompts,
+}: {
+  disabled: boolean;
+  onSelect: (prompt: string) => void;
+  prompts: string[];
+}) {
+  if (prompts.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="mt-3">
+      <div className="mb-2 font-mono text-[11px] uppercase text-[var(--muted)]">
+        Try this
+      </div>
+      <div className="flex flex-wrap gap-2">
+        {prompts.map((prompt) => (
+          <button
+            className="rounded-full border border-[var(--border)] bg-[var(--surface-elevated)] px-3 py-1.5 text-left text-xs leading-5 text-[var(--muted)] transition hover:border-[var(--accent-strong)] hover:text-[var(--foreground)] disabled:cursor-not-allowed disabled:opacity-55"
+            disabled={disabled}
+            key={prompt}
+            onClick={() => onSelect(prompt)}
+            type="button"
+          >
+            {prompt}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 const PARAMETER_HELP = {
   topK:
     "RAG term: top_k. The maximum number of matching chunks the retriever can bring back. Higher values widen the search, but only help when more useful evidence exists.",
@@ -825,6 +875,7 @@ function RetrievalControls({
                 : state.settings[key as keyof typeof state.settings];
           const inputId = `setting-input-${key}`;
           const rangeId = `setting-range-${key}`;
+          const labelId = `setting-label-${key}`;
           const numericMin = Number(min);
           const numericMax = Number(max);
           const numericValue = Number(value);
@@ -843,20 +894,20 @@ function RetrievalControls({
           return (
             <div className="block" key={String(key)}>
               <div className="mb-1 flex items-center justify-between gap-3">
-                <label
-                  className="flex min-w-0 items-center gap-1.5"
-                  htmlFor={rangeId}
-                  id={`setting-${key}`}
-                >
-                  <span className="text-sm font-medium text-[var(--foreground)]">
+                <div className="flex min-w-0 items-center gap-1.5">
+                  <label
+                    className="text-sm font-medium text-[var(--foreground)]"
+                    htmlFor={rangeId}
+                    id={labelId}
+                  >
                     {label}
-                  </span>
+                  </label>
                   <ParameterHelp
                     label={label}
                     text={PARAMETER_HELP[key]}
                     tooltipId={`setting-help-${key}`}
                   />
-                </label>
+                </div>
                 <input
                   aria-label={`${label} value`}
                   className="h-7 w-16 rounded-md border border-[var(--border)] bg-[var(--surface-muted)] px-2 text-right font-mono text-xs text-[var(--foreground)] outline-none ring-[var(--accent)] transition focus:ring-2 disabled:opacity-50"
@@ -881,7 +932,7 @@ function RetrievalControls({
                 />
               </div>
               <input
-                aria-labelledby={`setting-${key}`}
+                aria-labelledby={labelId}
                 className="rag-range w-full disabled:opacity-50"
                 disabled={locked}
                 max={numericMax}
@@ -948,11 +999,12 @@ function RetrievalControls({
         </div>
       </fieldset>
       {uploadProfileLocked ? (
-        <p className="mt-3 text-xs leading-5 text-[var(--muted)]">
-          Uploaded documents keep the chunking and embedding profile created at
-          upload time. You can still change Evidence to retrieve; changing
-          chunk length, overlap, or embedding mode requires re-indexing the
-          file.
+        <p className="mt-3 flex items-start gap-1.5 text-xs leading-5 text-[var(--muted)]">
+          <Info className="mt-0.5 size-3.5 shrink-0 text-[var(--accent-strong)]" />
+          <span>
+            {RAG_CONCEPT_HELP.uploadLocked} You can still change Evidence to
+            retrieve because that happens at query time.
+          </span>
         </p>
       ) : null}
     </div>
@@ -970,16 +1022,46 @@ function ParameterHelp({
 }) {
   return (
     <span className="group/help relative inline-flex">
-      <span
+      <button
         aria-describedby={tooltipId}
         aria-label={`About ${label}`}
-        className="inline-flex size-4 items-center justify-center rounded-full text-[var(--muted)] outline-none ring-[var(--accent)] transition hover:text-[var(--foreground)] focus:text-[var(--foreground)] focus:ring-2"
-        tabIndex={0}
+        className="inline-flex size-4 items-center justify-center rounded-full border-0 bg-transparent p-0 text-[var(--muted)] outline-none ring-[var(--accent)] transition hover:text-[var(--foreground)] focus:text-[var(--foreground)] focus:ring-2"
+        type="button"
       >
         <Info aria-hidden="true" className="size-3.5" strokeWidth={2} />
-      </span>
+      </button>
       <span
         className="pointer-events-none absolute left-0 top-6 z-30 w-64 rounded-md border border-[var(--border)] bg-[var(--surface)] p-3 font-sans text-xs leading-5 text-[var(--foreground)] opacity-0 shadow-lg transition group-hover/help:opacity-100 group-focus-within/help:opacity-100"
+        id={tooltipId}
+        role="tooltip"
+      >
+        {text}
+      </span>
+    </span>
+  );
+}
+
+function TraceHelp({
+  label,
+  text,
+  tooltipId,
+}: {
+  label: string;
+  text: string;
+  tooltipId: string;
+}) {
+  return (
+    <span className="group/help relative inline-flex">
+      <button
+        aria-describedby={tooltipId}
+        aria-label={`About ${label}`}
+        className="inline-flex size-4 items-center justify-center rounded-full border-0 bg-transparent p-0 text-[var(--trace-muted)] outline-none ring-[var(--trace-accent)] transition hover:text-[var(--trace-foreground)] focus:text-[var(--trace-foreground)] focus:ring-2"
+        type="button"
+      >
+        <Info aria-hidden="true" className="size-3.5" strokeWidth={2} />
+      </button>
+      <span
+        className="pointer-events-none absolute right-0 top-6 z-30 w-64 rounded-md border border-[var(--trace-border)] bg-[var(--trace-card)] p-3 font-sans text-xs leading-5 text-[var(--trace-foreground)] opacity-0 shadow-lg transition group-hover/help:opacity-100 group-focus-within/help:opacity-100"
         id={tooltipId}
         role="tooltip"
       >
@@ -1094,6 +1176,8 @@ function TraceComparison({
 }) {
   return (
     <div className="space-y-4">
+      <ComparisonVerdict verdict={comparison.verdict} />
+
       <div className="grid gap-3 md:grid-cols-2">
         <TraceMetricCard
           label="A baseline"
@@ -1175,6 +1259,33 @@ function TraceComparison({
           </p>
         )}
       </div>
+    </div>
+  );
+}
+
+function ComparisonVerdict({
+  verdict,
+}: {
+  verdict: ReturnType<typeof buildExperimentComparison>["verdict"];
+}) {
+  const toneClass =
+    verdict.status === "better"
+      ? "border-[var(--accent-strong)] bg-[var(--badge-bg)]"
+      : verdict.status === "worse"
+        ? "border-[var(--warning)]/50 bg-[var(--surface-elevated)]"
+        : "border-[var(--border)] bg-[var(--surface-elevated)]";
+
+  return (
+    <div className={["rounded-md border p-3", toneClass].join(" ")}>
+      <div className="mb-1 flex items-center justify-between gap-3">
+        <h3 className="text-sm font-semibold text-[var(--foreground)]">
+          {verdict.title}
+        </h3>
+        <span className="rounded-full border border-[var(--border)] px-2 py-0.5 font-mono text-[10px] text-[var(--muted)]">
+          {verdict.status}
+        </span>
+      </div>
+      <p className="text-sm leading-6 text-[var(--muted)]">{verdict.reason}</p>
     </div>
   );
 }
@@ -1334,8 +1445,12 @@ function AnswerPanel({
     );
   }
 
+  const evidence = buildTraceEvidence(result);
+
   return (
     <div className="space-y-4 border-t border-[var(--border)] p-5">
+      <TraceOutcomeSummary evidence={evidence} variant="light" />
+
       <div className="rounded-lg border border-[var(--border)] bg-[var(--surface-elevated)] p-5">
         <div className="mb-3 flex items-center justify-between gap-4">
           <h2 className="text-sm font-semibold">Answer</h2>
@@ -1409,13 +1524,18 @@ function AnswerCitations({
 
   return (
     <div className="mt-4 border-t border-[var(--border)] pt-4">
-      <h3 className="mb-2 font-mono text-[11px] uppercase text-[var(--muted)]">
-        Citations
+      <h3 className="mb-2 flex items-center gap-1.5 font-mono text-[11px] uppercase text-[var(--muted)]">
+        <span>Citations</span>
+        <ParameterHelp
+          label="Citations"
+          text={RAG_CONCEPT_HELP.citations}
+          tooltipId="answer-citations-help"
+        />
       </h3>
       <div className="flex flex-wrap gap-2">
         {citations.map((citation) => (
           <span
-            className="rounded-full border border-[var(--border)] bg-[var(--surface-muted)] px-2.5 py-1 font-mono text-[11px] text-[var(--muted)]"
+            className="max-w-full break-words rounded-lg border border-[var(--border)] bg-[var(--surface-muted)] px-2.5 py-1 font-mono text-[11px] text-[var(--muted)]"
             key={`${citation.label}-${citation.detail}`}
           >
             <span className="font-semibold text-[var(--foreground)]">
@@ -1426,6 +1546,49 @@ function AnswerCitations({
         ))}
       </div>
     </div>
+  );
+}
+
+function TraceOutcomeSummary({
+  evidence,
+  variant,
+}: {
+  evidence: ReturnType<typeof buildTraceEvidence>;
+  variant: "light" | "dark";
+}) {
+  const verdict = evidence.retrievalVerdict;
+  const toneClass =
+    verdict.tone === "strong"
+      ? "border-[var(--accent-strong)]"
+      : verdict.tone === "weak" || verdict.tone === "none"
+        ? "border-[var(--warning)]/60"
+        : variant === "dark"
+          ? "border-[var(--trace-accent)]"
+          : "border-[var(--border)]";
+  const surfaceClass =
+    variant === "dark"
+      ? "bg-[var(--trace-code-bg)] text-[var(--trace-muted)]"
+      : "bg-[var(--surface-muted)] text-[var(--muted)]";
+  const headingClass =
+    variant === "dark"
+      ? "text-[var(--trace-foreground)]"
+      : "text-[var(--foreground)]";
+
+  return (
+    <section className={["rounded-lg border p-4", toneClass, surfaceClass].join(" ")}>
+      <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+        <h2 className={["text-sm font-semibold", headingClass].join(" ")}>
+          {verdict.label}
+        </h2>
+        <span className="rounded-full border border-current/25 px-2 py-0.5 font-mono text-[10px]">
+          {verdict.topSimilarityPercent === null
+            ? "no score"
+            : `${verdict.topSimilarityPercent}% top match`}
+        </span>
+      </div>
+      <p className="text-sm leading-6">{evidence.summary}</p>
+      <p className="mt-1 text-xs leading-5">{verdict.detail}</p>
+    </section>
   );
 }
 
@@ -1465,6 +1628,10 @@ function TraceInspector({
     () => (result ? buildTraceChunkRows(result) : []),
     [result],
   );
+  const chunkRowsById = useMemo(
+    () => new Map(chunkRows.map((row) => [row.chunkId, row])),
+    [chunkRows],
+  );
 
   return (
     <aside className="min-w-0 rounded-xl border border-[var(--trace-border)] bg-[var(--trace-surface)] p-5 text-[var(--trace-foreground)]">
@@ -1495,22 +1662,50 @@ function TraceInspector({
       <TraceChunkList rows={chunkRows} />
 
       <div className="space-y-3">
-        <div className="font-mono text-[11px] text-[var(--trace-accent)]">
-          ranked evidence
+        <div className="flex items-center gap-1.5 font-mono text-[11px] text-[var(--trace-accent)]">
+          <span>ranked evidence</span>
+          <TraceHelp
+            label="Cosine similarity"
+            text={RAG_CONCEPT_HELP.cosineSimilarity}
+            tooltipId="ranked-evidence-similarity-help"
+          />
         </div>
         {rows.length === 0 ? (
           <div className="rounded-lg border border-[var(--trace-border)] bg-[var(--trace-card)] p-3 text-sm leading-6 text-[var(--trace-muted)]">
             Ranked evidence will appear here.
           </div>
         ) : (
-          rows.map((row) => <TraceRow key={row.chunkId} row={row} />)
+          rows.map((row) => (
+            <TraceRow
+              chunkMetadata={chunkRowsById.get(row.chunkId)}
+              key={row.chunkId}
+              row={row}
+            />
+          ))
         )}
       </div>
 
       <div className="mt-4 rounded-lg border border-[var(--trace-border)] bg-[var(--trace-code-bg)] p-3">
-        <div className="mb-2 flex items-center gap-2 font-mono text-[11px] text-[var(--trace-accent)]">
-          <GitBranch className="size-3.5" />
-          prompt sent to model
+        <div className="mb-2 flex items-center justify-between gap-3 font-mono text-[11px] text-[var(--trace-accent)]">
+          <div className="flex items-center gap-2">
+            <GitBranch className="size-3.5" />
+            <span>prompt sent to model</span>
+            <TraceHelp
+              label="Prompt assembly"
+              text={RAG_CONCEPT_HELP.promptAssembly}
+              tooltipId="trace-prompt-help"
+            />
+          </div>
+          {prompt ? (
+            <div className="flex items-center gap-1.5 text-[var(--trace-muted)]">
+              <span>{formatNumber(prompt.length)} chars</span>
+              <TraceHelp
+                label="Prompt length"
+                text={RAG_CONCEPT_HELP.promptLength}
+                tooltipId="trace-prompt-length-help"
+              />
+            </div>
+          ) : null}
         </div>
         <pre className="max-h-72 overflow-auto whitespace-pre-wrap font-mono text-xs leading-5 text-[var(--trace-foreground)]">
           {prompt ?? "Run a trace to inspect the model prompt."}
@@ -1557,26 +1752,11 @@ function TraceEvidenceStack({
           {evidence.stages.length} stages
         </span>
       </div>
-      <p className="text-xs leading-5 text-[var(--trace-muted)]">
-        {evidence.summary}
-      </p>
+      <TraceOutcomeSummary evidence={evidence} variant="dark" />
 
       <div className="space-y-2">
         {evidence.stages.map((stage) => (
-          <div
-            className="rounded-md border border-[var(--trace-border)] bg-[var(--trace-code-bg)] p-2"
-            key={stage.label}
-          >
-            <div className="flex items-center justify-between gap-3 font-mono text-[11px]">
-              <span className="text-[var(--trace-muted)]">{stage.label}</span>
-              <span className="text-[var(--trace-foreground)]">
-                {stage.value}
-              </span>
-            </div>
-            <p className="mt-1 break-words font-mono text-[10px] leading-4 text-[var(--trace-muted)]">
-              {stage.detail}
-            </p>
-          </div>
+          <TraceStageRow key={stage.label} stage={stage} />
         ))}
       </div>
 
@@ -1641,6 +1821,34 @@ function TraceEvidenceStack({
   );
 }
 
+function TraceStageRow({
+  stage,
+}: {
+  stage: ReturnType<typeof buildTraceEvidence>["stages"][number];
+}) {
+  return (
+    <details className="rounded-md border border-[var(--trace-border)] bg-[var(--trace-code-bg)] p-2">
+      <summary className="cursor-pointer">
+        <div className="flex items-center justify-between gap-3 font-mono text-[11px]">
+          <span className="text-[var(--trace-muted)]">{stage.label}</span>
+          <span className="text-[var(--trace-foreground)]">{stage.value}</span>
+        </div>
+        <p className="mt-1 text-xs leading-5 text-[var(--trace-foreground)]">
+          {stage.meaning}
+        </p>
+      </summary>
+      <div className="mt-2 border-t border-[var(--trace-border)] pt-2">
+        <p className="text-xs leading-5 text-[var(--trace-muted)]">
+          {stage.whatThisMeans}
+        </p>
+        <p className="mt-2 break-words font-mono text-[10px] leading-4 text-[var(--trace-muted)]">
+          {stage.detail}
+        </p>
+      </div>
+    </details>
+  );
+}
+
 function TraceChunkList({
   rows,
 }: {
@@ -1652,12 +1860,19 @@ function TraceChunkList({
       className="mb-4 rounded-lg border border-[var(--trace-border)] bg-[var(--trace-card)] p-3"
     >
       <div className="mb-3 flex items-center justify-between gap-3">
-        <h3
-          className="font-mono text-[11px] text-[var(--trace-accent)]"
-          id="trace-chunks-heading"
-        >
-          source chunks
-        </h3>
+        <div className="flex items-center gap-1.5">
+          <h3
+            className="font-mono text-[11px] text-[var(--trace-accent)]"
+            id="trace-chunks-heading"
+          >
+            source chunks
+          </h3>
+          <TraceHelp
+            label="Cosine similarity"
+            text={RAG_CONCEPT_HELP.cosineSimilarity}
+            tooltipId="source-chunks-similarity-help"
+          />
+        </div>
         <span className="font-mono text-[10px] text-[var(--trace-muted)]">
           {rows.length} total
         </span>
@@ -1679,18 +1894,7 @@ function TraceChunkList({
                   <span className="truncate text-[var(--trace-foreground)]">
                     {row.fileName} · chunk {row.chunkIndex}
                   </span>
-                  <span
-                    className={[
-                      "shrink-0 rounded-full border px-2 py-0.5 text-[10px]",
-                      row.selected
-                        ? "border-[var(--accent)] text-[var(--accent)]"
-                        : row.retrieved
-                          ? "border-[var(--trace-accent)] text-[var(--trace-accent)]"
-                          : "border-[var(--trace-border)] text-[var(--trace-muted)]",
-                    ].join(" ")}
-                  >
-                    {row.rank === null ? "not used" : `rank ${row.rank}`}
-                  </span>
+                  <ChunkStatePill row={row} />
                 </div>
                 <div className="mt-1 flex items-center justify-between gap-3 font-mono text-[10px] text-[var(--trace-muted)]">
                   <span className="truncate">{row.chunkId}</span>
@@ -1698,6 +1902,10 @@ function TraceChunkList({
                     {row.charStart}-{row.charEnd}
                   </span>
                 </div>
+                <SimilarityScoreBar
+                  label={row.scoreLabel}
+                  value={row.scoreBarValue}
+                />
                 <p className="mt-2 line-clamp-2 text-xs leading-5 text-[var(--trace-muted)]">
                   {row.preview}
                 </p>
@@ -1724,11 +1932,73 @@ function TraceChunkList({
                   </dd>
                 </div>
               </dl>
+              <div className="space-y-1 border-t border-[var(--trace-border)] pt-3 text-xs leading-5 text-[var(--trace-muted)]">
+                <p>{row.stateDescription}</p>
+                <p>{row.scoreDescription}</p>
+              </div>
             </details>
           ))}
         </div>
       )}
     </section>
+  );
+}
+
+function ChunkStatePill({
+  row,
+}: {
+  row: Pick<
+    ReturnType<typeof buildTraceChunkRows>[number],
+    "rank" | "selected" | "stateLabel"
+  >;
+}) {
+  const stateClass = row.selected
+    ? "border-[var(--accent)] text-[var(--accent)]"
+    : row.rank !== null
+      ? "border-[var(--trace-accent)] text-[var(--trace-accent)]"
+      : "border-[var(--trace-border)] text-[var(--trace-muted)]";
+
+  return (
+    <span
+      className={[
+        "shrink-0 rounded-full border px-2 py-0.5 text-[10px]",
+        stateClass,
+      ].join(" ")}
+    >
+      {row.rank === null ? row.stateLabel : `rank ${row.rank} · ${row.stateLabel}`}
+    </span>
+  );
+}
+
+function SimilarityScoreBar({
+  label,
+  value,
+}: {
+  label: string;
+  value: number;
+}) {
+  const clampedValue = Math.min(100, Math.max(0, value));
+
+  return (
+    <div className="mt-2">
+      <div className="mb-1 flex items-center justify-between gap-3 font-mono text-[10px] text-[var(--trace-muted)]">
+        <span>similarity</span>
+        <span>{label}</span>
+      </div>
+      <div
+        aria-label={`Similarity score ${clampedValue} percent`}
+        aria-valuemax={100}
+        aria-valuemin={0}
+        aria-valuenow={clampedValue}
+        className="h-1.5 rounded-full bg-[var(--trace-border)]"
+        role="meter"
+      >
+        <div
+          className="h-full rounded-full bg-[var(--trace-accent)]"
+          style={{ width: `${clampedValue}%` } as CSSProperties}
+        />
+      </div>
+    </div>
   );
 }
 
@@ -1844,23 +2114,29 @@ function RecentTracesList({
   );
 }
 
-function TraceRow({ row }: { row: RagRetrievalRow }) {
+function TraceRow({
+  chunkMetadata,
+  row,
+}: {
+  chunkMetadata?: ReturnType<typeof buildTraceChunkRows>[number];
+  row: RagRetrievalRow;
+}) {
+  const stateRow = chunkMetadata ?? {
+    rank: row.rank,
+    selected: row.selected,
+    stateLabel: row.selected ? "sent to prompt" : "found, not sent",
+  };
+  const scoreLabel = chunkMetadata?.scoreLabel ?? "match";
+  const scoreBarValue =
+    chunkMetadata?.scoreBarValue ?? Math.round(row.similarity * 100);
+
   return (
     <details className="rounded-lg border border-[var(--trace-border)] bg-[var(--trace-card)] p-3">
       <summary className="cursor-pointer">
         <div className="mb-2 flex items-center justify-between font-mono text-[11px]">
           <span className="text-[var(--accent)]">rank {row.rank}</span>
           <div className="flex items-center gap-2">
-            <span
-              className={[
-                "rounded-full border px-2 py-0.5 text-[10px]",
-                row.selected
-                  ? "border-[var(--accent)] text-[var(--accent)]"
-                  : "border-[var(--trace-border)] text-[var(--trace-muted)]",
-              ].join(" ")}
-            >
-              {row.selected ? "used" : "not used"}
-            </span>
+            <ChunkStatePill row={stateRow} />
             <span className="text-[var(--trace-muted)]">
               match score {row.similarity.toFixed(3)}
             </span>
@@ -1869,6 +2145,7 @@ function TraceRow({ row }: { row: RagRetrievalRow }) {
         <div className="font-mono text-xs text-[var(--trace-foreground)]">
           {row.fileName} · chunk {row.chunkIndex} · {row.retrievalMode}
         </div>
+        <SimilarityScoreBar label={scoreLabel} value={scoreBarValue} />
         <p className="mt-2 line-clamp-3 text-sm leading-6 text-[var(--trace-muted)]">
           {row.content}
         </p>
