@@ -87,21 +87,19 @@ Findings incorporated into the execution rules:
 
 Active goal: finish RAG Lens V1 as a polished standard RAG debugger with a
 clear public portfolio entry point. The core RAG system is implemented and
-deployed, and the beginner trace clarity slice is complete; the remaining V1
-work is public polish and final launch verification.
+deployed, beginner trace clarity is complete, and the GitHub Pages public entry
+is merged and live. The only remaining V1 slice is final launch verification.
 
 Current non-deferred V1 focus:
 
-1. Public landing and repo polish: GitHub Pages entry point, Render warmup,
-   README screenshots/GIFs, repository metadata, privacy/rate-limit messaging,
-   and portfolio narrative.
-2. Final launch QA: full local, hosted Supabase, Render, browser, docs, cleanup,
+1. Final launch QA: full local, hosted Supabase, Render, browser, docs, cleanup,
    and secret-boundary verification.
 
-Work these as two normal short-lived branch PRs, not one giant PR:
+Slice 11 used a normal short-lived branch PR and is merged. Slice 12 is the
+active short-lived branch PR:
 
-1. `codex/public-landing-polish`
-2. `codex/final-launch-qa`
+1. `codex/public-landing-polish` - merged.
+2. `codex/final-launch-qa` - active.
 
 Do not create worktrees by default. Use a worktree only when it materially
 reduces risk or isolates a parallel investigation.
@@ -685,12 +683,13 @@ Commit:
 git commit -m "docs: polish public RAG Lens entry"
 ```
 
-Status: implemented on `codex/public-landing-polish`, pending PR review, merge,
-and GitHub Pages enablement from `/docs` on `main`. The branch adds the static
-Pages entry, Next landing polish, provider-free `/api/warmup`, narrow CORS for
-the Pages origin, browser-side cooldown, repository presentation guidance,
+Status: complete and merged. The Slice 11 branch added the static Pages entry,
+Next landing polish, provider-free `/api/warmup`, narrow CORS for the Pages
+origin, browser-side cooldown, repository presentation guidance,
 privacy/rate-limit messaging, and browser QA evidence for desktop/mobile
-landing and workbench surfaces.
+landing and workbench surfaces. GitHub Pages is enabled from `/docs` on `main`,
+repository metadata points to the Pages URL, and Render has the Pages warmup
+origin configured.
 
 ### Slice 12 - Final Launch QA
 
@@ -722,7 +721,14 @@ Verification:
 - Browser QA evidence for landing, workbench, completed trace, comparison, and
   upload/delete flow.
 
-Status: next after Slice 11 is merged and the live public entry is enabled.
+Status: active on `codex/final-launch-qa`. Local production API smoke has
+passed example corpus query, markdown upload, PDF upload, wrong MIME rejection,
+oversized upload rejection, expired-session messaging, and delete-now cleanup.
+The branch keeps `pdf-parse` external to the Next production server bundle and
+adds a regression test for that deployment contract. `bun test`,
+`bun run lint`, `bun run build`, `bun run preflight:render`, hosted Supabase
+smoke, hosted Supabase integration smoke, and `git diff --check` pass on the
+branch.
 
 ## Review Checklist
 

@@ -9,10 +9,8 @@ then inspect the retrieval trace that produced the answer.
 [Public entry target](https://lagarcess.github.io/rag-lens/) |
 [View source](https://github.com/lagarcess/rag-lens)
 
-The Slice 11 public share URL is GitHub Pages. This branch adds the static
-public-entry page under `docs/`; after merge, enable GitHub Pages from `/docs`
-on `main`. Render is the app/backend sandbox origin that the public entry warms
-before opening the workbench.
+The public share URL is GitHub Pages. Render remains the app/backend sandbox
+origin that the public entry warms before opening the workbench.
 
 ![RAG Lens public entry screenshot](docs/assets/screenshots/landing.png)
 
@@ -43,10 +41,10 @@ small PDF, text, or markdown file.
 
 ## Demo Flow
 
-1. After GitHub Pages is enabled from `/docs` on `main`, open the public entry:
+1. Open the public entry:
    [https://lagarcess.github.io/rag-lens/](https://lagarcess.github.io/rag-lens/).
 2. Choose **Open workbench**. The landing page warms the Render sandbox when
-   the public-entry implementation is deployed.
+   needed, then opens the hosted workbench.
 3. Select a first-party example corpus, or upload a small `.pdf`, `.txt`, `.md`,
    or `.markdown` file for a temporary anonymous session.
 4. Ask a question.
@@ -187,7 +185,7 @@ chat UI:
 
 ## Repository Presentation
 
-Recommended GitHub repo metadata after the public-entry branch lands:
+Current GitHub repo metadata:
 
 - **Homepage:** `https://lagarcess.github.io/rag-lens/`
 - **Description:** `Inspect, debug, and understand a real RAG app built on your own docs.`
@@ -206,6 +204,8 @@ Recommended GitHub repo metadata after the public-entry branch lands:
 - Render sandbox/backend origin:
   `https://rag-lens-mx20.onrender.com`
 - Supabase: hosted project in the dedicated `RAG Lens` organization.
+- GitHub Pages is enabled from `/docs` on `main`.
+- Repository metadata points to the GitHub Pages public entry.
 
 Working locally against the hosted Supabase project:
 
@@ -222,8 +222,6 @@ Working locally against the hosted Supabase project:
 
 ## Known Limitations
 
-- GitHub Pages must be enabled from `/docs` on `main` after this branch merges;
-  until then, the Pages URL may still show GitHub's default 404.
 - Contextualized embedding comparison is implemented at the client/API contract
   level, but seeded/uploaded vectors currently use the default standard vector
   profile. Re-indexed profile comparison is deferred.
