@@ -1,12 +1,32 @@
 import type { RagCitation, RagTraceResponse } from "@/lib/rag/trace";
 
+const STRONG_SCORE_THRESHOLD = 0.75;
+const USABLE_SCORE_THRESHOLD = 0.45;
+
+type EvidenceTone = "strong" | "usable" | "weak" | "none";
+type ScoreLabel = "strong" | "usable" | "weak" | "no score";
+
+interface TraceStageEvidence {
+  label: string;
+  meaning: string;
+  value: string;
+  detail: string;
+  whatThisMeans: string;
+}
+
+interface RetrievalVerdict {
+  label: "strong evidence" | "usable evidence" | "weak evidence" | "no evidence";
+  tone: EvidenceTone;
+  detail: string;
+  topSimilarity: number | null;
+  topSimilarityPercent: number | null;
+  retrievedCount: number;
+}
+
 export interface TraceEvidence {
   summary: string;
-  stages: Array<{
-    label: string;
-    value: string;
-    detail: string;
-  }>;
+  retrievalVerdict: RetrievalVerdict;
+  stages: TraceStageEvidence[];
   timingRows: Array<[string, string]>;
   modelRows: Array<[string, string]>;
   warnings: string[];
@@ -30,6 +50,12 @@ export interface TraceChunkRow {
   similarity: number | null;
   selected: boolean;
   retrieved: boolean;
+  scorePercent: number | null;
+  scoreBarValue: number;
+  scoreLabel: ScoreLabel;
+  scoreDescription: string;
+  stateLabel: "sent to prompt" | "found, not sent" | "not retrieved";
+  stateDescription: string;
 }
 
 export interface AnswerCitationView {
@@ -39,6 +65,7 @@ export interface AnswerCitationView {
 
 export function buildTraceEvidence(result: RagTraceResponse): TraceEvidence {
   const trace = result.trace;
+  const retrievalVerdict = buildRetrievalVerdict(result);
   const extractionDetail = trace.extraction.documents
     .map(
       (document) =>
@@ -48,48 +75,61 @@ export function buildTraceEvidence(result: RagTraceResponse): TraceEvidence {
   const selectedCount = trace.retrieval.rows.filter((row) => row.selected).length;
 
   return {
-    summary: `${formatUnit(
+    summary: formatRunSummary(
       trace.retrieval.rows.length,
-      "evidence match",
-      "evidence matches",
-    )} found; ${formatUnit(
       trace.prompt.contextChunkIds.length,
-      "chunk",
-    )} sent to the model prompt.`,
+    ),
+    retrievalVerdict,
     stages: [
       {
         label: "Read documents",
+        meaning: "Document reading",
         value: formatUnit(trace.extraction.documents.length, "doc"),
         detail: extractionDetail || "No documents extracted",
+        whatThisMeans:
+          "The app read the available files and counted how much searchable text they contain.",
       },
       {
         label: "Split into chunks",
+        meaning: "Chunking",
         value: formatUnit(trace.chunking.totalChunks, "chunk"),
         detail: `${formatNumber(
           trace.settings.chunkSize,
         )} characters each · ${formatNumber(trace.settings.chunkOverlap)} overlap`,
+        whatThisMeans:
+          "The document text was split into smaller passages so each passage can be checked against the question.",
       },
       {
         label: "Compared meaning",
+        meaning: "Semantic comparison",
         value: trace.models.embedding.provider,
         detail: formatEmbeddingDetail(result),
+        whatThisMeans:
+          "The question and document chunks were turned into comparable meaning signals before search.",
       },
       {
         label: "Found evidence",
+        meaning: "Retrieval",
         value: formatUnit(trace.retrieval.rows.length, "match", "matches"),
         detail: `${formatUnit(trace.retrieval.rows.length, "row")} · ${formatUnit(
           selectedCount,
           "sent to prompt",
           "sent to prompt",
         )} · ${trace.retrieval.method}`,
+        whatThisMeans:
+          "The app ranked chunks by how closely they matched the question and chose which evidence to send forward.",
       },
       {
         label: "Built prompt",
+        meaning: "Prompt assembly",
         value: `${formatNumber(trace.prompt.rendered.length)} chars`,
         detail: formatUnit(trace.prompt.contextChunkIds.length, "context chunk"),
+        whatThisMeans:
+          "Only the selected evidence was placed beside the question for the answer writer.",
       },
       {
         label: "Generated answer",
+        meaning: "Answer generation",
         value: trace.models.answer.provider,
         detail: [
           trace.models.answer.model,
@@ -97,6 +137,8 @@ export function buildTraceEvidence(result: RagTraceResponse): TraceEvidence {
         ]
           .filter(Boolean)
           .join(" · "),
+        whatThisMeans:
+          "The answer writer used the provided evidence and question to produce the final response.",
       },
     ],
     timingRows: [
@@ -105,7 +147,7 @@ export function buildTraceEvidence(result: RagTraceResponse): TraceEvidence {
       ["writing answer", `${formatNumber(trace.timingsMs.generation)} ms`],
     ],
     modelRows: buildModelRows(result),
-    warnings: [...trace.warnings],
+    warnings: buildBeginnerWarnings(result, retrievalVerdict),
   };
 }
 
@@ -135,6 +177,11 @@ export function buildTraceChunkRows(result: RagTraceResponse): TraceChunkRow[] {
 
   return result.trace.chunking.chunks.map((chunk) => {
     const retrievalRow = retrievalRowsById.get(chunk.chunkId);
+    const score = buildScoreMetadata(retrievalRow?.similarity ?? null);
+    const state = buildChunkStateCopy(
+      retrievalRow?.selected ?? false,
+      Boolean(retrievalRow),
+    );
 
     return {
       chunkId: chunk.chunkId,
@@ -147,6 +194,8 @@ export function buildTraceChunkRows(result: RagTraceResponse): TraceChunkRow[] {
       similarity: retrievalRow?.similarity ?? null,
       selected: retrievalRow?.selected ?? false,
       retrieved: Boolean(retrievalRow),
+      ...score,
+      ...state,
     };
   });
 }
@@ -197,6 +246,148 @@ function buildModelRows(result: RagTraceResponse): Array<[string, string]> {
   return rows;
 }
 
+function buildRetrievalVerdict(result: RagTraceResponse): RetrievalVerdict {
+  const retrievedCount = result.trace.retrieval.rows.length;
+
+  if (retrievedCount === 0) {
+    return {
+      label: "no evidence",
+      tone: "none",
+      detail: "No chunks were retrieved for this question.",
+      topSimilarity: null,
+      topSimilarityPercent: null,
+      retrievedCount,
+    };
+  }
+
+  const topSimilarity = Math.max(
+    ...result.trace.retrieval.rows.map((row) => row.similarity),
+  );
+  const topSimilarityPercent = similarityToPercent(topSimilarity);
+
+  if (topSimilarity >= STRONG_SCORE_THRESHOLD && retrievedCount >= 2) {
+    return {
+      label: "strong evidence",
+      tone: "strong",
+      detail:
+        "The top match is high and the retriever found multiple chunks to compare.",
+      topSimilarity,
+      topSimilarityPercent,
+      retrievedCount,
+    };
+  }
+
+  if (topSimilarity >= USABLE_SCORE_THRESHOLD) {
+    return {
+      label: "usable evidence",
+      tone: "usable",
+      detail:
+        "The app found evidence that may answer the question, but it is not a strong multi-chunk match.",
+      topSimilarity,
+      topSimilarityPercent,
+      retrievedCount,
+    };
+  }
+
+  return {
+    label: "weak evidence",
+    tone: "weak",
+    detail:
+      "The retrieved chunks are low-confidence matches; check the source text before trusting the answer.",
+    topSimilarity,
+    topSimilarityPercent,
+    retrievedCount,
+  };
+}
+
+function buildBeginnerWarnings(
+  result: RagTraceResponse,
+  verdict: RetrievalVerdict,
+) {
+  const warnings = result.trace.warnings.map(formatBeginnerWarning);
+
+  if (verdict.tone === "weak") {
+    warnings.push(
+      "The best retrieved evidence is weak, so the answer may need a better question or better source text.",
+    );
+  }
+
+  if (verdict.tone === "none") {
+    warnings.push(
+      "No matching evidence was retrieved, so the answer should say it cannot answer from these documents.",
+    );
+  }
+
+  return Array.from(new Set(warnings));
+}
+
+function formatBeginnerWarning(warning: string) {
+  const normalized = warning.toLowerCase();
+
+  if (normalized.includes("similarity")) {
+    return "Some retrieved evidence scored low, so check whether the answer is fully supported by the documents.";
+  }
+
+  return warning;
+}
+
+function buildScoreMetadata(similarity: number | null) {
+  if (similarity === null) {
+    return {
+      scorePercent: null,
+      scoreBarValue: 0,
+      scoreLabel: "no score" as const,
+      scoreDescription:
+        "No retrieval score because this chunk was not returned for the question.",
+    };
+  }
+
+  const scorePercent = similarityToPercent(similarity);
+
+  return {
+    scorePercent,
+    scoreBarValue: scorePercent,
+    scoreLabel: getScoreLabel(similarity),
+    scoreDescription: `${scorePercent}% similarity to the question.`,
+  };
+}
+
+function buildChunkStateCopy(selected: boolean, retrieved: boolean) {
+  if (selected) {
+    return {
+      stateLabel: "sent to prompt" as const,
+      stateDescription:
+        "This chunk was included as evidence for the answer writer.",
+    };
+  }
+
+  if (retrieved) {
+    return {
+      stateLabel: "found, not sent" as const,
+      stateDescription:
+        "This chunk matched the question, but it was not included in the prompt context.",
+    };
+  }
+
+  return {
+    stateLabel: "not retrieved" as const,
+    stateDescription:
+      "This chunk was indexed, but it was not one of the matches for this question.",
+  };
+}
+
+function getScoreLabel(similarity: number): ScoreLabel {
+  if (similarity >= STRONG_SCORE_THRESHOLD) {
+    return "strong";
+  }
+
+  if (similarity >= USABLE_SCORE_THRESHOLD) {
+    return "usable";
+  }
+
+  return "weak";
+}
+
 function formatEmbeddingDetail(result: RagTraceResponse) {
   const embedding = result.trace.models.embedding;
   const queryModel = embedding.queryModel ?? embedding.model;
@@ -225,6 +416,28 @@ function formatPreview(content: string) {
   return `${compact.slice(0, maxLength - 3).trimEnd()}...`;
 }
 
+function formatRunSummary(retrievedCount: number, selectedCount: number) {
+  if (retrievedCount === 0) {
+    return "The app found no matching evidence, so nothing was sent to the answer writer.";
+  }
+
+  return `The app found ${formatEvidencePieces(
+    retrievedCount,
+  )} and gave ${formatEvidencePieces(selectedCount)} to the answer writer.`;
+}
+
+function formatEvidencePieces(value: number) {
+  if (value === 0) {
+    return "no pieces of evidence";
+  }
+
+  return `${formatNumber(value)} ${value === 1 ? "piece" : "pieces"} of evidence`;
+}
+
+function similarityToPercent(similarity: number) {
+  return Math.round(Math.min(1, Math.max(0, similarity)) * 100);
+}
+
 function formatUnit(
   value: number,
   singular: string,
@@ -234,5 +447,5 @@ function formatUnit(
 }
 
 function formatNumber(value: number) {
-  return new Intl.NumberFormat().format(value);
+  return new Intl.NumberFormat("en-US").format(value);
 }
