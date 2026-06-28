@@ -85,38 +85,27 @@ Findings incorporated into the execution rules:
 
 ## Active Goal And Current Gap
 
-Active goal: drive RAG Lens from this locked roadmap through fully functional
-local and deployed V1 slices, using non-overlapping subagents for independent
-implementation and review work, and committing each cohesive slice after
-verification.
+Active goal: finish RAG Lens V1 as a polished standard RAG debugger with clear
+educational trace guidance and a public portfolio entry point. The core RAG
+system is implemented and deployed; the remaining V1 work is product clarity,
+public polish, and final launch verification.
 
-Current non-deferred V1 focus after Slice 9.1:
+Current non-deferred V1 focus:
 
-1. Keep the scheduled cleanup job as a retry/backstop for expired sessions,
-   failed immediate purges, and abandoned browser sessions.
-2. Keep `render.yaml` and deployment docs aligned with hosted V1 behavior:
-   Supabase vector retrieval, OpenRouter chat generation, and no Render cleanup
-   cron.
-3. Deploy only from the dedicated `rag-lens` Render workspace
-   (`tea-d8vvqob7uimc738uflsg`) or after the user explicitly authorizes a
-   different target workspace.
-4. Run `bun run preflight:render` before any Render dashboard, Blueprint, or CLI
-   creation step.
+1. Beginner trace clarity: explain chunking, embeddings, retrieval, prompt
+   assembly, answer generation, citations, comparison results, and locked upload
+   settings in plain language without leaving the workbench.
+2. Public landing and repo polish: GitHub Pages entry point, Render warmup,
+   README screenshots/GIFs, repository metadata, privacy/rate-limit messaging,
+   and portfolio narrative.
+3. Final launch QA: full local, hosted Supabase, Render, browser, docs, cleanup,
+   and secret-boundary verification.
 
-This excludes the deferred GitHub Pages landing and warmup topology.
-
-Current public-demo trust pass:
-
-1. Make the anonymous upload constraints visible in the workbench before upload:
-   3 files per session, 10 MB total, active session expiry, immediate
-   delete-now, and monthly purge.
-2. Align upload validation with the documented safety model by rejecting files
-   whose browser-reported MIME type is missing instead of inferring trust from
-   the extension alone.
-3. Expand the trace inspector from retrieved passages only to an inspectable
-   full chunk list, including chunks that were not retrieved.
-4. Keep this pass local and committed only. Do not deploy or push until the
-   user explicitly asks.
+This scope intentionally stays with standard RAG. Re-indexed embedding profiles,
+dynamic upload re-chunking, contextualized embedding comparisons, GraphRAG,
+agentic RAG, multimodal RAG, account systems, long-term knowledge bases,
+advanced eval suites, and distributed production rate limiting are deferred
+until after V1.
 
 ## Execution Discipline
 

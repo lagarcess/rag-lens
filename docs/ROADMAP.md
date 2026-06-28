@@ -233,10 +233,16 @@ Verification:
 - Upload session expires and cleans up.
 - No secrets in repository or browser bundle.
 
-## Deferred Slice - Beginner Trace Guidance
+Status: implemented for the current Render app/backend deployment and
+portfolio documentation. Remaining V1 work is educational clarity and public
+entry polish, not core RAG infrastructure.
+
+## Slice 10 - Beginner Trace Clarity
+
+Priority: highest. Do this before public launch packaging.
 
 Goal: Make the workbench understandable to visitors who do not already know RAG
-terminology.
+terminology while staying focused on standard RAG.
 
 Problem:
 
@@ -250,14 +256,22 @@ Problem:
 
 Deliverables:
 
-- Plain-language trace summary above technical metrics.
-- Beginner labels or tooltips for `top_k`, chunk size, overlap, embeddings,
-  similarity score, prompt length, and citations.
-- Trace comparison summary that states whether the variant improved retrieval,
-  changed the selected evidence, expanded the prompt, or had no practical
-  effect.
-- Right-panel progressive disclosure: concise stage overview first, raw IDs and
-  prompt details second.
+- Plain-language trace summaries above technical metrics that explain what was
+  found, what was sent to the prompt, and why it matters.
+- Collapsible "What this means" explanations for chunking, embeddings,
+  retrieval, prompt assembly, and answer generation.
+- Beginner labels or tooltips for `top_k`, chunk size, chunk overlap,
+  embeddings, cosine similarity, prompt assembly, citations, and prompt length.
+- A compact RAG concepts glossary drawer or modal only if inline explanations
+  are not enough; avoid turning the workbench into a separate tutorial.
+- Trace comparison verdicts that state whether the variant improved retrieval,
+  changed selected evidence, expanded the prompt, weakened grounding, or had no
+  practical effect.
+- Similarity score bars and clearer selected/not-selected chunk states.
+- Example-guided "Try this" prompts for first-time users using the first-party
+  corpora.
+- Right-panel progressive disclosure: concise stage overview first, chunk IDs,
+  metadata, and prompt details second.
 - Clear locked-state explanation for uploads: chunk size, overlap, and
   embedding mode are fixed after upload because changing them requires
   re-chunking and re-embedding the uploaded file.
@@ -269,8 +283,12 @@ Verification:
 - Locked upload controls explain what is locked, why, and what can still be
   changed.
 - Browser QA covers empty state, completed trace, comparison, and upload mode.
+- `bun test`, `bun run lint`, `bun run build`, and `git diff --check` pass.
 
-## Deferred Slice - Static Landing And Warmup
+## Slice 11 - Public Landing And Repo Polish
+
+Priority: immediately after Slice 10. The workbench clarity pass should land
+first so the public entry points send visitors to the strongest product surface.
 
 Goal: Make the recruiter-facing URL instant while keeping Render as the
 sandbox/app origin rather than the public URL to share.
@@ -283,6 +301,12 @@ Deliverables:
 - CTA flow that warms Render, waits when needed, then redirects to `/workbench`.
 - Browser-side warmup cooldown to avoid pinging Render on every visit.
 - README and portfolio links that point to GitHub Pages, not the Render origin.
+- README hero section with product tagline, screenshots or GIFs of the trace
+  inspector, quickstart, "what you will learn", architecture highlights, live
+  demo link, and portfolio narrative.
+- GitHub repository description, topics, and banner image aligned to the
+  standard RAG debugger positioning.
+- Clear privacy and rate-limit messaging around temporary anonymous uploads.
 
 Verification:
 
@@ -290,3 +314,78 @@ Verification:
 - Warm Render service opens the sandbox quickly.
 - Loading interstitial appears only while the sandbox is not ready.
 - Warmup endpoint does not create sessions or call model providers.
+- README links, screenshots, and setup steps are current.
+- Browser QA covers the landing page, warmup/loading path, desktop workbench,
+  mobile workbench, example query, upload rejection states, and delete-now flow.
+- `bun test`, `bun run lint`, `bun run build`, `bun run preflight:render`, and
+  `git diff --check` pass before launch.
+
+## Slice 12 - Final Launch QA
+
+Goal: Confirm the standard RAG debugger is portfolio-ready end to end and stop
+adding V1 scope.
+
+Deliverables:
+
+- Full verification pass for the deployed app and local repo.
+- Manual smoke tests with example corpora, small text/markdown uploads, PDF
+  upload success, oversized upload rejection, wrong MIME rejection, session
+  expiry messaging, and delete-now cleanup.
+- Hosted Supabase smoke and integration smoke remain count-only and leave no
+  fixture data behind.
+- Final docs alignment across README, product, architecture, API contract,
+  security, deployment, testing, roadmap, and project lock.
+- Known limitations remain explicit and do not read like accidental omissions.
+- Optional lightweight monitoring/analytics is limited to free-tier operational
+  visibility and must not expand the product surface.
+
+Verification:
+
+- `bun test`
+- `bun run lint`
+- `bun run build`
+- `bun run preflight:render`
+- `bun run smoke:supabase -- --json`
+- `bun run smoke:supabase:integration -- --json`
+- `git diff --check`
+- Browser QA evidence for landing, workbench, completed trace, comparison, and
+  upload/delete flow.
+
+## Done Criteria
+
+RAG Lens V1 is done when:
+
+- A visitor can open the public entry point, reach the Render workbench, choose
+  an example or upload temporary documents, ask a question, inspect the trace,
+  understand what happened without prior RAG vocabulary, compare standard RAG
+  settings, and delete their anonymous session.
+- The app demonstrates standard RAG end to end: ingestion, chunking, embeddings,
+  Supabase `pgvector` retrieval, prompt assembly, OpenRouter answer generation,
+  citations, trace persistence for uploaded sessions, retention, cleanup, and
+  deployment discipline.
+- The README and docs clearly explain the product promise, architecture,
+  security model, local setup, hosted deployment, demo flow, known limitations,
+  and portfolio narrative.
+- The public share link is the static landing page, while Render remains the
+  app/backend sandbox origin.
+- Final verification commands and browser QA pass with evidence.
+- No deferred scope below is required to call V1 complete.
+
+## Explicitly Deferred After V1
+
+- Re-indexed embedding profiles and dynamic upload re-chunking experiments.
+- Contextualized embedding comparisons beyond the current standard vector
+  profile.
+- Agentic RAG, GraphRAG, multimodal RAG, rerankers, and advanced eval suites.
+- User accounts, team collaboration, billing, or long-term personal knowledge
+  bases.
+- Distributed production rate limiting beyond the current V1 public-demo abuse
+  brake.
+
+## Branch And Review Policy
+
+This roadmap lock may be committed directly to `main` because it is docs-only.
+After this commit, new product, code, infrastructure, and substantive docs work
+should happen on short-lived `codex/` branches and move through pull requests
+for review before merging to `main`, unless the user explicitly authorizes a
+direct-to-main exception.

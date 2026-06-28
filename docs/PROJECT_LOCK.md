@@ -70,6 +70,11 @@ The deferred portfolio topology is:
 ## Execution Discipline
 
 - Work in cohesive slices that can be committed independently.
+- The roadmap lock commit is allowed to land directly on `main` because it is
+  docs-only and explicitly authorized. After that, new product, code,
+  infrastructure, and substantive docs work should use short-lived `codex/`
+  branches and pull requests for review before merging to `main`, unless the
+  user explicitly authorizes another direct-to-main exception.
 - Use non-overlapping subagents for independent docs, UI, backend, database, or
   verification tasks.
 - Give each subagent a disjoint scope and close it when its report is consumed.
