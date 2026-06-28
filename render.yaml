@@ -15,6 +15,10 @@ services:
         value: production
       - key: NEXT_PUBLIC_SITE_URL
         sync: false
+      - key: NEXT_PUBLIC_LANDING_ORIGIN
+        value: https://lagarcess.github.io
+      - key: NEXT_PUBLIC_WARMUP_ALLOWED_ORIGINS
+        value: https://lagarcess.github.io
       - key: NEXT_PUBLIC_SUPABASE_URL
         sync: false
       - key: NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY

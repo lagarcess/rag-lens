@@ -95,6 +95,24 @@ Before public deploy:
 - Upload rejection states.
 - Session expiry/delete-now flow.
 
+## Public Entry QA
+
+Before marking Slice 11 complete:
+
+- GitHub Pages public entry loads at
+  `https://lagarcess.github.io/rag-lens/`.
+- The public entry starts a cheap Render warmup after first paint.
+- Warmup uses narrow CORS for the GitHub Pages origin.
+- Warmup does not create sessions, upload data, run retrieval, or call model
+  providers.
+- The CTA opens `/workbench` quickly when Render is warm.
+- The theme-aware loading interstitial appears only while the sandbox is still
+  waking.
+- Browser-side cooldown prevents a warmup request on every page view.
+- README links and screenshots match the deployed public entry and workbench.
+- Browser QA covers desktop landing, mobile landing, desktop workbench, mobile
+  workbench, example query, upload rejection states, and delete-now flow.
+
 ## Deployment Preflight
 
 Before creating or updating Render services, run:
@@ -125,3 +143,9 @@ Last checked on June 27, 2026:
   retrieved chunks, and no browser error-level console logs.
 - Workbench screenshot captured at `docs/assets/screenshots/workbench.png`.
 - Browser console had no error-level logs on the captured workbench view.
+
+Slice 11 status on June 28, 2026: public-entry implementation and local QA are
+complete on `codex/public-landing-polish`. Browser QA covered the static Pages
+entry, Next landing, CTA redirect to `/workbench`, desktop workbench, and mobile
+workbench with no error-level console logs or horizontal overflow. After merge,
+enable GitHub Pages from `/docs` on `main` and verify the live Pages URL.

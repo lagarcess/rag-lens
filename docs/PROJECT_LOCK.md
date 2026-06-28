@@ -59,13 +59,34 @@ secret placeholders, and the active Render workspace. Once the dedicated
 workspace exists, pin `RENDER_EXPECTED_WORKSPACE_ID` locally so the guard does
 not rely on name-only matching.
 
-The deferred portfolio topology is:
+The public-entry topology for Slice 11 is:
 
 - GitHub Pages hosts the shareable landing page.
 - The landing page warms the Render sandbox after first paint.
 - If Render is cold, the CTA shows a theme-aware RAG Lens loading state before
   opening `/workbench`.
 - The Render URL is the app/backend origin, not the public portfolio URL.
+
+Public links in the README, portfolio materials, repository homepage, and
+social posts should point to `https://lagarcess.github.io/rag-lens/`, not the
+Render origin. The current Render origin remains
+`https://rag-lens-mx20.onrender.com` and should be described as infrastructure
+or sandbox/backend origin only.
+
+## Repository Presentation Lock
+
+Use standard RAG debugger positioning for public repository metadata:
+
+- GitHub homepage: `https://lagarcess.github.io/rag-lens/`.
+- GitHub description: `Inspect, debug, and understand a real RAG app built on your own docs.`
+- Recommended topics: `rag`, `rag-debugger`,
+  `retrieval-augmented-generation`, `vector-search`, `pgvector`, `supabase`,
+  `nextjs`, `openrouter`, `perplexity`, `ai-engineering`.
+- Social preview/banner image: use an actual RAG Lens workbench or trace
+  inspector image. Do not use stock AI art or a generic marketing graphic.
+  `docs/assets/screenshots/workbench.png` is the current source asset; create
+  a final social-preview crop only after Slice 11 browser QA confirms the
+  public entry and workbench visuals.
 
 ## Execution Discipline
 
@@ -105,3 +126,6 @@ As of June 28, 2026:
 - The current Render web URL is `https://rag-lens-mx20.onrender.com`.
 - Public route hardening, upload cleanup, trace persistence, experiment
   comparison, and beginner trace clarity slices are implemented and committed.
+- Slice 11 public landing and repo polish are implemented on
+  `codex/public-landing-polish`, pending PR review, merge, and GitHub Pages
+  enablement from `/docs` on `main`.

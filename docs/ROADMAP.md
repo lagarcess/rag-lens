@@ -327,7 +327,7 @@ desktop/mobile browser QA, and a pre-merge code-review pass.
 
 ## Slice 11 - Public Landing And Repo Polish
 
-Priority: next. Slice 10 is complete, so public entry points can send visitors
+Priority: active. Slice 10 is complete, so public entry points can send visitors
 to the strongest product surface.
 
 Goal: Make the recruiter-facing URL instant while keeping Render as the
@@ -359,6 +359,15 @@ Verification:
   mobile workbench, example query, upload rejection states, and delete-now flow.
 - `bun test`, `bun run lint`, `bun run build`, `bun run preflight:render`, and
   `git diff --check` pass before launch.
+
+Status: implemented on `codex/public-landing-polish`, pending PR review, merge,
+and GitHub Pages enablement from `/docs` on `main`. The branch includes the
+static GitHub Pages entry, Next landing polish, cheap `/api/warmup` route with
+narrow CORS, browser-side cooldown, docs/repo polish, and privacy/rate-limit
+messaging. Local verification passed with focused warmup/static-entry tests,
+`bun test`, `bun run lint`, `bun run build`, `bun run preflight:render`,
+`git diff --check`, and browser QA across desktop/mobile static entry, Next
+landing, and workbench.
 
 ## Slice 12 - Final Launch QA
 
