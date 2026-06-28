@@ -206,6 +206,7 @@ Current GitHub repo metadata:
 - Supabase: hosted project in the dedicated `RAG Lens` organization.
 - GitHub Pages is enabled from `/docs` on `main`.
 - Repository metadata points to the GitHub Pages public entry.
+- V1 final launch QA is complete. Merge commit `80b5b6e` is deployed on Render.
 
 Working locally against the hosted Supabase project:
 

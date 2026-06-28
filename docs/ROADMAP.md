@@ -6,22 +6,21 @@ subagent discipline, verification gates, and cleanup rules.
 
 ## Current V1 State
 
-Core standard RAG is already implemented end to end. Slices 0-11 are complete for
+Core standard RAG is implemented end to end. Slices 0-12 are complete for
 the current V1 baseline: foundation, app shell, Supabase sessions, first-party
 examples, uploads, chunking, Perplexity embeddings, Supabase `pgvector`
 retrieval, trace persistence/history, OpenRouter answers, experiment mode,
 retention cleanup, Render deployment, portfolio documentation, and beginner
-trace clarity, plus the public GitHub Pages entry and repository polish.
+trace clarity, plus the public GitHub Pages entry, repository polish, and final
+launch QA.
 
-Only one V1 completion slice remains:
-
-1. **Slice 12 - Final Launch QA**: run the full local, hosted, browser, docs,
-   and cleanup verification pass and declare V1 complete only if it passes.
+No V1 completion slices remain. Work below this line is explicitly deferred
+post-V1 scope.
 
 Recommended PR sequence:
 
 1. `codex/public-landing-polish` - merged.
-2. `codex/final-launch-qa` - active final QA branch.
+2. `codex/final-launch-qa` - merged.
 
 Use normal short-lived branches for this sequence. Do not create worktrees by
 default; use a worktree only when it materially reduces risk or isolates a
@@ -398,16 +397,18 @@ Verification:
 - Browser QA evidence for landing, workbench, completed trace, comparison, and
   upload/delete flow.
 
-Status: active on `codex/final-launch-qa`. The branch fixes a production-only
-PDF upload failure by keeping `pdf-parse` external to the Next.js server bundle,
-adds a regression test for that config contract, and records final QA evidence.
+Status: complete and merged. The Slice 12 PR fixed a production-only PDF upload
+failure by keeping `pdf-parse` external to the Next.js server bundle, added a
+regression test for that config contract, and recorded final QA evidence.
 `bun test`, `bun run lint`, `bun run build`, `bun run preflight:render`,
 hosted Supabase smoke, hosted Supabase integration smoke, and
-`git diff --check` pass on the branch. Local production API smoke has passed
+`git diff --check` passed before merge. Local production API smoke passed
 example corpus query, markdown upload, PDF upload, wrong MIME rejection,
 oversized upload rejection, expired-session messaging, and delete-now cleanup.
-Hosted Supabase read-only and mutating integration smokes have passed with
-count-only output and no remaining fixture data.
+Post-merge hosted smoke passed GitHub Pages, warmup CORS, default-profile
+example query, markdown/PDF uploads, upload rejection states, expired-session
+messaging, and delete-now cleanup after Render deploy
+`dep-d90r8l1kh4rs739moscg` for merge commit `80b5b6e`.
 
 ## Done Criteria
 
@@ -428,6 +429,8 @@ RAG Lens V1 is done when:
   app/backend sandbox origin.
 - Final verification commands and browser QA pass with evidence.
 - No deferred scope below is required to call V1 complete.
+
+Status: met on June 28, 2026.
 
 ## Explicitly Deferred After V1
 
