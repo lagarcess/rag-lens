@@ -6,26 +6,24 @@ subagent discipline, verification gates, and cleanup rules.
 
 ## Current V1 State
 
-Core standard RAG is already implemented end to end. Slices 0-9 are complete for
+Core standard RAG is already implemented end to end. Slices 0-10 are complete for
 the current V1 baseline: foundation, app shell, Supabase sessions, first-party
 examples, uploads, chunking, Perplexity embeddings, Supabase `pgvector`
 retrieval, trace persistence/history, OpenRouter answers, experiment mode,
-retention cleanup, Render deployment, and portfolio documentation.
+retention cleanup, Render deployment, portfolio documentation, and beginner
+trace clarity.
 
-Only three V1 completion slices remain:
+Only two V1 completion slices remain:
 
-1. **Slice 10 - Beginner Trace Clarity**: make the workbench teach standard RAG
-   without assuming prior terminology.
-2. **Slice 11 - Public Landing And Repo Polish**: make the public entry,
+1. **Slice 11 - Public Landing And Repo Polish**: make the public entry,
    README, screenshots/GIFs, and repository presentation launch-ready.
-3. **Slice 12 - Final Launch QA**: run the full local, hosted, browser, docs,
+2. **Slice 12 - Final Launch QA**: run the full local, hosted, browser, docs,
    and cleanup verification pass and declare V1 complete only if it passes.
 
 Recommended PR sequence:
 
-1. `codex/beginner-trace-clarity`
-2. `codex/public-landing-polish`
-3. `codex/final-launch-qa`
+1. `codex/public-landing-polish`
+2. `codex/final-launch-qa`
 
 Use normal short-lived branches for this sequence. Do not create worktrees by
 default; use a worktree only when it materially reduces risk or isolates a
@@ -269,8 +267,8 @@ Verification:
 - No secrets in repository or browser bundle.
 
 Status: implemented for the current Render app/backend deployment and
-portfolio documentation. Remaining V1 work is educational clarity and public
-entry polish, not core RAG infrastructure.
+portfolio documentation. Remaining V1 work is public entry polish and final
+launch QA, not core RAG infrastructure.
 
 ## Slice 10 - Beginner Trace Clarity
 
@@ -320,10 +318,17 @@ Verification:
 - Browser QA covers empty state, completed trace, comparison, and upload mode.
 - `bun test`, `bun run lint`, `bun run build`, and `git diff --check` pass.
 
+Status: complete in `codex/beginner-trace-clarity`. The workbench now includes
+plain-English retrieval verdicts, guided example prompts, inline RAG concept
+help, collapsible stage explanations, similarity bars, selected/retrieved chunk
+states, and comparison verdicts with practical tradeoff handling. Verification
+passed with `bun run lint`, `bun test`, `bun run build`, `git diff --check`,
+desktop/mobile browser QA, and a pre-merge code-review pass.
+
 ## Slice 11 - Public Landing And Repo Polish
 
-Priority: immediately after Slice 10. The workbench clarity pass should land
-first so the public entry points send visitors to the strongest product surface.
+Priority: next. Slice 10 is complete, so public entry points can send visitors
+to the strongest product surface.
 
 Goal: Make the recruiter-facing URL instant while keeping Render as the
 sandbox/app origin rather than the public URL to share.

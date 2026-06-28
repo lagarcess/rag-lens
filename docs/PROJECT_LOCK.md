@@ -92,7 +92,7 @@ The deferred portfolio topology is:
 
 ## Reviewed State
 
-As of June 27, 2026:
+As of June 28, 2026:
 
 - Supabase is linked to the dedicated RAG Lens project.
 - Supabase migrations are applied and advisors report no warning-level issues.
@@ -103,5 +103,5 @@ As of June 27, 2026:
 - Render service now lives in the dedicated `rag-lens` workspace:
   `rag-lens` (`srv-d900drho3t8c73bpvr80`).
 - The current Render web URL is `https://rag-lens-mx20.onrender.com`.
-- Public route hardening, upload cleanup, trace persistence, and experiment
-  comparison slices are implemented and committed.
+- Public route hardening, upload cleanup, trace persistence, experiment
+  comparison, and beginner trace clarity slices are implemented and committed.
