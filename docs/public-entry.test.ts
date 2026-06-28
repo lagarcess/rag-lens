@@ -24,6 +24,10 @@ describe("GitHub Pages public entry", () => {
     expect(html).toContain("localStorage");
     expect(html).toContain("LOCAL_PREVIEW_HOSTS");
     expect(html).toContain("isLocalPreview()");
+    expect(html).toContain("@media (prefers-color-scheme: dark)");
+    expect(html).toContain("class=\"warmup-logo\"");
+    expect(html).toContain("assets/brand/rag-lens-logo-light-mark.png");
+    expect(html).toContain("assets/brand/rag-lens-logo-dark-mark.png");
   });
 
   test("does not expose provider or database secrets", () => {

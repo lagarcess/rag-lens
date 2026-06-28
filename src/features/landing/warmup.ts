@@ -8,7 +8,7 @@ export function shouldRunWarmup(lastWarmupValue: string | null, now = Date.now()
 
   const lastWarmupAt = Number(lastWarmupValue);
 
-  if (!Number.isFinite(lastWarmupAt)) {
+  if (!Number.isFinite(lastWarmupAt) || lastWarmupAt > now) {
     return true;
   }
 

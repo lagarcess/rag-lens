@@ -48,6 +48,28 @@ describe("GET /api/warmup", () => {
       process.env.NEXT_PUBLIC_SITE_URL = previousSiteUrl;
     }
   });
+
+  test("allows comma-separated warmup origins", async () => {
+    const previousAllowedOrigins = process.env.NEXT_PUBLIC_WARMUP_ALLOWED_ORIGINS;
+    process.env.NEXT_PUBLIC_WARMUP_ALLOWED_ORIGINS =
+      "https://preview.example, https://lagarcess.github.io";
+
+    try {
+      const response = await GET(
+        new Request("https://rag-lens.onrender.com/api/warmup", {
+          headers: {
+            origin: "https://preview.example",
+          },
+        }),
+      );
+
+      expect(response.headers.get("access-control-allow-origin")).toBe(
+        "https://preview.example",
+      );
+    } finally {
+      process.env.NEXT_PUBLIC_WARMUP_ALLOWED_ORIGINS = previousAllowedOrigins;
+    }
+  });
 });
 
 describe("OPTIONS /api/warmup", () => {

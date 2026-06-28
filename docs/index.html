@@ -36,6 +36,7 @@
         --trace-text: #eef8f1;
         --trace-muted: #9bb1a4;
         --shadow: 0 28px 80px rgba(21, 25, 21, 0.16);
+        --topbar-bg: rgba(247, 248, 245, 0.9);
       }
 
       * {
@@ -71,7 +72,7 @@
 
       .topbar {
         border-bottom: 1px solid var(--line);
-        background: rgba(247, 248, 245, 0.9);
+        background: var(--topbar-bg);
         backdrop-filter: blur(16px);
       }
 
@@ -234,7 +235,7 @@
         display: flex;
       }
 
-      .warmup-icon {
+      .warmup-logo {
         display: grid;
         width: 40px;
         height: 40px;
@@ -242,10 +243,18 @@
         place-items: center;
         border-radius: 8px;
         background: var(--surface-2);
-        color: var(--accent-strong);
-        font-family:
-          "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
-        font-weight: 800;
+        overflow: hidden;
+      }
+
+      .warmup-logo img {
+        display: block;
+        width: 40px;
+        height: 40px;
+        object-fit: cover;
+      }
+
+      .warmup-logo-dark {
+        display: none;
       }
 
       .warmup-copy strong {
@@ -485,6 +494,39 @@
         }
       }
 
+      @media (prefers-color-scheme: dark) {
+        :root {
+          color-scheme: dark;
+          --bg: #0f1513;
+          --surface: #151d1a;
+          --surface-2: #1d2924;
+          --text: #eef8f1;
+          --muted: #9bb1a4;
+          --line: #26342f;
+          --accent: #19c993;
+          --accent-strong: #34d399;
+          --cyan: #22d3ee;
+          --trace-bg: #0a0f0d;
+          --trace-line: #25322d;
+          --trace-text: #eef8f1;
+          --trace-muted: #9bb1a4;
+          --shadow: 0 28px 90px rgba(0, 0, 0, 0.36);
+          --topbar-bg: rgba(15, 21, 19, 0.88);
+        }
+
+        .button-primary {
+          color: #062019;
+        }
+
+        .warmup-logo-light {
+          display: none;
+        }
+
+        .warmup-logo-dark {
+          display: block;
+        }
+      }
+
       @media (max-width: 900px) {
         .hero,
         .trace-section {
@@ -576,7 +618,18 @@
               >
             </div>
             <div class="warmup-panel" id="warmup-panel" role="status">
-              <span class="warmup-icon">RL</span>
+              <span class="warmup-logo" aria-label="RAG Lens">
+                <img
+                  class="warmup-logo-light"
+                  src="assets/brand/rag-lens-logo-light-mark.png"
+                  alt=""
+                />
+                <img
+                  class="warmup-logo-dark"
+                  src="assets/brand/rag-lens-logo-dark-mark.png"
+                  alt=""
+                />
+              </span>
               <div class="warmup-copy">
                 <strong id="warmup-title">Starting the sandbox</strong>
                 <span id="warmup-detail">
@@ -787,7 +840,7 @@
             window.localStorage.getItem(WARMUP_STORAGE_KEY),
           );
 
-          if (!Number.isFinite(lastWarmupAt)) {
+          if (!Number.isFinite(lastWarmupAt) || lastWarmupAt > Date.now()) {
             return true;
           }
 

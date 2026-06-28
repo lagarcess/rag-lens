@@ -39,4 +39,8 @@ describe("landing warmup helpers", () => {
       true,
     );
   });
+
+  test("treats future cooldown timestamps as invalid", () => {
+    expect(shouldRunWarmup(String(10_000), 1_000)).toBe(true);
+  });
 });
