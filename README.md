@@ -18,7 +18,7 @@ origin that the public entry warms before opening the workbench.
 
 ## Why It Exists
 
-RAG Play is educational because it shows a pipeline. RAG Lens takes the next
+[RAG Play](https://ragplay.vercel.app) is educational because it shows a pipeline. RAG Lens takes the next
 step: it lets you inspect, debug, and understand a real RAG app built on your
 own docs.
 
