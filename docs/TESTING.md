@@ -152,7 +152,7 @@ Pages warmup origin. Live checks confirmed the Pages URL, warmup CORS for
 `https://lagarcess.github.io`, blocked broad CORS for other origins, and a
 theme-aware loading path.
 
-Slice 12 local production QA on June 28, 2026:
+Slice 12 final launch QA on June 28, 2026:
 
 - `next.config.ts` externalizes `pdf-parse`; a regression test covers that
   production bundle contract.
@@ -164,3 +164,11 @@ Slice 12 local production QA on June 28, 2026:
   messaging, and delete-now cleanup.
 - Hosted Supabase read-only smoke and mutating integration smoke passed with
   count-only output and zero remaining fixture rows or Storage objects.
+- PR #3 merged to `main` as `80b5b6e`, then Render deploy
+  `dep-d90r8l1kh4rs739moscg` succeeded for that commit.
+- Post-merge hosted smoke confirmed GitHub Pages `200`, warmup CORS for
+  `https://lagarcess.github.io`, no broad CORS reflection, default-profile
+  example query success, markdown upload, PDF upload, wrong MIME rejection,
+  oversized upload rejection, expired-session messaging, and delete-now cleanup.
+- Headless Chrome screenshots confirmed the live Pages desktop entry and hosted
+  workbench mobile view render nonblank.

@@ -94,7 +94,7 @@ intended hosted V1 behavior because the dedicated Supabase project has seeded
 example vectors and uploaded documents are indexed into Supabase. Keep
 `RAG_RETRIEVAL_BACKEND=local` only for zero-dependency local example traces.
 
-Current Render workspace status on June 27, 2026:
+Current Render workspace status on June 28, 2026:
 
 - Dedicated workspace: `rag-lens` (`tea-d8vvqob7uimc738uflsg`).
 - CLI active workspace is `rag-lens`.
@@ -102,11 +102,12 @@ Current Render workspace status on June 27, 2026:
 - Web URL: `https://rag-lens-mx20.onrender.com`.
 - `bun run preflight:render` passes against the dedicated workspace and
   validates the web-only Blueprint shape.
-- The web deploy is live on commit
-  `2f88c49effd1d5e3819f9fd3fc886aeec9b7704a`.
-- Live smoke checks passed for `/api/health`, `/api/corpora`, and one
+- Post-merge QA verified deploy `dep-d90r8l1kh4rs739moscg` for merge commit
+  `80b5b6e`.
+- Live smoke checks passed for GitHub Pages, `/api/warmup`, one default-profile
   `/api/query` request using Supabase pgvector retrieval plus OpenRouter answer
-  generation.
+  generation, markdown/PDF uploads, upload rejection states, expired-session
+  messaging, and delete-now cleanup.
 
 The first web service creation predicted `https://rag-lens.onrender.com`, but
 Render assigned `https://rag-lens-mx20.onrender.com`. If future code starts
@@ -261,7 +262,9 @@ Operational notes:
 
 Status: Slice 11 is merged. GitHub Pages is enabled from `/docs` on `main`,
 the live Pages URL responds at `https://lagarcess.github.io/rag-lens/`, and the
-warmup endpoint allows the Pages origin without opening CORS broadly.
+warmup endpoint allows the Pages origin without opening CORS broadly. Slice 12
+is merged and Render deploy `dep-d90r8l1kh4rs739moscg` is live for merge commit
+`80b5b6e`.
 
 Repository metadata has been set to match the public topology:
 

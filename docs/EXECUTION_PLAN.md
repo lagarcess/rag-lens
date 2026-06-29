@@ -88,18 +88,16 @@ Findings incorporated into the execution rules:
 Active goal: finish RAG Lens V1 as a polished standard RAG debugger with a
 clear public portfolio entry point. The core RAG system is implemented and
 deployed, beginner trace clarity is complete, and the GitHub Pages public entry
-is merged and live. The only remaining V1 slice is final launch verification.
+is merged and live. Final launch QA is complete.
 
 Current non-deferred V1 focus:
 
-1. Final launch QA: full local, hosted Supabase, Render, browser, docs, cleanup,
-   and secret-boundary verification.
+1. None. V1 is complete; future work belongs in the deferred post-V1 scope.
 
-Slice 11 used a normal short-lived branch PR and is merged. Slice 12 is the
-active short-lived branch PR:
+Slice 11 and Slice 12 used normal short-lived branch PRs and are merged:
 
 1. `codex/public-landing-polish` - merged.
-2. `codex/final-launch-qa` - active.
+2. `codex/final-launch-qa` - merged.
 
 Do not create worktrees by default. Use a worktree only when it materially
 reduces risk or isolates a parallel investigation.
@@ -721,14 +719,15 @@ Verification:
 - Browser QA evidence for landing, workbench, completed trace, comparison, and
   upload/delete flow.
 
-Status: active on `codex/final-launch-qa`. Local production API smoke has
-passed example corpus query, markdown upload, PDF upload, wrong MIME rejection,
-oversized upload rejection, expired-session messaging, and delete-now cleanup.
-The branch keeps `pdf-parse` external to the Next production server bundle and
-adds a regression test for that deployment contract. `bun test`,
-`bun run lint`, `bun run build`, `bun run preflight:render`, hosted Supabase
-smoke, hosted Supabase integration smoke, and `git diff --check` pass on the
-branch.
+Status: complete and merged. Local production API smoke passed example corpus
+query, markdown upload, PDF upload, wrong MIME rejection, oversized upload
+rejection, expired-session messaging, and delete-now cleanup. The branch keeps
+`pdf-parse` external to the Next production server bundle and adds a regression
+test for that deployment contract. `bun test`, `bun run lint`,
+`bun run build`, `bun run preflight:render`, hosted Supabase smoke, hosted
+Supabase integration smoke, and `git diff --check` passed before merge.
+Post-merge hosted smoke passed after Render deploy
+`dep-d90r8l1kh4rs739moscg` for merge commit `80b5b6e`.
 
 ## Review Checklist
 

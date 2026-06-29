@@ -127,6 +127,11 @@ As of June 28, 2026:
 - Slice 11 public landing and repo polish are merged. GitHub Pages is enabled
   from `/docs` on `main`, repository metadata points to the Pages URL, and the
   Render warmup route allows the Pages origin.
-- Slice 12 final launch QA is active on `codex/final-launch-qa`; local
-  production API smoke has passed example query, markdown/PDF uploads, rejection
-  states, expired-session messaging, and delete-now cleanup.
+- Slice 12 final launch QA is merged. Render deploy
+  `dep-d90r8l1kh4rs739moscg` is live for merge commit `80b5b6e`, and hosted
+  smoke passed Pages, warmup CORS, default-profile example query,
+  markdown/PDF uploads, rejection states, expired-session messaging, and
+  delete-now cleanup.
+- V1 standard RAG debugger scope is complete. Re-indexed profiles, GraphRAG,
+  agentic RAG, accounts, long-term knowledge bases, advanced evals, and
+  distributed production rate limiting remain post-V1 deferred scope.
